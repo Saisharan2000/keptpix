@@ -1,0 +1,59 @@
+---
+/**
+ * src/components/astro/RelatedTools.astro
+ *
+ * Spec: docs/09-seo-content-plan.md §3 — 4-6 genuinely related routes
+ *
+ * Slugs are resolved against the published route data and UNRESOLVED ONES ARE
+ * DROPPED. Milestone 1 ships a single pair route while heic-to-jpg already
+ * lists four related slugs, so rendering them blindly would emit internal links
+ * to pages that 404 until Milestone 6 — a real defect, and an SEO one. As waves
+ * 2-4 add entries to formats.ts these light up on their own, with no code change.
+ *
+ * ZERO JavaScript.
+ */
+import { publishedFormatPairRoutes } from '../../content/formats';
+
+interface Props {
+  slugs: string[];
+  /** Slug of the current route, so a page never links to itself. */
+  currentSlug?: string;
+  headingId?: string;
+}
+
+const { slugs, currentSlug, headingId = 'related-heading' } = Astro.props;
+
+const pairLinks = slugs
+  .filter((s) => s !== currentSlug)
+  .map((s) => publishedFormatPairRoutes.find((r) => r.slug === s))
+  .filter((r) => r !== undefined)
+  .map((r) => ({ href: '/convert/' + r.slug, label: r.h1 }));
+
+/* Hub routes always exist, so they are a safe backfill to a useful link count. */
+const hubLinks = [
+  { href: '/convert', label: 'All converters' },
+  { href: '/compress', label: 'Compress to an exact size' },
+  { href: '/metadata', label: 'Inspect EXIF and GPS data' },
+  { href: '/how-it-works', label: 'How this works without uploading' },
+];
+
+const links = [...pairLinks, ...hubLinks].slice(0, 6);
+---
+
+<section aria-labelledby={headingId}>
+  <h2 id={headingId} class="m-0 text-2xl font-semibold tracking-tight text-text">Related tools</h2>
+  <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+    {
+      links.map((l) => (
+        <li>
+          <a
+            href={l.href}
+            class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+          >
+            {l.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</section>

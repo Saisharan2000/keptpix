@@ -1,0 +1,72 @@
+---
+/**
+ * src/pages/metadata.astro  ->  /metadata
+ * Spec: docs/09-seo-content-plan.md §2.3 — task hub.
+ */
+import ToolLayout from '../layouts/ToolLayout.astro';
+import PrivacyBanner from '../components/astro/PrivacyBanner.astro';
+import ToolShell from '../components/react/ToolShell';
+
+const defaultConfig = {
+  metadata: { stripAll: true, preserveOrientation: true, preserveColorProfile: false },
+};
+---
+
+<ToolLayout
+  title="Inspect and strip image metadata — NoUpload"
+  description="See the GPS coordinates, camera model and timestamps hidden in your photos, then remove them. Nothing is uploaded."
+  path="/metadata"
+  h1="Inspect and strip image metadata"
+  lede="See what your photos reveal about you — then remove it. Everything happens on your device."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Metadata', path: '/metadata' },
+  ]}
+>
+  <Fragment slot="tool">
+    <div id="tool" tabindex="-1" class="scroll-mt-20">
+      <ToolShell client:visible defaultConfig={defaultConfig} fromLabel="image" />
+      <noscript>
+        <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+          The tool needs JavaScript, because the work runs on your device rather than on a
+          server. Everything you can read on this page works without it.
+        </p>
+      </noscript>
+    </div>
+  </Fragment>
+
+  <section aria-labelledby="what-heading">
+    <h2 id="what-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      What your photos are carrying
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      A photo taken on a phone is not just pixels. Embedded in the file, invisible unless you go
+      looking, is usually a set of GPS coordinates accurate to within a few metres, the make and
+      model of the device, the exact second the shutter opened, the lens, the exposure settings,
+      and sometimes a software history of every edit.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      That travels with the file. Post the picture, email it, attach it to a form, and the
+      coordinates of where you took it usually go too. Some social platforms strip it on upload;
+      many services, forums and messaging apps do not.
+    </p>
+  </section>
+
+  <section aria-labelledby="orientation-heading">
+    <h2 id="orientation-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      The one tag worth keeping
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Orientation is the exception. Phone cameras record the picture as the sensor saw it and add
+      a tag saying how to rotate it for display, which is why a photo can look upright in one app
+      and sideways in another. Strip that tag naively and portrait photos start appearing rotated.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      So it is handled rather than deleted: the rotation is applied to the actual pixels first, and
+      the tag is then discarded along with everything else. Your photo stays the right way up, and
+      nothing identifying survives.
+    </p>
+  </section>
+
+  <PrivacyBanner />
+</ToolLayout>

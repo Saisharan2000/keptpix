@@ -1,0 +1,115 @@
+---
+/**
+ * src/components/astro/SeoHead.astro
+ *
+ * Spec: docs/09-seo-content-plan.md §4 — structured data
+ *
+ * Emits WebApplication + FAQPage + BreadcrumbList JSON-LD at BUILD TIME. This
+ * is the block AI answer engines actually read: GPTBot, ClaudeBot and
+ * PerplexityBot fetch JavaScript but never execute it (docs/09 §1.1), so
+ * anything injected at runtime is invisible to them.
+ *
+ * ZERO client-side JavaScript. `application/ld+json` is data, not script.
+ */
+
+export interface FaqEntry {
+  q: string;
+  a: string;
+}
+
+export interface Crumb {
+  name: string;
+  path: string;
+}
+
+export interface WebAppInfo {
+  name: string;
+  featureList: string[];
+}
+
+interface Props {
+  title: string;
+  description: string;
+  /** Route path beginning with a slash, e.g. "/convert/heic-to-jpg". */
+  path: string;
+  faq?: FaqEntry[];
+  breadcrumbs?: Crumb[];
+  webApp?: WebAppInfo;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  path,
+  faq = [],
+  breadcrumbs = [],
+  webApp,
+  noindex = false,
+} = Astro.props;
+
+const SITE = 'https://noupload.app';
+const canonical = SITE + (path === '/' ? '' : path);
+
+const graph: Record<string, unknown>[] = [];
+
+if (webApp) {
+  graph.push({
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: webApp.name,
+    applicationCategory: 'MultimediaApplication',
+    operatingSystem: 'Any (web browser)',
+    url: canonical,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: webApp.featureList,
+  });
+}
+
+if (faq.length > 0) {
+  graph.push({
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  });
+}
+
+if (breadcrumbs.length > 0) {
+  graph.push({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbs.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: SITE + (c.path === '/' ? '' : c.path),
+    })),
+  });
+}
+
+/**
+ * A literal "</` + `script>" inside a JSON string would terminate the block
+ * early. JSON.stringify does not escape it, so escape every '<' ourselves.
+ */
+const serialise = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex,follow" />}
+
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="NoUpload" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+
+{graph.map((node) => <script type="application/ld+json" set:html={serialise(node)} />)}

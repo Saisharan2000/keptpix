@@ -1,0 +1,31 @@
+/* 08-design-system.md §2.3 — verbatim. */
+:root {
+  --space-1: 0.25rem;  --space-2: 0.5rem;   --space-3: 0.75rem;
+  --space-4: 1rem;     --space-5: 1.5rem;   --space-6: 2rem;
+  --space-7: 3rem;     --space-8: 4rem;     --space-9: 6rem;
+
+  --radius-sm: 4px;  --radius-md: 8px;  --radius-lg: 12px;
+  --radius-xl: 16px; --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgb(16 22 28 / 0.06);
+  --shadow-md: 0 2px 8px rgb(16 22 28 / 0.08), 0 1px 2px rgb(16 22 28 / 0.04);
+  --shadow-lg: 0 8px 24px rgb(16 22 28 / 0.12), 0 2px 6px rgb(16 22 28 / 0.06);
+
+  --duration-fast: 120ms;/* @kind other */
+  --duration-base: 200ms;/* @kind other */
+  --duration-slow: 320ms;/* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);/* @kind other */
+
+  --container-sm: 40rem; --container-md: 56rem;
+  --container-lg: 72rem; --container-xl: 84rem;
+
+  /* Breakpoints (reference values — sm 640 · md 768 · lg 1024 · xl 1280) */
+  --bp-sm: 640px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1280px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

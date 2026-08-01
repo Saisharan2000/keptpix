@@ -1,0 +1,159 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@config '../../tailwind.config.ts';
+
+/* Bridge the design tokens (docs/08 §2) onto Tailwind's utility namespaces, so
+ * `bg-accent` and `border-border-strong` resolve to the tokens rather than to
+ * Tailwind's built-in palette.
+ *
+ * The entries look self-referential (`--color-bg: var(--color-bg)`) because the
+ * token names in docs/08 §2 already occupy Tailwind's `--color-*` namespace.
+ * This is safe and deliberate:
+ *
+ *   - `inline` makes each utility compile to `var(--color-bg)` directly, e.g.
+ *     `.bg-accent { background-color: var(--color-accent) }`.
+ *   - Tailwind still emits a `--color-bg: var(--color-bg)` declaration into
+ *     `@layer theme`. That declaration is dead. tokens.css is imported
+ *     UNLAYERED, and unlayered declarations outrank every layered one in the
+ *     cascade, so the real value from tokens.css always wins — in both themes.
+ *
+ * Do NOT wrap tokens.css in an @layer to "tidy this up". That would invert the
+ * precedence and every color would collapse to a circular, invalid value. */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-bg-subtle: var(--color-bg-subtle);
+  --color-bg-muted: var(--color-bg-muted);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-subtle: var(--color-text-subtle);
+
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-active: var(--color-accent-active);
+  --color-accent-subtle: var(--color-accent-subtle);
+  --color-accent-text: var(--color-accent-text);
+
+  --color-success: var(--color-success);
+  --color-success-subtle: var(--color-success-subtle);
+  --color-warning: var(--color-warning);
+  --color-warning-subtle: var(--color-warning-subtle);
+  --color-danger: var(--color-danger);
+  --color-danger-subtle: var(--color-danger-subtle);
+  --color-info: var(--color-info);
+  --color-info-subtle: var(--color-info-subtle);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Type scale. Tailwind's font-size namespace is also `--text-*`, and its
+   * defaults differ from docs/08 §2 (its text-4xl is 2.25rem, ours is 3rem), so
+   * these must be mapped or every heading renders at the wrong size. The
+   * `--text-*--line-height` suffix pairs each size with its --leading-* token. */
+  --text-xs: var(--text-xs);
+  --text-xs--line-height: var(--leading-xs);
+  --text-sm: var(--text-sm);
+  --text-sm--line-height: var(--leading-sm);
+  --text-base: var(--text-base);
+  --text-base--line-height: var(--leading-base);
+  --text-lg: var(--text-lg);
+  --text-lg--line-height: var(--leading-lg);
+  --text-xl: var(--text-xl);
+  --text-xl--line-height: var(--leading-xl);
+  --text-2xl: var(--text-2xl);
+  --text-2xl--line-height: var(--leading-2xl);
+  --text-3xl: var(--text-3xl);
+  --text-3xl--line-height: var(--leading-3xl);
+  --text-4xl: var(--text-4xl);
+  --text-4xl--line-height: var(--leading-4xl);
+
+  --font-weight-normal: var(--weight-normal);
+  --font-weight-medium: var(--weight-medium);
+  --font-weight-semibold: var(--weight-semibold);
+  --font-weight-bold: var(--weight-bold);
+
+  --tracking-tight: var(--tracking-tight);
+  --tracking-normal: var(--tracking-normal);
+
+  /* Spacing is deliberately NOT mapped. Tailwind's native numeric scale already
+   * produces the docs/08 §2 values (p-4 = 1rem = --space-4, p-6 = 1.5rem =
+   * --space-5), and remapping `--spacing-*` would silently change what every
+   * existing utility number means. Where a spec names a token explicitly, use
+   * var(--space-N) directly. Same reasoning for --container-*. */
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --ease-out: var(--ease-out);
+
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  :root {
+    color-scheme: light;
+  }
+
+  [data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-base);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* docs/08 §6 — focus is 2px, offset 2px, and is never removed. */
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+
+@layer components {
+  /* docs/08 §2.2 numeric rule: every file size, dimension, and percentage is
+   * monospaced with tabular figures, so digits do not jitter as a target-size
+   * search updates them pass by pass. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* docs/08 §6 — "Skip to tool" is the first focusable element on every page. */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: var(--space-2);
+    z-index: 100;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    background-color: var(--color-accent);
+    color: var(--color-accent-text);
+  }
+
+  .skip-link:focus {
+    left: var(--space-2);
+  }
+}

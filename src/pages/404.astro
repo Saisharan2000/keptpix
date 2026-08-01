@@ -1,0 +1,24 @@
+---
+/**
+ * src/pages/404.astro  ->  /404
+ *
+ * Spec: docs/09-seo-content-plan.md §2
+ * Full content lands in: Milestone 6
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+---
+
+<ContentLayout
+  title="Page not found — NoUpload"
+  description="That page does not exist."
+  path="/404"
+  h1="Page not found"
+  lede="That page does not exist. The tools below all do."
+  noindex
+>
+  <p class="m-0 text-base text-text-muted">
+    Try <a href="/convert" class="font-medium text-accent">all converters</a>,
+    <a href="/compress" class="font-medium text-accent">compress to a size</a>, or
+    <a href="/" class="font-medium text-accent">start from the homepage</a>.
+  </p>
+</ContentLayout>

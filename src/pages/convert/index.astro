@@ -1,0 +1,38 @@
+---
+/**
+ * src/pages/convert/index.astro  ->  /convert
+ *
+ * Spec: docs/09-seo-content-plan.md §2.3 — task hub
+ * Full content lands in: Milestone 6
+ *
+ * Lists only published routes, so the docs/09 §3 supported gate holds here too.
+ */
+import ContentLayout from '../../layouts/ContentLayout.astro';
+import { publishedFormatPairRoutes } from '../../content/formats';
+
+const routes = publishedFormatPairRoutes;
+---
+
+<ContentLayout
+  title="Convert images between formats — NoUpload"
+  description="Convert HEIC, WebP, PNG, JPG, AVIF, and more in your browser. Nothing is uploaded."
+  path="/convert"
+  h1="Convert images"
+  lede="Pick a conversion. Every one runs on your device — your files are never uploaded."
+>
+  <ul class="grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+    {
+      routes.map((r) => (
+        <li>
+          <a
+            href={'/convert/' + r.slug}
+            class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
+          >
+            <span class="block text-sm font-medium text-text">{r.h1}</span>
+            <span class="mt-1 block text-sm text-text-muted">{r.metaDescription}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</ContentLayout>

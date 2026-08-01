@@ -1,0 +1,100 @@
+---
+/**
+ * src/pages/privacy.astro  ->  /privacy
+ *
+ * Spec: docs/09-seo-content-plan.md §2.4 — "Short and true: we collect nothing
+ * because there is nowhere to send it."
+ *
+ * Deliberately short. A long privacy policy on a tool that collects nothing
+ * would be theatre, and length is how most policies hide things.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+
+/**
+ * Read at BUILD time so this page can never claim something different from
+ * what the deployed bundle actually does — the promise below is that any
+ * page-view counter "will be named here", and a hardcoded sentence is exactly
+ * the kind of thing that silently goes stale (docs/12 D-53).
+ *
+ * The env var is read directly rather than importing analyticsEnabled() from
+ * platform/analytics.ts: docs/07 §2 gives pages/ no grant to platform/, and
+ * this is one boolean, not logic worth widening a layer boundary for. Both
+ * read the SAME variable, so they cannot disagree.
+ */
+const analyticsOn = (import.meta.env.PUBLIC_CF_BEACON_TOKEN ?? '').trim().length > 0;
+---
+
+<ContentLayout
+  title="Privacy — NoUpload"
+  description="We collect nothing, because there is nowhere to send it. No accounts, no tracking, no uploads."
+  path="/privacy"
+  h1="Privacy"
+  lede="Short version: we collect nothing, because there is nowhere to send it."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Privacy', path: '/privacy' },
+  ]}
+>
+  <section aria-labelledby="files-heading">
+    <h2 id="files-heading" class="m-0 text-xl font-semibold text-text">Your files</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      Your images are never uploaded. They are read by the page, converted inside your browser,
+      and handed back. They are not stored, logged, cached or transmitted, because this site has
+      no server that could receive them. You can confirm this by converting a file with your
+      network disconnected — see
+      <a href="/how-it-works" class="font-medium text-accent">how it works</a>.
+    </p>
+  </section>
+
+  <section aria-labelledby="accounts-heading">
+    <h2 id="accounts-heading" class="m-0 text-xl font-semibold text-text">Accounts and data</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      There are no accounts, so there is no email address, password or profile. Nothing is asked
+      for and nothing is kept. The only thing stored on your device is your light or dark theme
+      preference, which never leaves it.
+    </p>
+  </section>
+
+  <section aria-labelledby="metadata-heading">
+    <h2 id="metadata-heading" class="m-0 text-xl font-semibold text-text">Metadata in your photos</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      Photos from a phone usually contain GPS coordinates accurate to a few metres, the camera
+      make and model, and the exact time the picture was taken. That data is stripped from
+      converted files by default. You can turn stripping off if you need it, and you can inspect
+      exactly what a file contains before converting it.
+    </p>
+  </section>
+
+  <section aria-labelledby="third-heading">
+    <h2 id="third-heading" class="m-0 text-xl font-semibold text-text">Third parties</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      There are no third-party scripts, no advertising, no social embeds and no analytics that
+      transmit anything about your files. Every asset this site loads — including the image
+      codecs — is served from this domain. If a privacy-respecting page-view counter is ever
+      added, it will be one that sends no personal data, it will be named here, and it will be
+      blocked while any conversion is running.
+    </p>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      {
+        analyticsOn
+          ? 'That counter is now enabled, and it is named here as promised: Cloudflare Web ' +
+            'Analytics. It is cookieless, records a page view and nothing that identifies you, ' +
+            'and is the single exception to the same-domain rule above — its script is fetched ' +
+            'from static.cloudflareinsights.com. It is loaded only after the converter is ready ' +
+            'and never while a conversion is running. It is never given anything about your files.'
+          : 'No such counter is enabled on this build. Nothing on this page is loaded from any ' +
+            'other domain.'
+      }
+    </p>
+  </section>
+
+  <section aria-labelledby="changes-heading">
+    <h2 id="changes-heading" class="m-0 text-xl font-semibold text-text">If this ever changes</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      The no-upload guarantee is not a policy that can be quietly revised — it is how the software
+      is built, and it is enforced by an automated test that fails the release if any code tries
+      to send a file anywhere. That is a stronger commitment than a paragraph on this page, and it
+      is the one worth checking.
+    </p>
+  </section>
+</ContentLayout>

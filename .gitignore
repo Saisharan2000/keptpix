@@ -1,0 +1,39 @@
+# build output
+dist/
+.astro/
+.output/
+
+# dependencies
+node_modules/
+
+# test + analysis artifacts
+coverage/
+test-results/
+playwright-report/
+blob-report/
+stats.html
+
+# environment
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+Thumbs.db
+*.local
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# wrangler (Phase 4)
+.wrangler/
+
+# Test fixture photos are REAL CAMERA FILES carrying GPS coordinates, camera
+# model and capture timestamps. They are deliberately not committed — see
+# tests/fixtures/images/README.md. Suites that need them skip when absent.
+tests/fixtures/images/*.HEIC
+tests/fixtures/images/*.heic
+tests/fixtures/images/*.jpeg
+tests/fixtures/images/*.jpg
+tests/fixtures/images/*.png

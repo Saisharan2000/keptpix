@@ -1,0 +1,100 @@
+---
+/**
+ * src/pages/resize/[preset].astro  ->  /resize/1920x1080
+ *
+ * Spec: docs/09-seo-content-plan.md §2.3 (Wave 2)
+ *
+ * TEMPLATE COMPLETE, CONTENT EMPTY — deliberately. docs/10 M6 asks for the
+ * template but not the content, so that Wave 2 is a pure data addition to
+ * src/content/presets.ts with no code change here.
+ *
+ * getStaticPaths reads publishedResizePresetRoutes, which is currently empty, so
+ * this route builds zero pages today and every page tomorrow.
+ */
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import FaqSection from '../../components/astro/FaqSection.astro';
+import RelatedTools from '../../components/astro/RelatedTools.astro';
+import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
+import ToolShell from '../../components/react/ToolShell';
+import { publishedResizePresetRoutes } from '../../content/presets';
+
+export function getStaticPaths() {
+  return publishedResizePresetRoutes.map((route) => ({
+    params: { preset: route.slug },
+    props: { route },
+  }));
+}
+
+const { route } = Astro.props;
+
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Resize', path: '/resize' },
+  { name: route.h1, path: '/resize/' + route.slug },
+];
+
+const webApp = {
+  name: route.h1,
+  featureList: [
+    'Resizes images to exactly ' + route.width + 'x' + route.height,
+    'No upload — files never leave the device',
+    'Batch resizing, no file count limit',
+    'Removes EXIF and GPS metadata',
+  ],
+};
+
+/** The slug preconfigures the tool, through the same prop every route uses. */
+const defaultConfig = {
+  resize: { kind: 'exact' as const, width: route.width, height: route.height },
+};
+---
+
+<ToolLayout
+  title={route.title}
+  description={route.metaDescription}
+  path={'/resize/' + route.slug}
+  h1={route.h1}
+  lede="Drop your files and they come back at exactly this size. Everything runs on your device."
+  faq={route.faq}
+  breadcrumbs={breadcrumbs}
+  webApp={webApp}
+>
+  <Fragment slot="tool">
+    <div id="tool" tabindex="-1" class="scroll-mt-20">
+      <ToolShell client:visible defaultConfig={defaultConfig} fromLabel="image" />
+      <noscript>
+        <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+          The tool needs JavaScript, because the work runs on your device rather than on a
+          server. Everything you can read on this page works without it.
+        </p>
+      </noscript>
+    </div>
+  </Fragment>
+
+  <section aria-labelledby="about-heading">
+    <h2 id="about-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      About {route.width}x{route.height}
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">{route.intro}</p>
+  </section>
+
+  <section aria-labelledby="uses-heading">
+    <h2 id="uses-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Where this size is used
+    </h2>
+    <ul class="mt-4 flex list-none flex-col gap-3 p-0">
+      {
+        route.useCases.map((useCase) => (
+          <li class="flex max-w-[68ch] gap-3 text-base text-text-muted">
+            <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span>{useCase}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <FaqSection faq={route.faq} />
+  <PrivacyBanner />
+  <RelatedTools slugs={route.relatedSlugs} currentSlug={route.slug} />
+</ToolLayout>

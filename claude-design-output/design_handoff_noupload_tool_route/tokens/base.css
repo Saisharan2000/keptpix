@@ -1,0 +1,10 @@
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font-family:var(--font-sans);font-size:var(--text-base);line-height:var(--leading-base);color:var(--color-text);background:var(--color-bg);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,p,figure{margin:0}
+a{color:var(--color-accent);text-decoration:none;text-underline-offset:2px}
+a:hover{color:var(--color-accent-hover);text-decoration:underline}
+:focus-visible{outline:var(--focus-ring-width) solid var(--color-focus-ring);outline-offset:var(--focus-ring-offset)}
+/* Numeric rule (§2.2): sizes, dimensions and percentages are mono + tabular. */
+.nu-num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.nu-skip{position:absolute;left:-9999px;top:0}
+.nu-skip:focus{left:var(--space-4);top:var(--space-4);z-index:100;background:var(--color-surface);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);box-shadow:var(--shadow-md)}

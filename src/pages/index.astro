@@ -1,0 +1,112 @@
+---
+/**
+ * src/pages/index.astro  ->  /
+ *
+ * Spec: docs/09-seo-content-plan.md §2.4 — homepage, tool + positioning.
+ *
+ * The homepage is a landing page, not a tool page. Someone arriving here has no
+ * file in hand and no specific task; they are deciding whether to trust this.
+ * The routes below are the actual entry points, so the job here is to say what
+ * this is, why it is different, and get out of the way.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+import PrivacyBanner from '../components/astro/PrivacyBanner.astro';
+import { publishedFormatPairRoutes } from '../content/formats';
+import { publishedSizePresetRoutes, formatTarget } from '../content/presets';
+
+const stars = publishedFormatPairRoutes.filter((r) => r.tier === 'star');
+const sizes = publishedSizePresetRoutes;
+---
+
+<ContentLayout
+  title="NoUpload — convert and compress images without uploading them"
+  description="Convert and compress images entirely in your browser. No upload, no sign-up, no file size limit. Your files never leave your device."
+  path="/"
+  h1="Image tools that never upload your files"
+  lede="Every conversion runs on your own device, inside this tab. Nothing is sent anywhere — and you can verify that yourself in about a minute."
+>
+  <section aria-labelledby="convert-heading">
+    <h2 id="convert-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Convert between formats
+    </h2>
+    <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+      {
+        stars.map((route) => (
+          <li>
+            <a
+              href={'/convert/' + route.slug}
+              class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
+            >
+              <span class="block text-sm font-medium text-text">{route.h1}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="compress-heading">
+    <h2 id="compress-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Compress to an exact size
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      When a form demands "under 100 KB" and rejects everything else without explaining how, this
+      is the tool. It searches quality and dimensions together until the file genuinely fits.
+    </p>
+    <ul class="mt-5 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-3">
+      {
+        sizes.map((route) => (
+          <li>
+            <a
+              href={'/compress/' + route.slug}
+              class="num block rounded-md border border-border px-4 py-3 text-center text-sm font-medium text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+            >
+              {formatTarget(route.targetBytes)}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="why-heading">
+    <h2 id="why-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Why this is different
+    </h2>
+    <div class="mt-5 flex flex-col gap-5">
+      <div class="max-w-[68ch]">
+        <strong class="block text-base font-semibold text-text">Your files never leave the device</strong>
+        <span class="mt-1 block text-base text-text-muted">
+          There is no server doing the work, so there is nowhere for your photos to go. Not a
+          policy promise — an architectural fact, and one you can confirm by converting a file
+          with your network disconnected.
+        </span>
+      </div>
+      <div class="max-w-[68ch]">
+        <strong class="block text-base font-semibold text-text">No limits, because there is no bill</strong>
+        <span class="mt-1 block text-base text-text-muted">
+          No file size cap, no daily quota, no sign-up. Your device does the work, so serving one
+          user costs the same as serving none — there is no cost to ration.
+        </span>
+      </div>
+      <div class="max-w-[68ch]">
+        <strong class="block text-base font-semibold text-text">EXIF and GPS removed by default</strong>
+        <span class="mt-1 block text-base text-text-muted">
+          Phone photos carry your coordinates to within a few metres, the camera model and the
+          exact capture time. That is stripped unless you ask to keep it — and you can inspect
+          exactly what a file contains before converting it.
+        </span>
+      </div>
+      <div class="max-w-[68ch]">
+        <strong class="block text-base font-semibold text-text">Exact target sizes, not a quality guess</strong>
+        <span class="mt-1 block text-base text-text-muted">
+          Most tools hand you a slider and let you hunt. This searches for the size you asked for
+          and shows you the real progress while it does — "pass 4 of 8, 112 KB" rather than a
+          spinner that means nothing.
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <PrivacyBanner />
+</ContentLayout>

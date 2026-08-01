@@ -1,0 +1,62 @@
+{
+  "name": "noupload",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Batch image conversion and exact-target-size compression that runs 100% in your browser. Nothing is ever uploaded.",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && node scripts/build-precache-manifest.mjs && node scripts/build-sw.mjs",
+    "preview": "astro preview",
+    "test": "vitest run --project unit",
+    "test:e2e": "playwright test",
+    "check:budgets": "node scripts/check-budgets.mjs",
+    "lint": "eslint .",
+    "typecheck": "astro sync && tsc --noEmit",
+    "test:integration": "vitest run --project integration"
+  },
+  "dependencies": {
+    "@astrojs/preact": "^4.1.3",
+    "@jsquash/avif": "^2.1.1",
+    "@jsquash/jpeg": "^1.6.0",
+    "@jsquash/jxl": "^1.3.0",
+    "@jsquash/oxipng": "^2.3.0",
+    "astro": "^5.16.2",
+    "client-zip": "^2.5.0",
+    "comlink": "^4.4.2",
+    "dexie": "^4.4.0",
+    "exifr": "^7.1.3",
+    "libheif-js": "^1.19.8",
+    "preact": "^10.29.7",
+    "utif2": "^4.1.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.56.1",
+    "@tailwindcss/vite": "^4.1.16",
+    "@types/node": "^26.1.2",
+    "@vitest/browser": "^4.1.10",
+    "@vitest/browser-playwright": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.10",
+    "astro-eslint-parser": "^1.4.0",
+    "esbuild": "^0.27.7",
+    "eslint": "^9.39.0",
+    "eslint-plugin-astro": "^1.7.0",
+    "eslint-plugin-boundaries": "^5.0.2",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "globals": "^16.5.0",
+    "playwright": "^1.56.1",
+    "prettier": "^3.6.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "rollup-plugin-visualizer": "^6.0.4",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^4.1.10"
+  }
+}

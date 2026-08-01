@@ -1,0 +1,52 @@
+---
+/**
+ * src/layouts/ToolLayout.astro
+ *
+ * Spec: docs/08-design-system.md §4.1 — desktop idle wireframe
+ *
+ * Hero and every content block below the tool are static Astro markup shipping
+ * ZERO JavaScript, so they are fully present in the HTML an AI crawler receives
+ * without rendering. The only thing that will ever hydrate here is ToolShell,
+ * mounted into the "tool" slot at Milestone 4.
+ */
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  h1: string;
+  lede: string;
+  faq?: Array<{ q: string; a: string }>;
+  breadcrumbs?: Array<{ name: string; path: string }>;
+  webApp?: { name: string; featureList: string[] };
+}
+
+const { title, description, path, h1, lede, faq, breadcrumbs, webApp } = Astro.props;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  faq={faq}
+  breadcrumbs={breadcrumbs}
+  webApp={webApp}
+  skipTarget="#tool"
+  skipLabel="Skip to tool"
+>
+  <main id="main" class="mx-auto w-full max-w-[var(--container-lg)] px-6 pt-12 pb-16">
+    <div class="flex flex-col gap-12">
+      <div>
+        <h1 class="m-0 text-4xl font-bold tracking-tight text-text">{h1}</h1>
+        <p class="mt-4 mb-0 max-w-[62ch] text-lg text-text-muted">{lede}</p>
+      </div>
+
+      <slot name="tool" />
+
+      <div class="flex flex-col gap-12">
+        <slot />
+      </div>
+    </div>
+  </main>
+</BaseLayout>

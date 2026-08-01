@@ -1,0 +1,56 @@
+---
+/**
+ * src/pages/resize.astro  ->  /resize
+ * Spec: docs/09-seo-content-plan.md §2.3 — task hub.
+ */
+import ToolLayout from '../layouts/ToolLayout.astro';
+import PrivacyBanner from '../components/astro/PrivacyBanner.astro';
+import ToolShell from '../components/react/ToolShell';
+
+const defaultConfig = {
+  resize: { kind: 'maxDimension' as const, max: 1920 },
+};
+---
+
+<ToolLayout
+  title="Resize images in your browser — NoUpload"
+  description="Resize images to exact dimensions or a maximum bound, in your browser. No upload, no sign-up, no file limit."
+  path="/resize"
+  h1="Resize images"
+  lede="Resize to an exact size or a maximum bound. Everything runs on your device — nothing is uploaded."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Resize', path: '/resize' },
+  ]}
+>
+  <Fragment slot="tool">
+    <div id="tool" tabindex="-1" class="scroll-mt-20">
+      <ToolShell client:visible defaultConfig={defaultConfig} fromLabel="image" />
+      <noscript>
+        <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+          The tool needs JavaScript, because the work runs on your device rather than on a
+          server. Everything you can read on this page works without it.
+        </p>
+      </noscript>
+    </div>
+  </Fragment>
+
+  <section aria-labelledby="quality-heading">
+    <h2 id="quality-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Why resizing quality varies so much between tools
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Shrinking an image a long way in one step produces visible aliasing — jagged diagonals and
+      shimmering detail — because too much information is discarded at once. Halving repeatedly
+      and finishing with the remainder looks markedly better and costs almost nothing, so that is
+      what happens here: no single step reduces either dimension by more than half.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Enlarging is the one thing no tool can do well. Pixels that were never captured cannot be
+      invented, so upscaling only ever produces a softer version of what you had. Resizing here
+      only ever reduces.
+    </p>
+  </section>
+
+  <PrivacyBanner />
+</ToolLayout>

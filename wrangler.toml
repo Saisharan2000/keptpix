@@ -1,0 +1,18 @@
+# wrangler.toml — Phase 4 ONLY.
+#
+# Spec: docs/06-contracts.md §4 — the license-signing Cloudflare Worker.
+#
+# This is the single sanctioned server component in the entire product, and it
+# never receives user file data. It signs Ed25519 license tokens on a verified
+# purchase webhook. Everything is commented out until Phase 4 so nothing can be
+# deployed by accident.
+#
+# The static site itself does NOT use this file — it deploys to Cloudflare Pages
+# straight from dist/ (ADR-002).
+
+# name = "noupload-license"
+# main = "workers/license/index.ts"
+# compatibility_date = "2026-01-01"
+#
+# [vars]
+# LICENSE_PRODUCT = "noupload-pro"

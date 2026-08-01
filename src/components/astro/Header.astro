@@ -1,0 +1,99 @@
+---
+/**
+ * src/components/astro/Header.astro
+ *
+ * Spec: docs/08-design-system.md §4.1 — 56px bar, nav, theme toggle
+ *
+ * ZERO bundled JavaScript. The toggle is driven by one small inline script in
+ * BaseLayout; the icon swap is pure CSS keyed off data-theme-pref, so the right
+ * glyph is painted on the first frame with no script involvement.
+ */
+
+const links = [
+  { href: '/convert', label: 'Convert' },
+  { href: '/compress', label: 'Compress' },
+  { href: '/resize', label: 'Resize' },
+  { href: '/metadata', label: 'Metadata' },
+];
+
+const current = Astro.url.pathname.replace(/\/$/, '');
+
+const linkBase =
+  'block rounded-md px-3 py-2 text-sm no-underline hover:bg-bg-muted hover:text-text';
+---
+
+<header class="sticky top-0 z-30 h-14 border-b border-border bg-bg">
+  <div class="mx-auto flex h-full max-w-[var(--container-xl)] items-center gap-6 px-6">
+    <a
+      href="/"
+      class="text-base font-bold tracking-tight text-text no-underline"
+      aria-label="NoUpload home"
+    >
+      NoUpload
+    </a>
+
+    <nav aria-label="Primary" class="hidden md:block">
+      <ul class="m-0 flex list-none items-center gap-1 p-0">
+        {
+          links.map((l) => (
+            <li>
+              <a
+                href={l.href}
+                aria-current={current === l.href ? 'page' : undefined}
+                class={
+                  current === l.href
+                    ? linkBase + ' text-text font-medium'
+                    : linkBase + ' text-text-muted'
+                }
+              >
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <button
+      type="button"
+      data-theme-toggle
+      class="ml-auto grid h-10 w-10 place-items-center rounded-md border border-border-strong text-text-muted hover:bg-bg-muted hover:text-text"
+      aria-label="Theme: system. Activate to change."
+    >
+      <svg class="theme-icon theme-icon-system" width="18" height="18" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+        <path d="M8 21h8m-4-4v4"></path>
+      </svg>
+      <svg class="theme-icon theme-icon-light" width="18" height="18" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4l1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+      </svg>
+      <svg class="theme-icon theme-icon-dark" width="18" height="18" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"></path>
+      </svg>
+      <span class="sr-only" data-theme-label>System</span>
+    </button>
+  </div>
+</header>
+
+<style>
+  .theme-icon {
+    display: none;
+    grid-area: 1 / 1;
+  }
+  :global(html[data-theme-pref='system']) .theme-icon-system,
+  :global(html[data-theme-pref='light']) .theme-icon-light,
+  :global(html[data-theme-pref='dark']) .theme-icon-dark {
+    display: block;
+  }
+  /* Scripting disabled: no data-theme-pref is ever set, so show the default. */
+  :global(html:not([data-theme-pref])) .theme-icon-system {
+    display: block;
+  }
+</style>

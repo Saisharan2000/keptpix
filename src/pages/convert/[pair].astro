@@ -1,0 +1,137 @@
+---
+/**
+ * src/pages/convert/[pair].astro  ->  /convert/heic-to-jpg
+ *
+ * Spec: docs/09-seo-content-plan.md §3 (content blocks), docs/08 §4.1 (layout)
+ *
+ * getStaticPaths reads ONLY published routes, so the docs/09 §3 "supported"
+ * hard gate is enforced at build time: a pair the engine cannot perform never
+ * becomes a page. Adding an entry to src/content/formats.ts produces a working
+ * route here with zero code changes — that is the Milestone 6 requirement.
+ */
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import FormatSpecTable from '../../components/astro/FormatSpecTable.astro';
+import FaqSection from '../../components/astro/FaqSection.astro';
+import RelatedTools from '../../components/astro/RelatedTools.astro';
+import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
+import ToolShell from '../../components/react/ToolShell';
+import { publishedFormatPairRoutes, FORMAT_LABEL } from '../../content/formats';
+
+export function getStaticPaths() {
+  return publishedFormatPairRoutes.map((route) => ({
+    params: { pair: route.slug },
+    props: { route },
+  }));
+}
+
+const { route } = Astro.props;
+
+const fromLabel = FORMAT_LABEL[route.from] ?? route.from.toUpperCase();
+const toLabel = FORMAT_LABEL[route.to] ?? route.to.toUpperCase();
+
+/** Prose fields carry blank-line-separated paragraphs (see content/formats.ts). */
+const paragraphs = (text: string) =>
+  text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+const lede =
+  'Free, unlimited, and 100% in your browser. Your photos are never uploaded.';
+
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Convert', path: '/convert' },
+  { name: route.h1, path: '/convert/' + route.slug },
+];
+
+const webApp = {
+  name: fromLabel + ' to ' + toLabel + ' Converter',
+  featureList: [
+    'Converts ' + fromLabel + ' to ' + toLabel + ' entirely in the browser',
+    'No upload — files never leave the device',
+    'Batch conversion, no file count limit',
+    'Removes EXIF and GPS metadata',
+  ],
+};
+---
+
+<ToolLayout
+  title={route.title}
+  description={route.metaDescription}
+  path={'/convert/' + route.slug}
+  h1={route.h1}
+  lede={lede}
+  faq={route.faq}
+  breadcrumbs={breadcrumbs}
+  webApp={webApp}
+>
+  <Fragment slot="tool">
+    {/*
+      ToolShell is the ONLY client:visible component on this page (docs/08 §3).
+      Astro server-renders it, so the dropzone and the privacy line are present
+      in the raw HTML before any hydration — the AI-crawler guarantee holds even
+      though this region is interactive.
+    */}
+    <div id="tool" tabindex="-1" class="scroll-mt-20">
+      <ToolShell
+        client:visible
+        defaultConfig={route.defaultConfig}
+        fromLabel={fromLabel}
+      />
+
+      <noscript>
+        <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+          The converter needs JavaScript, because the conversion runs on your device rather
+          than on a server. Everything you can read on this page works without it.
+        </p>
+      </noscript>
+    </div>
+  </Fragment>
+
+  <section aria-labelledby="what-is-heading">
+    <h2 id="what-is-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      What is a {fromLabel} file?
+    </h2>
+    {
+      paragraphs(route.intro).map((p) => (
+        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">{p}</p>
+      ))
+    }
+  </section>
+
+  <section aria-labelledby="why-heading">
+    <h2 id="why-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Why convert {fromLabel} to {toLabel}?
+    </h2>
+    <ul class="mt-4 flex list-none flex-col gap-3 p-0">
+      {
+        route.whyConvert.map((point) => (
+          <li class="flex max-w-[68ch] gap-3 text-base text-text-muted">
+            <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span>{point}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <FormatSpecTable comparison={route.comparison} fromLabel={fromLabel} toLabel={toLabel} />
+
+  <section aria-labelledby="technical-heading">
+    <h2 id="technical-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      What actually changes
+    </h2>
+    {
+      paragraphs(route.technicalNotes).map((p) => (
+        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">{p}</p>
+      ))
+    }
+  </section>
+
+  <FaqSection faq={route.faq} />
+
+  <PrivacyBanner />
+
+  <RelatedTools slugs={route.relatedSlugs} currentSlug={route.slug} />
+</ToolLayout>

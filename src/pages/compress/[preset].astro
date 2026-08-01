@@ -1,0 +1,123 @@
+---
+/**
+ * src/pages/compress/[preset].astro  ->  /compress/jpg-to-100kb
+ *
+ * Spec: docs/09-seo-content-plan.md §2.2 + §3
+ *
+ * The slug prefills sizeMode, so the user's first action is dropping a file
+ * (docs/09 §2.2). That preconfiguration goes through the SAME defaultConfig
+ * prop the format-pair routes use — Milestone 4 built one mechanism, and this
+ * route needed no changes to it.
+ */
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import FaqSection from '../../components/astro/FaqSection.astro';
+import RelatedTools from '../../components/astro/RelatedTools.astro';
+import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
+import ToolShell from '../../components/react/ToolShell';
+import { publishedSizePresetRoutes, formatTarget } from '../../content/presets';
+
+export function getStaticPaths() {
+  return publishedSizePresetRoutes.map((route) => ({
+    params: { preset: route.slug },
+    props: { route },
+  }));
+}
+
+const { route } = Astro.props;
+const target = formatTarget(route.targetBytes);
+
+const lede =
+  'Set the size, drop your files, get them back under the limit. Everything happens on your device — nothing is uploaded.';
+
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: 'Compress', path: '/compress' },
+  { name: route.h1, path: '/compress/' + route.slug },
+];
+
+const webApp = {
+  name: route.h1,
+  featureList: [
+    'Compresses images to an exact target size of ' + target,
+    'No upload — files never leave the device',
+    'Batch compression, no file count limit',
+    'Removes EXIF and GPS metadata',
+  ],
+};
+
+/** Prefills the tool from the slug — the whole point of a preset route. */
+const defaultConfig = {
+  outputFormat: route.format,
+  sizeMode: { kind: 'target' as const, targetBytes: route.targetBytes },
+};
+---
+
+<ToolLayout
+  title={route.title}
+  description={route.metaDescription}
+  path={'/compress/' + route.slug}
+  h1={route.h1}
+  lede={lede}
+  faq={route.faq}
+  breadcrumbs={breadcrumbs}
+  webApp={webApp}
+>
+  <Fragment slot="tool">
+    <div id="tool" tabindex="-1" class="scroll-mt-20">
+      <ToolShell client:visible defaultConfig={defaultConfig} fromLabel="JPG" />
+      <noscript>
+        <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+          The compressor needs JavaScript, because the work runs on your device rather than
+          on a server. Everything you can read on this page works without it.
+        </p>
+      </noscript>
+    </div>
+  </Fragment>
+
+  <section aria-labelledby="about-heading">
+    <h2 id="about-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Why {target}?
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">{route.intro}</p>
+  </section>
+
+  <section aria-labelledby="uses-heading">
+    <h2 id="uses-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Where this limit comes up
+    </h2>
+    <ul class="mt-4 flex list-none flex-col gap-3 p-0">
+      {
+        route.useCases.map((useCase) => (
+          <li class="flex max-w-[68ch] gap-3 text-base text-text-muted">
+            <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+            <span>{useCase}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="how-heading">
+    <h2 id="how-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      How the exact size is reached
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Most tools give you a quality slider and leave you to guess. We search instead: encode,
+      measure, adjust, repeat — usually landing within three passes and never more than eight.
+      The result is accepted once it sits between 92% and 100% of your target, so you get a
+      file that is comfortably under the limit rather than one balanced exactly on it.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      When quality alone cannot get there — and for the smallest targets it cannot — the image
+      dimensions are reduced as well, and you are told exactly what the final size became. A
+      target that is genuinely unreachable returns the closest result we managed, clearly
+      labelled, rather than a silent failure or an oversized file.
+    </p>
+  </section>
+
+  <FaqSection faq={route.faq} />
+
+  <PrivacyBanner />
+
+  <RelatedTools slugs={route.relatedSlugs} currentSlug={route.slug} />
+</ToolLayout>

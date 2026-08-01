@@ -1,0 +1,206 @@
+---
+/**
+ * src/pages/how-it-works.astro  ->  /how-it-works
+ *
+ * ⭐ THE TRUST PAGE (docs/09 §2.4, docs/10 M6).
+ *
+ * Three required sections: step-by-step DevTools verification, a plain-English
+ * architecture explanation, and an HONEST list of what this tool cannot do.
+ *
+ * The reasoning from docs/08 §1: trust badges are worthless, a verifiable claim
+ * is not. Everything on this page is checkable by the reader in about a minute,
+ * and the limitations section is here because a page that only lists strengths
+ * reads like marketing — which is the opposite of what earns trust.
+ *
+ * ZERO JavaScript.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+
+const steps = [
+  {
+    title: 'Open your browser\u2019s developer tools',
+    body: 'Press F12, or Ctrl+Shift+I on Windows and Linux, or Cmd+Option+I on a Mac. A panel opens beside or below the page.',
+  },
+  {
+    title: 'Switch to the Network tab and clear it',
+    body: 'This tab lists every single request the page makes. Click the clear button (a circle with a slash) so you are starting from an empty list.',
+  },
+  {
+    title: 'Convert a file',
+    body: 'Go to any converter, drop in a photo, and run it. Watch the Network tab while it works.',
+  },
+  {
+    title: 'Read what appeared',
+    body: 'You will see nothing during the conversion itself. Before it, you may see the page, its stylesheet, the worker script, and — only for HEIC — a codec file. Every one of those comes from this domain, and none of them carries your image.',
+  },
+  {
+    title: 'Now try the decisive test: go offline',
+    body: 'Tick the "Offline" box in the Network tab, or unplug your network entirely, then convert another file. It still works. Software cannot upload your photo to a server it has no connection to.',
+  },
+];
+
+const cannot = [
+  {
+    title: 'It cannot work in a browser with JavaScript disabled',
+    body: 'The conversion runs on your device, which means it runs as code in your browser. Everything you can read on these pages works without JavaScript, but the tool itself does not.',
+  },
+  {
+    title: 'It cannot beat a desktop app on very large batches',
+    body: 'Your browser limits how much memory a tab may use. For hundreds of 50 MP images at once, dedicated desktop software will be faster and more reliable. For anything up to a few dozen photos, this is comfortably quicker than uploading them somewhere.',
+  },
+  {
+    title: 'It cannot keep your files between visits',
+    body: 'Nothing is stored. Reload the page and your queue is gone, because we never wrote it anywhere. That is deliberate — silently keeping copies of your photos would undermine the entire point — but it does mean you should download your results before closing the tab.',
+  },
+  {
+    title: 'It cannot recover quality that was already lost',
+    body: 'Converting a heavily compressed JPEG to PNG does not restore detail. No tool can. Lossless formats preserve exactly what they are given, artifacts included.',
+  },
+  {
+    title: 'It cannot promise every format on every browser',
+    body: 'Some formats depend on what your specific browser can decode or encode. AVIF and JPEG XL support in particular varies. Where we cannot perform a conversion, we say so plainly instead of failing halfway through.',
+  },
+  {
+    title: 'It cannot prove anything about a version you did not check',
+    body: 'The verification above tests the code running in your browser right now. That is the honest limit of what any web tool can offer — which is why we tell you how to check rather than asking you to believe us.',
+  },
+];
+---
+
+<ContentLayout
+  title="How it works — verify for yourself that nothing is uploaded"
+  description="Step-by-step: check in your browser's own developer tools that NoUpload never sends your files anywhere. Plus an honest list of what it cannot do."
+  path="/how-it-works"
+  h1="How it works"
+  lede="Do not take our word for it. Here is how to check, in your own browser, in about a minute."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'How it works', path: '/how-it-works' },
+  ]}
+>
+  <section aria-labelledby="verify-heading">
+    <h2 id="verify-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Verify it yourself
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Every claim on this site is checkable with a tool already built into your browser. You do
+      not need to trust a badge, a certificate, or a privacy policy.
+    </p>
+
+    <ol class="mt-6 flex list-none flex-col gap-5 p-0">
+      {
+        steps.map((step, index) => (
+          <li class="flex max-w-[68ch] gap-4">
+            <span
+              aria-hidden="true"
+              class="num mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-subtle text-sm font-semibold text-accent"
+            >
+              {index + 1}
+            </span>
+            <span>
+              <strong class="block text-base font-semibold text-text">{step.title}</strong>
+              <span class="mt-1 block text-base text-text-muted">{step.body}</span>
+            </span>
+          </li>
+        ))
+      }
+    </ol>
+
+    <p class="mt-6 mb-0 max-w-[68ch] rounded-lg border border-success bg-success-subtle px-4 py-3 text-base text-text">
+      The offline test is the one that settles it. Every other guarantee depends on reading code
+      or trusting a policy. This one is a physical fact about your network connection.
+    </p>
+  </section>
+
+  <section aria-labelledby="arch-heading">
+    <h2 id="arch-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Why it works this way
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      A conventional image converter is a website with a server behind it. You upload your photo,
+      the server does the work, and you download the result. That design means your file leaves
+      your device, and you have no way to know what happens to it next — whether it is logged,
+      cached, backed up, scanned, or kept.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      This site has no server doing that work, because browsers no longer need one. Modern
+      browsers can decode and encode images natively, and can run that work on a background
+      thread so the page stays responsive. When you drop a file here, it is read directly from
+      your disk by the page, handed to a background worker in your own browser, converted, and
+      handed back. It never becomes a network request, because there is nowhere for it to go.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      For formats the browser cannot read on its own — HEIC being the main one, because Apple
+      uses a patent-encumbered codec no browser except Safari licenses — a small decoder is
+      downloaded the first time you need it. It is served from this same domain, it is code
+      rather than a service, and it runs on your device like everything else.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      There is a commercial consequence worth being open about: because your device does the
+      work, this costs us essentially nothing per user. We are not absorbing a server bill that
+      we will eventually need to recover by studying your files or selling something derived from
+      them. The incentive that usually makes free tools untrustworthy is not present here.
+    </p>
+  </section>
+
+  <section aria-labelledby="cannot-heading">
+    <h2 id="cannot-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      What this tool cannot do
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      A page that lists only strengths is advertising. These are the real limitations, including
+      the ones that might send you somewhere else.
+    </p>
+
+    <ul class="mt-6 flex list-none flex-col gap-5 p-0">
+      {
+        cannot.map((item) => (
+          <li class="max-w-[68ch]">
+            <strong class="block text-base font-semibold text-text">{item.title}</strong>
+            <span class="mt-1 block text-base text-text-muted">{item.body}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="next-heading">
+    <h2 id="next-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Try it
+    </h2>
+    <ul class="mt-4 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+      <li>
+        <a
+          href="/convert/heic-to-jpg"
+          class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+        >
+          Convert HEIC to JPG
+        </a>
+      </li>
+      <li>
+        <a
+          href="/compress/jpg-to-100kb"
+          class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+        >
+          Compress a JPG to 100KB
+        </a>
+      </li>
+      <li>
+        <a
+          href="/convert"
+          class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+        >
+          All converters
+        </a>
+      </li>
+      <li>
+        <a
+          href="/privacy"
+          class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+        >
+          Privacy, in short
+        </a>
+      </li>
+    </ul>
+  </section>
+</ContentLayout>

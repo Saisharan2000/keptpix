@@ -1,0 +1,37 @@
+---
+/**
+ * src/layouts/ContentLayout.astro
+ *
+ * Spec: docs/07-folder-structure.md §1 — prose pages
+ * ZERO JavaScript.
+ */
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  h1: string;
+  lede?: string;
+  breadcrumbs?: Array<{ name: string; path: string }>;
+  noindex?: boolean;
+}
+
+const { title, description, path, h1, lede, breadcrumbs, noindex } = Astro.props;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  path={path}
+  breadcrumbs={breadcrumbs}
+  noindex={noindex}
+>
+  <main id="main" class="mx-auto w-full max-w-[var(--container-md)] px-6 pt-12 pb-16">
+    <h1 class="m-0 text-3xl font-bold tracking-tight text-text">{h1}</h1>
+    {lede && <p class="mt-4 mb-0 max-w-[62ch] text-lg text-text-muted">{lede}</p>}
+    <div class="mt-10 flex flex-col gap-8">
+      <slot />
+    </div>
+  </main>
+</BaseLayout>

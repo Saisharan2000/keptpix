@@ -1,0 +1,22 @@
+---
+/**
+ * src/pages/blog/[slug].astro  ->  /blog/:slug
+ *
+ * Spec: docs/09-seo-content-plan.md §2.4 (Wave 4)
+ * Implemented in: Post-v1
+ *
+ * getStaticPaths returns [] until the blog content collection is populated. Adding an entry there
+ * must produce a working route with ZERO code changes here.
+ */
+import ContentLayout from '../../layouts/ContentLayout.astro';
+
+export function getStaticPaths() {
+  return [] as Array<{ params: Record<string, string>; props: { title: string } }>;
+}
+
+const { title } = Astro.props;
+---
+
+<ContentLayout title={title} description={title} path="/blog/:slug" h1={title}>
+  <p class="m-0 text-base text-text-muted">Scaffolded in Milestone 0; content in Post-v1.</p>
+</ContentLayout>

@@ -1,0 +1,68 @@
+---
+/**
+ * src/pages/about.astro  ->  /about
+ * Spec: docs/09-seo-content-plan.md §2.4 — who built it and why.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+---
+
+<ContentLayout
+  title="About — NoUpload"
+  description="Why an image converter that runs on your device is a different product, not just a different implementation."
+  path="/about"
+  h1="About"
+  lede="Why a converter that runs on your device is a different product, not just a different implementation."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
+  ]}
+>
+  <section aria-labelledby="why-heading">
+    <h2 id="why-heading" class="m-0 text-xl font-semibold text-text">Why this exists</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      Search for an image converter and you will find dozens of sites that all work the same way:
+      you upload a file, a server converts it, you download the result. They are free, they are
+      convenient, and every one of them requires handing your photo to a stranger's computer.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      For a screenshot of a spreadsheet that hardly matters. For a passport scan, a medical
+      document, a photograph of your family with GPS coordinates in it, or anything covered by an
+      employer's policy, it matters a great deal — and the friendly interface tells you nothing
+      about what happens to the file afterwards.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      The interesting part is that the upload has been unnecessary for years. Browsers gained the
+      ability to decode, resize and encode images on their own, and to do it on a background
+      thread without freezing the page. The architecture just did not catch up, because a server
+      is what everybody already knew how to build.
+    </p>
+  </section>
+
+  <section aria-labelledby="how-heading">
+    <h2 id="how-heading" class="m-0 text-xl font-semibold text-text">How it is built</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      Every page is plain prerendered HTML, so it loads instantly and is readable without
+      JavaScript. The conversion tool is a small piece of interactive code that appears on top of
+      that, and the image work happens in a background worker so the interface never freezes. For
+      formats browsers cannot read natively — HEIC most of all — a decoder is downloaded the first
+      time you need it, from this domain, and run on your device.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      One consequence is worth stating plainly: because your device does the work, serving you
+      costs us almost nothing. There is no infrastructure bill that eventually has to be paid for
+      by studying your files or selling something derived from them. The incentive that makes most
+      free tools worth distrusting is simply absent.
+    </p>
+  </section>
+
+  <section aria-labelledby="honest-heading">
+    <h2 id="honest-heading" class="m-0 text-xl font-semibold text-text">Being honest about it</h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      This approach has real limits, and
+      <a href="/how-it-works" class="font-medium text-accent">how it works</a> lists them —
+      including the cases where you would be better off with desktop software. A page that only
+      lists strengths is advertising, and the whole argument here rests on being checkable rather
+      than persuasive.
+    </p>
+  </section>
+</ContentLayout>

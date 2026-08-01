@@ -1,0 +1,12 @@
+dist/
+.astro/
+node_modules/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+package-lock.json
+stats.html
+docs/
+NoUploadblueprints/
+tests/fixtures/

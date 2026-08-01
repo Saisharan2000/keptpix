@@ -1,0 +1,73 @@
+---
+/**
+ * src/components/astro/FormatSpecTable.astro
+ *
+ * Spec: docs/05-data-models.md §5 (ComparisonTable) + docs/09 §3
+ *
+ * Five required rows — Compression, Support, Transparency, Metadata, Typical
+ * size — with real values, never filler. Proper table semantics: a caption, a
+ * scoped column header per format, and a scoped row header per attribute, so
+ * screen readers can announce "Transparency, HEIC, yes, full alpha channel".
+ *
+ * ZERO JavaScript.
+ */
+import type { ComparisonTable } from '../../core/types';
+
+interface Props {
+  comparison: ComparisonTable;
+  fromLabel: string;
+  toLabel: string;
+  headingId?: string;
+}
+
+const { comparison, fromLabel, toLabel, headingId = 'comparison-heading' } = Astro.props;
+
+const cell = 'border-b border-border px-4 py-3 align-top text-sm text-text-muted';
+---
+
+<section aria-labelledby={headingId}>
+  <h2 id={headingId} class="m-0 text-2xl font-semibold tracking-tight text-text">
+    {fromLabel} compared with {toLabel}
+  </h2>
+
+  <!--
+    tabindex="0" is required, not decorative: this table is min-w-[36rem] and
+    overflows on any phone viewport, and a region that scrolls must be
+    reachable by keyboard or a keyboard-only user can never read its right-hand
+    columns (axe scrollable-region-focusable, serious). Caught by the a11y
+    sweep only once it ran against a 390px engine — docs/12 D-55.
+  -->
+  <div class="mt-5 overflow-x-auto" tabindex="0" role="region" aria-labelledby={headingId}>
+    <table class="w-full min-w-[36rem] border-collapse text-left">
+      <caption class="sr-only">
+        Technical comparison of {fromLabel} and {toLabel}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col" class="border-b border-border-strong px-4 py-3 text-xs font-semibold tracking-[0.02em] text-text-muted uppercase">
+            <span class="sr-only">Attribute</span>
+          </th>
+          <th scope="col" class="border-b border-border-strong px-4 py-3 text-sm font-semibold text-text">
+            {fromLabel}
+          </th>
+          <th scope="col" class="border-b border-border-strong px-4 py-3 text-sm font-semibold text-text">
+            {toLabel}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          comparison.rows.map((row) => (
+            <tr>
+              <th scope="row" class="border-b border-border px-4 py-3 align-top text-sm font-medium text-text">
+                {row.label}
+              </th>
+              <td class={cell}>{row.from}</td>
+              <td class={cell}>{row.to}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

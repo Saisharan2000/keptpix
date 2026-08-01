@@ -1,0 +1,173 @@
+---
+/**
+ * src/layouts/BaseLayout.astro
+ *
+ * Spec: docs/07-folder-structure.md §1 — head, JSON-LD, theme bootstrap
+ *
+ * The ONLY JavaScript on a Milestone 1 page is the two inline scripts below.
+ * They are deliberately inline rather than bundled: an external file would be a
+ * network request in the waterfall, and the bootstrap must run before first
+ * paint or the wrong theme flashes. Neither is hydration and neither counts
+ * against the island budget in docs/04 §7.
+ */
+import '../styles/global.css';
+import Header from '../components/astro/Header.astro';
+import Footer from '../components/astro/Footer.astro';
+import SeoHead from '../components/astro/SeoHead.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  faq?: Array<{ q: string; a: string }>;
+  breadcrumbs?: Array<{ name: string; path: string }>;
+  webApp?: { name: string; featureList: string[] };
+  noindex?: boolean;
+  /** Element the skip link jumps to. */
+  skipTarget?: string;
+  skipLabel?: string;
+}
+
+const {
+  title,
+  description,
+  path,
+  faq,
+  breadcrumbs,
+  webApp,
+  noindex,
+  skipTarget = '#main',
+  skipLabel = 'Skip to content',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script is:inline>
+      // Runs before first paint. Sets both the resolved theme (drives every
+      // token in tokens.css) and the raw preference (drives the toggle's icon,
+      // in CSS). Wrapped in try/catch because localStorage throws outright in
+      // Safari private browsing rather than returning null.
+      (() => {
+        const root = document.documentElement;
+        let pref = 'system';
+        try {
+          pref = localStorage.getItem('noupload-theme') || 'system';
+        } catch {
+          pref = 'system';
+        }
+        const resolved =
+          pref === 'light' || pref === 'dark'
+            ? pref
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        root.setAttribute('data-theme', resolved);
+        root.setAttribute('data-theme-pref', pref);
+      })();
+    </script>
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <SeoHead
+      title={title}
+      description={description}
+      path={path}
+      faq={faq}
+      breadcrumbs={breadcrumbs}
+      webApp={webApp}
+      noindex={noindex}
+    />
+  </head>
+
+  <body class="flex min-h-screen flex-col bg-bg text-text">
+    <a href={skipTarget} class="skip-link">{skipLabel}</a>
+    <Header />
+    <slot />
+    <Footer />
+
+    <script is:inline>
+      // Theme toggle. Cycles system -> light -> dark. Delegated from document so
+      // it works regardless of how many toggles a page renders.
+      (() => {
+        const root = document.documentElement;
+        const order = ['system', 'light', 'dark'];
+        const labels = { system: 'System', light: 'Light', dark: 'Dark' };
+
+        const resolve = (pref) =>
+          pref === 'light' || pref === 'dark'
+            ? pref
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+
+        const apply = (pref) => {
+          root.setAttribute('data-theme', resolve(pref));
+          root.setAttribute('data-theme-pref', pref);
+          for (const node of document.querySelectorAll('[data-theme-toggle]')) {
+            node.setAttribute('aria-label', 'Theme: ' + labels[pref] + '. Activate to change.');
+            const text = node.querySelector('[data-theme-label]');
+            if (text) text.textContent = labels[pref];
+          }
+        };
+
+        document.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element)) return;
+          if (!target.closest('[data-theme-toggle]')) return;
+          const currentPref = root.getAttribute('data-theme-pref') || 'system';
+          const next = order[(order.indexOf(currentPref) + 1) % order.length];
+          try {
+            localStorage.setItem('noupload-theme', next);
+          } catch {
+            /* private browsing: the choice just will not persist */
+          }
+          apply(next);
+        });
+
+        // Follow the OS live, but only while the user is on 'system'.
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+          if ((root.getAttribute('data-theme-pref') || 'system') === 'system') apply('system');
+        });
+
+        apply(root.getAttribute('data-theme-pref') || 'system');
+      })();
+    </script>
+
+    <script is:inline>
+      // Service worker registration + the install-prompt capture (docs/10
+      // M8). Both are plain window-level browser events unrelated to any
+      // specific island, so — like the theme bootstrap above — this is
+      // vanilla inline JS rather than React: it must work identically on
+      // every page, including ones with no hydrated island at all.
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {
+            /* offline-first is a progressive enhancement, not a hard
+               requirement — a registration failure must not be an error the
+               user ever sees. */
+          });
+        });
+      }
+
+      // docs/08 §5 / docs/10 M8: the browser's own install prompt is
+      // suppressed and re-shown later, ONLY once ToolShell observes a
+      // completed conversion — never on arrival, which is what
+      // preventDefault() below exists to stop.
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        window.__noupload_installEvent = event;
+        window.dispatchEvent(new CustomEvent('noupload:install-available'));
+      });
+      window.addEventListener('appinstalled', () => {
+        window.__noupload_installEvent = null;
+        window.dispatchEvent(new CustomEvent('noupload:install-available'));
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+/* 08-design-system.md §2.2 — verbatim. No web fonts: system stack only. */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  --text-xs:   0.75rem;   --leading-xs:   1.125rem;/* @kind font */
+  --text-sm:   0.875rem;  --leading-sm:   1.3125rem;/* @kind font */
+  --text-base: 1rem;      --leading-base: 1.5rem;/* @kind font */
+  --text-lg:   1.125rem;  --leading-lg:   1.75rem;/* @kind font */
+  --text-xl:   1.375rem;  --leading-xl:   1.875rem;/* @kind font */
+  --text-2xl:  1.75rem;   --leading-2xl:  2.125rem;/* @kind font */
+  --text-3xl:  2.25rem;   --leading-3xl:  2.625rem;/* @kind font */
+  --text-4xl:  3rem;      --leading-4xl:  3.25rem;/* @kind font */
+
+  --weight-normal: 400;/* @kind font */  --weight-medium: 500;/* @kind font */
+  --weight-semibold: 600;/* @kind font */ --weight-bold: 700;/* @kind font */
+
+  --tracking-tight: -0.02em;/* @kind font */
+  --tracking-normal: 0;/* @kind font */
+}

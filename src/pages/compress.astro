@@ -1,0 +1,61 @@
+---
+/**
+ * src/pages/compress.astro  ->  /compress
+ *
+ * Spec: docs/09-seo-content-plan.md §2.3 — task hub.
+ * Lists only published routes, so the docs/09 §3 supported gate holds here too.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+import { publishedSizePresetRoutes, formatTarget } from '../content/presets';
+---
+
+<ContentLayout
+  title="Compress images to an exact file size — NoUpload"
+  description="Compress JPG, PNG and WebP to an exact target size in your browser. No upload, no sign-up, no file limit."
+  path="/compress"
+  h1="Compress images to an exact size"
+  lede="Pick the limit you need to hit. Everything runs on your device — nothing is uploaded."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'Compress', path: '/compress' },
+  ]}
+>
+  <section aria-labelledby="sizes-heading">
+    <h2 id="sizes-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Common upload limits
+    </h2>
+    <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+      {
+        publishedSizePresetRoutes.map((route) => (
+          <li>
+            <a
+              href={'/compress/' + route.slug}
+              class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
+            >
+              <span class="num block text-sm font-medium text-text">
+                {formatTarget(route.targetBytes)}
+              </span>
+              <span class="mt-1 block text-sm text-text-muted">{route.useCases[0]}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="how-heading">
+    <h2 id="how-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      How an exact size is reached
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      A quality slider cannot tell you what the file will weigh — the relationship between the two
+      depends entirely on the picture. So instead of guessing, this encodes, measures, adjusts and
+      repeats, usually landing within three passes and never taking more than eight.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      When quality alone cannot get there, the dimensions come down too, and you are told what
+      they became. A target that is genuinely impossible returns the closest result we managed,
+      clearly labelled — never a silent failure, and never a file that quietly exceeds your limit.
+    </p>
+  </section>
+</ContentLayout>

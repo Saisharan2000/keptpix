@@ -1,0 +1,67 @@
+/* 08-design-system.md §2.1 — verbatim. Neutral-cool base, one saturated accent.
+   Accent is reserved for primary action and active state — never decoration. */
+:root {
+  /* Neutrals — light */
+  --color-bg:            #ffffff;
+  --color-bg-subtle:     #f7f8fa;
+  --color-bg-muted:      #eef0f4;
+  --color-surface:       #ffffff;
+  --color-surface-raised:#ffffff;
+  --color-border:        #e2e5ea;
+  --color-border-strong: #c8cdd6;
+  --color-text:          #12161c;
+  --color-text-muted:    #5a6472;
+  --color-text-subtle:   #838c99;
+
+  /* Accent — indigo */
+  --color-accent:        #4f46e5;
+  --color-accent-hover:  #4338ca;
+  --color-accent-active: #3730a3;
+  --color-accent-subtle: #eef2ff;
+  --color-accent-text:   #ffffff;
+
+  /* Semantic */
+  --color-success:       #0f8a5f;
+  --color-success-subtle:#e6f6ef;
+  --color-warning:       #b45309;
+  --color-warning-subtle:#fef3e2;
+  --color-danger:        #c0392f;
+  --color-danger-subtle: #fdeeed;
+  --color-info:          #1d6fd6;
+  --color-info-subtle:   #e8f1fd;
+
+  /* Focus */
+  --color-focus-ring:    #4f46e5;
+  --focus-ring-width:    2px;
+  --focus-ring-offset:   2px;
+}
+
+[data-theme="dark"] {
+  --color-bg:            #0b0e13;
+  --color-bg-subtle:     #12161d;
+  --color-bg-muted:      #1a1f28;
+  --color-surface:       #12161d;
+  --color-surface-raised:#1a1f28;
+  --color-border:        #262c37;
+  --color-border-strong: #3a4250;
+  --color-text:          #eef1f6;
+  --color-text-muted:    #a2acbb;
+  --color-text-subtle:   #6f7a8a;
+
+  --color-accent:        #8b83f7;
+  --color-accent-hover:  #a49df9;
+  --color-accent-active: #7a71f0;
+  --color-accent-subtle: #1c1b3a;
+  --color-accent-text:   #0b0e13;
+
+  --color-success:       #3dd68c;
+  --color-success-subtle:#0e2a1e;
+  --color-warning:       #f0a94c;
+  --color-warning-subtle:#2a1e0c;
+  --color-danger:        #f2726a;
+  --color-danger-subtle: #2c1312;
+  --color-info:          #6aa8f5;
+  --color-info-subtle:   #0f1e33;
+
+  --color-focus-ring:    #a49df9;
+}

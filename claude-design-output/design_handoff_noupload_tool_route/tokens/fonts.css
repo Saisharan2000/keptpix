@@ -1,0 +1,7 @@
+/* No web fonts (08 §2.2). These declarations only bind the named families in the
+   system stacks to the copies already installed on the user's machine — no file
+   is downloaded, and every family degrades to the next entry in the stack. */
+@font-face{font-family:"Cascadia Mono";src:local("Cascadia Mono"),local("CascadiaMono");font-display:swap}
+@font-face{font-family:"SF Mono";src:local("SF Mono"),local("SFMono-Regular");font-display:swap}
+@font-face{font-family:"Segoe UI";src:local("Segoe UI");font-display:swap}
+@font-face{font-family:"Helvetica Neue";src:local("Helvetica Neue");font-display:swap}
