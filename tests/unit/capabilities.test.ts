@@ -19,6 +19,7 @@ import {
   resolveMaxWorkers,
 } from '../../src/core/capabilities';
 import { MOBILE_MAX_PIXELS } from '../../src/core/guards';
+import { resolveEncoder } from '../../src/engines/registry';
 
 describe('resolveMaxWorkers — the docs/04 §4 table', () => {
   it('gives 3 workers to a desktop with >= 8 GB and >= 8 cores', () => {
@@ -122,35 +123,81 @@ describe('withEncodeBaseline — a failed probe must not disable the tool', () =
     // Regression guard. An OffscreenCanvas whose 2d context was never obtained
     // returns nothing from convertToBlob, which read as "no formats supported"
     // and made every conversion fail with E_ENCODE_FAILED.
-    expect(withEncodeBaseline([])).toEqual([...BASELINE_NATIVE_ENCODE]);
-    expect(withEncodeBaseline([])).toContain('jpeg');
-    expect(withEncodeBaseline([])).toContain('png');
+    expect(withEncodeBaseline([], true)).toEqual([...BASELINE_NATIVE_ENCODE]);
+    expect(withEncodeBaseline([], true)).toContain('jpeg');
+    expect(withEncodeBaseline([], true)).toContain('png');
   });
 
   it('trusts a non-empty probe verbatim', () => {
-    expect(withEncodeBaseline(['jpeg', 'png', 'webp', 'avif'])).toEqual([
+    expect(withEncodeBaseline(['jpeg', 'png', 'webp', 'avif'], true)).toEqual([
       'jpeg',
       'png',
       'webp',
       'avif',
     ]);
     // A browser genuinely limited to PNG is reported as such, not widened.
-    expect(withEncodeBaseline(['png'])).toEqual(['png']);
+    expect(withEncodeBaseline(['png'], true)).toEqual(['png']);
   });
 
   it('returns a fresh array, so the shared constant cannot be mutated', () => {
-    const a = withEncodeBaseline([]);
+    const a = withEncodeBaseline([], true);
     a.push('avif');
     expect(BASELINE_NATIVE_ENCODE).not.toContain('avif');
   });
 
   it('keeps every format encodable after the fallback', () => {
     const support = resolveCodecSupport({
-      nativeEncode: withEncodeBaseline([]),
+      nativeEncode: withEncodeBaseline([], true),
       nativeDecode: ['jpeg', 'png', 'webp', 'gif', 'bmp'],
     });
     expect(support.nativeEncode.jpeg).toBe(true);
     expect(support.encode.jpeg).toBe(true);
+  });
+});
+
+describe('WO-2 — no OffscreenCanvas means the encode set is honestly EMPTY (docs/12 D-55)', () => {
+  it('does NOT substitute the baseline when there is no OffscreenCanvas at all', () => {
+    // The D-10 heuristic ("an empty probe means the probe broke") is only valid
+    // where an OffscreenCanvas exists to have broken. Here the empty probe is
+    // the literal truth, and claiming JPEG/PNG/WebP work is how a user got one
+    // "try a different output format" per file — advice that could never work.
+    expect(withEncodeBaseline([], false)).toEqual([]);
+    // Even a non-empty probe cannot be trusted without the canvas to run it.
+    expect(withEncodeBaseline(['jpeg', 'png'], false)).toEqual([]);
+  });
+
+  it('yields an all-false encode matrix, so no UI-layer special-casing is needed', () => {
+    const support = resolveCodecSupport({
+      nativeEncode: withEncodeBaseline([], false),
+      nativeDecode: ['jpeg', 'png', 'webp', 'gif', 'bmp'],
+    });
+    for (const f of ALL_OUTPUT_FORMATS) {
+      expect(support.encode[f], f).toBe(false);
+      expect(support.nativeEncode[f], f).toBe(false);
+    }
+  });
+
+  it('makes resolveEncoder throw E_ENCODE_FAILED for every format, at every preference', () => {
+    const support = resolveCodecSupport({
+      nativeEncode: withEncodeBaseline([], false),
+      nativeDecode: ['jpeg', 'png', 'webp', 'gif', 'bmp'],
+    });
+    for (const format of ALL_OUTPUT_FORMATS) {
+      for (const preference of ['auto', 'native', 'best-quality'] as const) {
+        expect(() => resolveEncoder(format, preference, support), format + '/' + preference)
+          .toThrowError(expect.objectContaining({ code: 'E_ENCODE_FAILED' }));
+      }
+    }
+  });
+
+  it('the SAME empty probe still falls back to the baseline WITH OffscreenCanvas', () => {
+    // The two worlds must stay distinguishable — this is the D-10 case, intact.
+    const support = resolveCodecSupport({
+      nativeEncode: withEncodeBaseline([], true),
+      nativeDecode: ['jpeg', 'png', 'webp', 'gif', 'bmp'],
+    });
+    expect(support.encode.jpeg).toBe(true);
+    expect(() => resolveEncoder('jpeg', 'auto', support)).not.toThrow();
   });
 });
 

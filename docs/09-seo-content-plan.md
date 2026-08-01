@@ -69,6 +69,23 @@ Evidence anchors: "webp to jpg" sends 220.2K visits/mo to iLoveIMG; "webp to png
 
 **JPEG XL is a timed bet.** JXL returned to Chrome 145 in Feb 2026 behind a flag and is expected on-by-default in H2 2026, moving support from ~16% to ~85–90%. Format transitions reliably produce multi-year conversion-query waves. Publish the JXL routes *before* the flag flips, so they're aged and indexed when volume arrives.
 
+> **SHELVED — WO-8 / docs/12 D-58 (2026-08-01).** The bet is sound; the routes
+> are not buildable. Every JXL-destination route needs JXL **encode**, and
+> neither canvas nor any budget-compliant WASM build provides it — the smallest
+> JXL encoder is **1.36 MB**, 13% over the 1.2 MB per-codec ceiling in
+> `04 §7`, and the multi-threaded variants are larger and unusable anyway under
+> ADR-003. Chrome shipping *decode* on by default does not change this: these
+> routes convert **to** JXL.
+>
+> **No budget exception was granted.** That cap protects mobile users on slow
+> connections, who are this product's core audience; a speculative SEO bet does
+> not outrank them.
+>
+> **Reversal condition:** revisit only when a browser ships native JXL encode
+> via canvas, or a sub-1.2 MB JXL encoder build exists. Until then the 5 JXL
+> pair routes are contingent, not planned, and `content/formats.ts` defines no
+> jxl-destination route at all.
+
 ### 2.2 Target-size routes — `/compress/[format]-to-[size]`
 
 The Form Filer persona's exact query. Driven by government portal and exam registration upload caps.
@@ -191,7 +208,7 @@ Rationale: there is no content to protect, and being cited by an assistant as "a
 | **1** | Launch (Milestone 6) | `/`, `/how-it-works`, `/privacy`, `/about`, 4 task hubs (`/convert`, `/compress`, `/resize`, `/metadata`), **all 7 ★ pairs**, 6 JPG size routes | **21** | Small, hand-written, high quality. Establishes a baseline quality signal before scaling. |
 | **2** | +3 weeks | Remaining 5 P1 pairs (`heic-to-png`, `heic-to-webp`, `jpg-to-png`, `avif-to-jpg`, `avif-to-png`), 7 PNG/WebP size routes | **12** | Publish only after Wave 1 shows indexing |
 | **3** | +6 weeks | 13 P2 pairs (all except the 5 JXL pairs and `svg-to-png`), 11 `/formats/*` pages, 12 resize presets | **36** | |
-| **4** | H2 2026, on the Chrome JXL flag flip | 5 JXL pair routes + 1 JXL explainer post | **5** (+1 blog) | The dated catalyst — publish before the flag flips so they're aged and indexed |
+| **4** | ⛔ **SHELVED** (WO-8 / D-58) — blocked on JXL encode, not on the flag | ~~5 JXL pair routes~~ + 1 JXL explainer post (still viable) | **0** (+1 blog) | Contingent, not planned. Reversal: native canvas JXL encode, or a sub-1.2 MB encoder build |
 
 Waves 1–4 sum to 74 routes. `/404` is built in Wave 1 too but is excluded from every count — it is never indexed and carries no content. Waves 2–4 are **content operations, not engineering milestones** — Milestone 6 in `10-build-plan.md` builds Wave 1 and the templates; every later wave is data added to `src/content/formats.ts` and `presets.ts` with no code change.
 

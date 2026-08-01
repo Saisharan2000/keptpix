@@ -12,7 +12,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { WorkerPool } from '../../src/workers/pool';
 import type { JobProgressEvent, ProcessRequest } from '../../src/workers/protocol';
-import type { JobConfig } from '../../src/core/types';
+import type { DeviceProfile, JobConfig } from '../../src/core/types';
+import { resolveDeviceProfile } from '../../src/core/capabilities';
 
 /* ── fixtures ──────────────────────────────────────────────────────────── */
 
@@ -77,8 +78,8 @@ function makeRequest(
 }
 
 const pools: WorkerPool[] = [];
-function newPool(size = 1): WorkerPool {
-  const pool = new WorkerPool({ size });
+function newPool(size = 1, device?: DeviceProfile): WorkerPool {
+  const pool = new WorkerPool(device === undefined ? { size } : { size, device });
   pools.push(pool);
   return pool;
 }
@@ -381,21 +382,31 @@ describe('E_TOO_LARGE — the memory guard, actually wired in (docs/12 D-43)', (
    * error") is what surfaced the gap, since it cannot be tested if the
    * behaviour does not exist.
    *
-   * Resolution: the 80 MP figure in docs/06 §3.4 — "the empirical crash line"
-   * — is applied as a universal hard ceiling rather than only under
-   * device.isMobile, since a crash line is not a mobile-only phenomenon. Below
-   * it, the docs/04 §3 flowchart's silent PRESCALE is unchanged.
+   * Resolution: below the per-device soft budget, the docs/04 §3 flowchart's
+   * silent PRESCALE is unchanged. Above a hard ceiling, the decode is refused.
+   *
+   * That ceiling is DEVICE-SCALED as of docs/12 D-57 (WO-1). D-43 applied the
+   * 80 MP figure from docs/06 §3.4 universally, but that number was measured on
+   * mobile Safari — so a 32 GB workstation refused a 100 MP panorama it could
+   * handle, while the site advertised no such cap. It now stays at 80 MP where
+   * it was measured (mobile, or under 8 GB) and scales with real memory above
+   * that, capped at 300 MP.
    */
-  it('hard-rejects a 90 MP image with E_TOO_LARGE, naming the real dimensions', async () => {
-    const canvas = new OffscreenCanvas(10_000, 9_000); // 90 MP > 80 MP ceiling
+  const lowMemoryDevice = resolveDeviceProfile({ deviceMemoryGb: 4, hardwareConcurrency: 4 });
+  const highMemoryDevice = resolveDeviceProfile({ deviceMemoryGb: 16, hardwareConcurrency: 16 });
+
+  async function ninetyMegapixelPng(): Promise<ArrayBuffer> {
+    const canvas = new OffscreenCanvas(10_000, 9_000); // 90 MP
     const ctx = canvas.getContext('2d');
     if (ctx === null) throw new Error('no 2d context');
     ctx.fillStyle = '#4f46e5';
     ctx.fillRect(0, 0, 10_000, 9_000);
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    const bytes = await blob.arrayBuffer();
+    return (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer();
+  }
 
-    const pool = newPool();
+  it('hard-rejects a 90 MP image on a 4 GB device, naming the real dimensions', async () => {
+    const bytes = await ninetyMegapixelPng();
+    const pool = newPool(1, lowMemoryDevice);
     const response = await pool.process(makeRequest('oversized-1', bytes, makeConfig()));
 
     expect(response.ok).toBe(false);
@@ -407,8 +418,23 @@ describe('E_TOO_LARGE — the memory guard, actually wired in (docs/12 D-43)', (
     expect(response.error.recoverable).toBe(true);
   }, 60_000);
 
+  it(
+    'WO-1: the SAME 90 MP image succeeds on a 16 GB device rather than being refused ' +
+      'a limit that device does not have',
+    async () => {
+      const bytes = await ninetyMegapixelPng();
+      const pool = newPool(1, highMemoryDevice);
+      const response = await pool.process(makeRequest('oversized-hi', bytes, makeConfig()));
+
+      // It may be PRESCALED by the soft budget — that is the docs/04 §3
+      // flowchart working as designed. What it must NOT be is hard-refused.
+      expect(response.ok, JSON.stringify(response.ok ? null : response.error)).toBe(true);
+    },
+    60_000,
+  );
+
   it('leaves an image just under the ceiling completely unaffected', async () => {
-    // 8000x9000 = 72 MP, comfortably under 80 MP.
+    // 2400x2400 encodes small; well under any tier's ceiling.
     const bytes = await makeJpegBytes(2400, 2400);
     const pool = newPool();
     const response = await pool.process(makeRequest('normal-1', bytes, makeConfig()));

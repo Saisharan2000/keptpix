@@ -14,6 +14,7 @@ interface Props {
   onRemove: () => void;
   onAllowResize: () => void;
   onSelect: () => void;
+  onInspect: () => void;
   selected: boolean;
 }
 
@@ -39,6 +40,7 @@ export function FileCard({
   onRemove,
   onAllowResize,
   onSelect,
+  onInspect,
   selected,
 }: Props) {
   const thumbUrl = useObjectUrl(source.file);
@@ -93,7 +95,27 @@ export function FileCard({
         </p>
 
         {job.status === 'queued' && (
-          <p class="num m-0 text-xs text-text-muted">{formatBytes(source.sizeBytes)}</p>
+          <div class="flex items-center justify-between gap-2">
+            <p class="num m-0 text-xs text-text-muted">{formatBytes(source.sizeBytes)}</p>
+            {/*
+              Shown in the QUEUED state on purpose (WO-10, docs/02 §5): the
+              point of the inspector is seeing what a file carries BEFORE it is
+              processed. The GPS dot is the whole privacy demonstration — it
+              says "your photo knows where you were" using the user's own file,
+              without anything being uploaded to find out.
+            */}
+            <button
+              type="button"
+              onClick={onInspect}
+              class="flex min-h-9 shrink-0 items-center gap-1 px-1.5 text-xs text-text-muted hover:text-text"
+              aria-label={'Inspect metadata for ' + source.name}
+            >
+              {source.metadata?.hasGps === true && (
+                <span class="h-1.5 w-1.5 rounded-full bg-warning" aria-hidden="true" />
+              )}
+              Info
+            </button>
+          </div>
         )}
 
         {job.status === 'running' && (

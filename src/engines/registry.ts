@@ -141,6 +141,19 @@ export function resolveEncoder(
   // wrong. docs/06 §1 frames the 'auto' rule as support.nativeEncode[format].
   const canvasCan = canvas !== undefined && support.nativeEncode[format] === true;
 
+  /**
+   * Whether ANY encoder can produce this format on this engine (docs/12 D-55,
+   * WO-2). The WASM encoders are not an escape hatch from a missing canvas:
+   * mozjpeg and oxipng both build their ImageData through an OffscreenCanvas,
+   * so on an engine without one they fail exactly like canvas does — just
+   * later, after downloading a codec, with the same unhelpful message.
+   *
+   * `support.encode` folds native and WASM capability together, so consulting
+   * it here keeps the matrix authoritative and stops 'best-quality' handing
+   * back an encoder the engine cannot actually run.
+   */
+  const anyEncoderCan = support.encode[format] === true;
+
   if (preference === 'native') {
     // Canvas only. Throw if canvas cannot do the format.
     if (!canvasCan) {
@@ -155,7 +168,7 @@ export function resolveEncoder(
   if (preference === 'best-quality') {
     const preferred = BEST_QUALITY[format];
     const wasm = preferred === undefined ? undefined : encoders.get(preferred);
-    if (wasm !== undefined && wasm.canHandle(format)) return wasm;
+    if (wasm !== undefined && wasm.canHandle(format) && anyEncoderCan) return wasm;
     // Canvas as last resort — the documented fallback.
     if (canvasCan) return canvas;
     throw encodeUnavailable(format);
@@ -166,7 +179,7 @@ export function resolveEncoder(
 
   const fallbackId = WASM_FALLBACK[format];
   const wasm = fallbackId === undefined ? undefined : encoders.get(fallbackId);
-  if (wasm !== undefined && wasm.canHandle(format)) return wasm;
+  if (wasm !== undefined && wasm.canHandle(format) && anyEncoderCan) return wasm;
   if (canvasCan) return canvas;
   throw encodeUnavailable(format);
 }

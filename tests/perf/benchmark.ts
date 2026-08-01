@@ -256,6 +256,28 @@ describe('performance benchmark — docs/04 §7 budgets', () => {
     60_000,
   );
 
+  /**
+   * WO-6 UPDATE — the counter is now live here, and that revealed a second,
+   * separate limit worth stating plainly rather than banking a comfortable
+   * number.
+   *
+   * Running this project with `--enable-precise-memory-info` (see the `perf`
+   * project in vitest.config.ts) unfreezes `performance.memory`: the canary
+   * below now measures ~100 MB for a 100 MB allocation instead of 0.0, so the
+   * assertion RUNS rather than skipping.
+   *
+   * But it reads the MAIN THREAD's heap, and every byte of image work happens
+   * inside the worker, which has its own. So a 12 MP conversion legitimately
+   * moves this counter by ~0 MB — a true reading of the wrong heap. It proves
+   * the main thread stays light (itself worth knowing, and consistent with the
+   * responsiveness budget), but it is NOT the "< 400 MB peak" that docs/04 §7
+   * is really about.
+   *
+   * Measuring the right heap needs `performance.memory` sampled INSIDE
+   * image.worker.ts and reported over the existing progress channel. That is a
+   * change to production code for a test's benefit, so it is recorded as
+   * outstanding rather than done quietly here — see docs/12 D-45.
+   */
   it(
     'peak heap usage for a 12 MP image stays under 400 MB, WHEN the reading is reliable',
     async () => {

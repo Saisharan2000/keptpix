@@ -11,7 +11,7 @@ import type { CodecSupport, DeviceProfile, Dimensions, JobError, OutputFormat } 
 import { createJobError } from '../core/errors';
 import { computeTargetDimensions, planDownscaleSteps } from '../core/resize';
 import { orientationSwapsAxes } from '../core/metadata';
-import { MOBILE_MAX_PIXELS } from '../core/guards';
+import { resolveHardPixelCeiling } from '../core/guards';
 import { DEFAULT_TARGET_SEARCH_OPTIONS, searchForTargetSize } from '../core/target-size';
 import { resolveDecoder, resolveEncoder } from '../engines/registry';
 import type {
@@ -188,15 +188,18 @@ export async function runPipeline(
      *
      * Resolved as two tiers, docs/12 D-43: below the per-device soft budget,
      * behaviour is exactly the docs/04 §3 flowchart — the decoder above already
-     * prescaled via maxPixels, silently and for free. Above the absolute 80 MP
-     * line, no prescale is attempted: docs/06 §3.4 calls that "the empirical
-     * crash line," and a crash line is not a mobile-only phenomenon, so it is
-     * applied as a universal backstop rather than only under device.isMobile.
+     * prescaled via maxPixels, silently and for free. Above the hard ceiling,
+     * no prescale is attempted and the decode is refused outright.
      * This is also the only place E_TOO_LARGE was reachable at all — it was
      * fully defined in the taxonomy and fully unit-tested in guards.ts, but
      * nothing in the running pipeline ever threw it before this.
+     *
+     * The ceiling is now DEVICE-SCALED (docs/12 D-57, WO-1) and imported rather
+     * than hardcoded here. D-43 hardcoded the 80 MP mobile figure at this call
+     * site as a universal backstop, which made a 32 GB workstation refuse a
+     * 100 MP panorama it could handle — while the site advertised no such cap.
      */
-    if (decoded.width * decoded.height > MOBILE_MAX_PIXELS) {
+    if (decoded.width * decoded.height > resolveHardPixelCeiling(ctx.device)) {
       const dims = { width: decoded.width, height: decoded.height };
       decoded.close();
       state.decoded = null;

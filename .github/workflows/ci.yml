@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # NOT optional (WO-3, docs/12 D-55). Four browser projects are configured;
+      # for months only Chromium's binary was installed locally, so the suite
+      # reported a passing summary while three engines never launched. The
+      # project-coverage reporter now fails a run with a missing engine, and
+      # this step is what stops that failure from being the normal state in CI.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Integration tests (real browser)
+        run: npm run test:integration
+
+      - name: Build
+        run: npm run build
+
+      # docs/04 §7 — HTML per route, baseline island JS, and per-codec WASM size.
+      # Runs after the build because it measures the real dist/ output.
+      - name: Static budgets
+        run: npm run check:budgets
+
+      # Full e2e across all four engines. The privacy suite in here is the
+      # product's core claim expressed as code — a failure is a release blocker.
+      - name: E2E (chromium, firefox, webkit, mobile-safari)
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

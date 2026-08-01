@@ -16,7 +16,8 @@
     "check:budgets": "node scripts/check-budgets.mjs",
     "lint": "eslint .",
     "typecheck": "astro sync && tsc --noEmit",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "test:smoke": "playwright test --grep @smoke"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",

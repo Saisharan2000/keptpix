@@ -991,6 +991,40 @@ for a one-off manual profiling pass — Chrome’s DevTools Performance panel or
 task-manager-level RSS observation works regardless of isolation; it is a
 human-driven measurement, not one this automated suite can take.
 
+> **AMENDED — WO-6: the harness is not bound by ADR-003, and the counter now
+> works. It is measuring the wrong heap.**
+>
+> The production page cannot read precise heap numbers, but the TEST browser
+> can be launched with `--enable-precise-memory-info`. Verified against a raw
+> Playwright launch, which settles it beyond doubt:
+>
+> | chromium launch args | delta for a 100 MB allocation |
+> |---|---|
+> | *(none)* | **0.00 MB** — value frozen at a round `10000000` |
+> | `--enable-precise-memory-info` | **100.03 MB** — unrounded, real |
+>
+> A new `perf` vitest project passes that flag, so the canary now measures
+> ~99.9 MB and the `< 400 MB` assertion **runs instead of skipping**. One
+> gotcha cost real time: `launchOptions` must go on the PROVIDER
+> (`playwright({ launchOptions })`), not on the browser instance — an
+> instance-level `launchOptions` is silently ignored, and the only symptom is
+> the canary continuing to report the counter unreliable.
+>
+> **What it then measured is a genuinely useful negative result.** A 12 MP
+> conversion moves the main-thread heap by **~0.0 MB** — and that is a TRUE
+> reading, not a broken one. Every byte of image work happens inside the
+> worker, which has its own heap that `performance.memory` on the main thread
+> cannot see. So this now proves the main thread stays light (real, and
+> consistent with the responsiveness budget) while saying nothing about the
+> peak `04 §7` actually cares about.
+>
+> **Deliberately not done:** sampling `performance.memory` inside
+> `image.worker.ts` and reporting it over the progress channel. That is
+> production code changed for a test's benefit, on the hot path, and it is a
+> decision rather than a fix — recorded as outstanding. The honest position is
+> that the budget is now *instrumentable* but still *unmeasured*, which is a
+> better place to stand than a comfortable 0.0 MB that looks like a pass.
+
 ---
 
 ## 🔴 D-46 — Quality-tier codecs: two of five candidate WASM binaries do not fit the budget, and shipping the other three exposed a real routing bug
@@ -1304,14 +1338,42 @@ version + URL list into two placeholder tokens. The substitution is asserted:
 if a `__PRECACHE_*__` token survives, the build throws rather than shipping a
 worker that would cache nothing.
 
-**2. `Promise.all` over the precache list silently lost its tail.** Firing
-every `cache.add` at once cached **19 of 27 URLs — always the same first 19**,
-with no error on any of them, though each URL fetched fine individually. The
-loop is therefore sequential (`for … await cache.add(url)`). `cache.addAll()`
-has the same all-at-once shape and would not have helped. This costs a little
-background time on a step already off the critical path, in exchange for
-actually completing. **Worth knowing this failed silently** — the symptom was
-not an error but a partially-offline app.
+**2. `Promise.all` over the precache list appeared to lose its tail.** Firing
+every `cache.add` at once was observed caching **19 of 27 URLs**, with no error
+on any of them. The loop was made sequential (`for … await cache.add(url)`) and
+has stayed that way.
+
+> **AMENDED — WO-5: this DOES NOT REPRODUCE, and the original diagnosis was
+> probably wrong.** Re-measured against the built `dist/` on the preview
+> server, in all three shapes, and every one cached the full set:
+>
+> | Shape | Context | Result |
+> |---|---|---|
+> | `Promise.allSettled(urls.map(cache.add))` | page | **27/27**, 0 rejected |
+> | `cache.addAll(urls)` | page | **27/27**, no throw |
+> | `for … await cache.add(url)` | page | **27/27** |
+> | `Promise.allSettled(urls.map(cache.add))` | **real SW `install`** | **27/27**, 0 rejected |
+>
+> The last row is the one that matters — same all-at-once shape, inside a
+> genuine service-worker install handler, against what actually ships.
+>
+> **The likely real explanation is an observation-timing artifact, not a
+> caching bug.** D-55 later found exactly this mistake in `pwa.spec.ts`: the
+> cache was being READ at `state === 'activated'`, which is reachable while the
+> install loop is still running — measured there at **8 of 27 entries present**,
+> with all 27 landing ~500 ms later. "19 of 27" is the same shape of number
+> obtained the same way. An install that had not finished would look precisely
+> like a truncating `Promise.all`, and nothing at the time distinguished them.
+>
+> **Not reproduced on HTTP/2**: the preview server is HTTP/1.1, and `wrangler`
+> is not a dependency of this repo, so the HTTP/2 origin case remains untested
+> rather than cleared. That is the one open thread here.
+>
+> **The sequential loop stays**, per WO-5 — it costs a little background time on
+> a step already off the critical path, and changing it now would trade a
+> known-good behaviour for a marginal gain on the strength of a diagnosis this
+> amendment has just weakened. What changed is what we CLAIM to know: the
+> earlier text asserted a browser bug that measurement does not support.
 
 **3. WASM codecs are deliberately NOT precached.** `10 §M8` says "cache WASM
 codecs on first use", and it is right to: precaching them would download up to
@@ -1482,9 +1544,38 @@ fix and it is genuinely feasible — `platform/raster.ts` already does
 main-thread canvas work for SVG (D-03) — but it contradicts CLAUDE.md
 non-negotiable 3 ("all image processing happens inside a Web Worker; the main
 thread never blocks") for every file on those engines, not as an edge case.
-That is an architectural reversal, not a bug fix, and it belongs to whoever
-owns that non-negotiable. The honest notice is the correct behaviour until
-then; the fallback is listed as outstanding work below.
+
+> **DECIDED (2026-08-01, work order): not built, permanently-until-data.**
+> Weighed under CLAUDE.md Rule 0, and merit and the standard rule agree here —
+> no override was needed.
+>
+> - Safari 16.4 shipped **March 2023**. The pre-16.4 cohort is a thin and
+>   continuously shrinking sliver.
+> - Those same devices are the *worst* candidates for main-thread encoding —
+>   older chips, tight memory ceilings. The realistic outcome for a 12 MP HEIC
+>   is a frozen UI for many seconds and then a tab crash. **"Works badly, then
+>   dies" is worse than an honest "update your browser"**, which is free to act
+>   on.
+> - It would mean a full parallel pipeline — a main-thread twin of every codec
+>   path — maintained for the least-capable, least-tested platform, and it
+>   would degrade the architecture for everyone who *does* have the feature.
+> - D-03's main-thread exception is narrow by design: one format that cannot
+>   work in a worker at all. This would be wholesale.
+>
+> **Reversal condition:** real user reports from that cohort after launch,
+> weighed against the edge-analytics traffic share (D-56). Not before — the
+> current signal is a browser-support table, not a user.
+
+**WO-2 follow-up, since the notice alone was not enough.** The UI told the
+truth while the data layer still lied: `withEncodeBaseline` kept substituting
+the JPEG/PNG/WebP baseline, so any future caller of `CodecSupport` that forgot
+to also check `hasOffscreenCanvas` would reproduce the original failure. The
+capability signal is now a **required** parameter — the compiler found every
+call site — and the encode matrix comes back honestly empty, with
+`resolveEncoder` throwing `E_ENCODE_FAILED` for every format at every
+preference. That also caught a second hole: `'best-quality'` was handing back
+mozjpeg, which builds its `ImageData` through an `OffscreenCanvas` and would
+have failed the same way, just later and after downloading a codec.
 
 **Three test defects were also fixed, all of which had been masking real
 signal:**
@@ -1588,6 +1679,129 @@ blocker, so the safe state is the default until a human decides.
 3. **Ship nothing.** No numbers, guarantee intact.
 
 ---
+
+## 🟠 D-57 — The 80 MP ceiling was mobile Safari's number applied to every device, and the site promised no limit at all (WO-1)
+
+**Docs affected:** `06 §3.4` (device-scaled table added), `04 §6` (E_TOO_LARGE trigger reworded)
+**Milestone:** 8 — audit work order
+
+D-43 promoted `06 §3.4`'s 80 MP figure from a mobile-only guard to a universal
+hard rejection. That fixed a real gap (`E_TOO_LARGE` was unreachable) but
+over-corrected: **80 MP was measured as mobile Safari's crash line**, and
+applying it everywhere meant a 32 GB workstation refusing a 100 MP panorama it
+could handle comfortably — while the homepage, the dropzone and the
+`WebApplication` JSON-LD all advertised "No file size limit."
+
+Two things were wrong, and both are fixed:
+
+**The ceiling is now device-scaled**, defined once in
+`resolveHardPixelCeiling(device)` and imported by the pipeline rather than
+hardcoded at the call site (hardcoding it there is how the desktop case went
+unnoticed):
+
+| Device | Ceiling |
+|---|---|
+| Mobile, any memory | 80 MP — where the figure was actually measured |
+| Desktop < 8 GB | 80 MP |
+| Desktop ≥ 8 GB | `min(80 MP × gb/4, 300 MP)` |
+
+Proven end to end rather than by unit test alone: **the same 90 MP PNG is
+refused on a 4 GB profile and converts on a 16 GB profile.** The 300 MP
+absolute cap stays — past it the failure stops being "slow" and becomes a tab
+dying with no catchable error, which is worse than an honest refusal.
+
+**And the copy no longer makes a claim the code cannot keep.** Every absolute
+size promise is replaced with one true by construction — "No upload caps, no
+quotas, no watermarks. Your device's memory is the only limit." "No file
+*count* limit" is kept, because that one is genuinely true. This is the D-56
+principle applied to marketing copy rather than to telemetry: **this product
+must never publish an absolute claim its own code contradicts**, because the
+whole proposition rests on its claims being checkable.
+
+---
+
+## 🟡 D-58 — JXL Wave 4 shelved: the routes need an encoder that does not fit (WO-8)
+
+**Docs affected:** `09 §6` (Wave 4 marked SHELVED with a reversal condition)
+**Milestone:** 8 — audit work order
+
+`09 §6` plans 5 JXL pair routes timed to Chrome's on-by-default flip. The bet
+is sound and the timing logic is sound; the routes are simply not buildable.
+Every one converts **to** JXL, so every one needs JXL **encode** — and neither
+canvas nor any budget-compliant WASM build provides it. The smallest JXL
+encoder is 1.36 MB against the 1.2 MB per-codec ceiling in `04 §7` (D-46), and
+Chrome shipping *decode* does not help a destination format.
+
+**No budget exception granted.** That cap exists to protect mobile users on
+slow connections, who are this product's core audience; a speculative SEO bet
+does not outrank them.
+
+**Reversal condition, recorded in `09 §6` itself:** revisit only when a browser
+ships native JXL encode via canvas, or a sub-1.2 MB encoder build exists.
+Verified there is nothing to unship — `content/formats.ts` defines no
+jxl-destination route, the build emits none, and the sitemap contains zero.
+
+---
+
+## 🟡 D-59 — CompareView stays a modal; the three-pane wireframe is amended (WO-11)
+
+**Docs affected:** `08 §4.2` (wireframe amended to two-pane + modal)
+**Milestone:** 8 — audit work order
+
+`08 §4.2` drew a third "PREVIEW" pane holding the original/output comparison.
+What shipped is a full-width modal (D-54), and the spec is amended to match
+rather than the code being rebuilt to chase it.
+
+The reasoning is the same one that shaped D-54: this view exists to judge
+**compression artefacts**, differences of a few pixels that are invisible
+unless both images occupy the exact same screen position at the exact same
+scale. A narrow side pane beside the grid cannot do that at any useful zoom; a
+clip-based wipe over the full width can. The modal is also already built,
+verified and WCAG 2.5.7-compliant, so rebuilding it as a pane would spend
+baseline budget to get a worse tool.
+
+The wireframe's `[Compare full ⤢]` affordance survives as the per-card
+`Compare` button. The right-hand edge is now the metadata drawer (WO-10).
+Reversal condition: a persistent preview pane may return as an ADDITION if
+users ask for always-visible preview — never as a replacement for the
+same-position wipe.
+
+---
+
+## 🔴 D-60 — A screenshot diff cannot catch the bug it was specified to catch (WO-12)
+
+**Docs affected:** none — a testing-instrument decision
+**Milestone:** 8 — audit work order
+
+WO-12 specified a Playwright `toHaveScreenshot` guard, loose threshold, to
+catch the D-27 class: unicode escapes surviving code generation so the UI
+renders `0 done 00b7 0 running` instead of `·`. That bug was originally caught
+by a human happening to read a page snapshot, which is not a process.
+
+**The specified instrument does not work, and this was measured rather than
+argued.** The exact D-27 defect was re-injected into `Dropzone.tsx`, rebuilt,
+and the screenshot suite run:
+
+| Guard | Result with the D-27 bug live |
+|---|---|
+| `toHaveScreenshot`, `maxDiffPixelRatio: 0.02` | **2 passed** — missed it entirely |
+| Rendered-text scan for escape artefacts | **failed, quoting `"00b7"` and the route** |
+
+The corrupted string is a few characters inside a full-page element, far below
+a 2% pixel ratio. Tightening the ratio enough to catch it would make every run
+flaky on font antialiasing — which trains people to re-baseline without reading
+the diff, and that is worse than no check at all: it launders real regressions
+through a habit.
+
+**Both ship, each doing what it is actually good at** (Rule 0: the better
+answer wins, with evidence). The screenshots stay for layout collapse, which
+they genuinely detect. A text-integrity scan across four representative routes
+does the D-27 job — exact, deterministic, no baseline to maintain, and it fails
+with the offending string quoted. It also covers neighbouring failure modes
+that would look fine in a screenshot: unrendered HTML entities, mojibake, and
+`undefined` / `[object Object]` / `NaN` leaking into copy.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
@@ -1597,7 +1811,11 @@ blocker, so the safe state is the default until a human decides.
 | ✅ | ~~Milestone 6~~ (all content), ~~Milestone 7~~ (all suites, D-43/44/45) — **done**, 372 tests green | — |
 | ✅ | ~~jSquash quality-tier encoders~~ (mozjpeg, oxipng, avif decode, utif2 TIFF; jxl deliberately skipped) — **done**, verified against real bytes in a real browser, D-46/47/48; 300 tests green | — |
 | ✅ | ~~**Milestone 8**~~ — PWA/service worker, IndexedDB persistence, OPFS, CompareView, preset export/import, analytics: **all done**, D-50 through D-54. 314 unit+integration green, 78 e2e green, all budgets pass | — |
-| 🔴 | **Main-thread encode fallback for engines without `OffscreenCanvas`** (D-55) — Safari 16.0–16.3 and earlier currently get an honest "unsupported browser" notice and nothing else. Reversing CLAUDE.md non-negotiable 3 for those engines is an architectural call, not a bug fix | Safari < 16.4 users |
+| ✅ | ~~Main-thread encode fallback (D-55)~~ — **DECIDED: not built, permanently-until-data.** Safari 16.4 shipped March 2023; the pre-16.4 cohort is a thin, shrinking sliver, and those same devices would freeze then likely crash a tab on a 12 MP main-thread encode — "works badly then dies" is worse than an honest notice. Reversing CLAUDE.md non-negotiable 3 would degrade the architecture for everyone. **Reversal condition:** real user reports from that cohort after launch, weighed against edge-analytics traffic share | — |
+| ✅ | ~~Audit work order (docs/13)~~ — WO-1 through WO-12 **done**: D-57 (device-scaled ceiling + truthful copy), D-58 (JXL shelved), D-59 (compare modal), D-60 (screenshot guard replaced), plus WO-2/3/4 fixes and the D-45/D-52 amendments | — |
+| 🟠 | **Measure the WORKER's heap** (D-45, WO-6) — the counter is now live in the harness under `--enable-precise-memory-info`, but it reads the main thread, which a conversion barely touches. The `< 400 MB` budget is now *instrumentable* but still *unmeasured*; sampling inside `image.worker.ts` is production code changed for a test's benefit and wants a decision | A real §7 memory number |
+| 🟡 | **HEIC fixture into CI** (D-36, WO-7) — `scripts/scrub-fixture.mjs` is written and strips GPS/serials/timestamps while PRESERVING orientation and the `irot`/`imir` transforms that caught D-30 and D-34. Needs 2–3 neutral-location HEICs from the founder, then the HEIC suites stop skipping on a fresh clone | Flagship path untested in CI |
+| 🟡 | **Precache truncation on HTTP/2** (D-52, WO-5) — does not reproduce on HTTP/1.1 in any shape, including inside a real SW install; `wrangler` is not a dependency so the HTTP/2 origin case is untested rather than cleared | Knowing, not changing |
 | 🟠 | **Deploy to Cloudflare Pages** (`noupload.app`) — the one M8 acceptance item not doable from here; needs the account. Re-run `privacy.spec.ts` against production once live | Launch |
 | 🟡 | `npx playwright install` is now required for a truthful e2e run — chromium alone silently "passed" while 3 engines never launched (D-55). Worth pinning in CI setup | Honest cross-browser signal |
 | ✅ | ~~Analytics decision (D-56)~~ — **decided**: page views come from Cloudflare's edge, no beacon ships, assertion (a) stays absolute. Read them in the Cloudflare dashboard after deploy; nothing to configure | — |

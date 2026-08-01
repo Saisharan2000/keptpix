@@ -66,7 +66,9 @@ export async function probeCodecSupport(): Promise<CodecSupport> {
     probeNativeDecodeFormats(),
   ]);
   return resolveCodecSupport({
-    nativeEncode: withEncodeBaseline(nativeEncodeProbe),
+    // docs/12 D-55 (WO-2): an engine with no OffscreenCanvas genuinely cannot
+    // encode, and the D-10 empty-probe fallback must not claim otherwise.
+    nativeEncode: withEncodeBaseline(nativeEncodeProbe, typeof OffscreenCanvas !== 'undefined'),
     nativeDecode: ['jpeg', 'png', 'webp', 'gif', 'bmp', ...nativeDecodeProbe],
     wasmDecode: WASM_DECODE_FORMATS,
   });

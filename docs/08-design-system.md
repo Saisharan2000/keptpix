@@ -272,7 +272,36 @@ graph TD
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Desktop — files loaded, three-pane
+### 4.2 Desktop — files loaded
+
+> **AMENDED — WO-11 / docs/12 D-59 (2026-08-01): the desktop layout is TWO
+> panes (settings + files) plus a compare MODAL, not the three-pane wireframe
+> below.** The wireframe is kept as the original intent, and the third
+> "PREVIEW" column is the part that changed.
+>
+> **Why the modal wins on the merits.** This view exists to judge *compression
+> artefacts* — differences of a few pixels that are invisible unless both
+> images sit at the exact same screen position and the exact same scale. A
+> persistent side pane cannot do that: it is narrow, it is beside the grid
+> rather than over it, and at any useful zoom the two images cannot occupy the
+> same coordinates. The shipped `CompareView` is a clip-based wipe over the
+> full width, which can.
+>
+> It is also built, verified and WCAG 2.5.7-compliant (the divider has a
+> keyboard-operable range input carrying the accessible name, so dragging is
+> never the only path). Rebuilding it as a side pane would spend baseline
+> budget to get a worse comparison tool.
+>
+> **The `[Compare full ⎔]` affordance in the wireframe survives** — it is now
+> the `Compare` button on each finished file card, which is what opens the
+> modal.
+>
+> A metadata inspector drawer occupies the right-hand edge instead, opened per
+> file from the card's `Info` button (WO-10). Reversal condition: a persistent
+> preview pane may return as an ADDITION if users ask for always-visible
+> preview — never as a replacement for the same-position wipe.
+
+The original three-pane intent:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐

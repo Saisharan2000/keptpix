@@ -10,6 +10,7 @@ interface Props {
   onRemove: (sourceId: string) => void;
   onAllowResize: (jobId: string) => void;
   onSelect: (sourceId: string) => void;
+  onInspect: (sourceId: string) => void;
   onAddMore: () => void;
 }
 
@@ -22,6 +23,7 @@ export function FileGrid({
   onRemove,
   onAllowResize,
   onSelect,
+  onInspect,
   onAddMore,
 }: Props) {
   return (
@@ -52,6 +54,7 @@ export function FileGrid({
             onRemove={() => onRemove(source.id)}
             onAllowResize={() => onAllowResize(job.id)}
             onSelect={() => onSelect(source.id)}
+            onInspect={() => onInspect(source.id)}
           />
         ))}
       </div>

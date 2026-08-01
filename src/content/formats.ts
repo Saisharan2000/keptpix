@@ -93,7 +93,7 @@ EXIF orientation is applied to the pixels before encoding, so photos do not come
     },
     {
       q: 'Can I convert many photos at once?',
-      a: 'Yes. Drop a whole folder — there is no file count limit and no file size limit, because the work happens on your device rather than on a server somebody has to pay for. Files are processed in parallel across your available CPU cores, and results download individually or together as a ZIP.',
+      a: 'Yes. Drop a whole folder — there is no file count limit and no upload cap or daily quota, because the work happens on your device rather than on a server somebody has to pay for. Your device’s own memory is the only real limit, and very large images are handled by scaling them down rather than failing. Files are processed in parallel across your available CPU cores, and results download individually or together as a ZIP.',
     },
     {
       q: 'Are my photos uploaded anywhere?',
@@ -225,7 +225,7 @@ const webpToPng: FormatPairRoute = {
   title: 'Convert WebP to PNG — keeps transparency, nothing uploaded',
   h1: 'Convert WebP to PNG',
   metaDescription:
-    'Convert WebP to PNG in your browser, keeping transparency intact. No upload, no sign-up, no file size limit.',
+    'Convert WebP to PNG in your browser, keeping transparency intact. No upload, no sign-up, no quotas.',
 
   intro: `WebP comes in two quite different varieties that share one file extension. Lossy WebP uses VP8 intra-frame compression and behaves like a smaller JPEG. Lossless WebP uses an entirely different algorithm and behaves like a smaller PNG, typically around 26% smaller for the same pixels.
 
@@ -710,6 +710,11 @@ export const FORMAT_LABEL: Record<string, string> = {
   heic: 'HEIC',
   heif: 'HEIF',
   avif: 'AVIF',
+  // A display label only — there is NO jxl-destination route, deliberately.
+  // Wave 4 is shelved (docs/12 D-58, WO-8): every JXL route needs JXL ENCODE,
+  // which no canvas provides and no WASM build provides under the 1.2 MB
+  // per-codec cap in docs/04 §7 (smallest is 1.36 MB). Revisit only when a
+  // browser ships native JXL encode, or a sub-1.2 MB encoder build exists.
   jxl: 'JPEG XL',
   svg: 'SVG',
 };

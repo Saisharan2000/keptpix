@@ -9,9 +9,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  // The project-coverage reporter is not optional tooling: it fails the run if
+  // a configured engine never executed a single test (WO-3, docs/12 D-55).
   reporter: process.env.CI
-    ? [['github'], ['html', { open: 'never' }]]
-    : [['list'], ['html', { open: 'never' }]],
+    ? [['github'], ['html', { open: 'never' }], ['./tests/e2e/_project-coverage-reporter.ts']]
+    : [['list'], ['html', { open: 'never' }], ['./tests/e2e/_project-coverage-reporter.ts']],
 
   use: {
     baseURL: BASE_URL,

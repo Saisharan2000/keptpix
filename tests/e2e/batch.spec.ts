@@ -92,6 +92,38 @@ test.describe('batch of 50: one corrupt, one oversized', () => {
 
     const convertButton = page.getByRole('button', { name: /^Convert \d+ files?$/ });
     await expect(convertButton).toBeVisible();
+
+    /**
+     * Pin a 4 GB device profile before converting (WO-1, docs/12 D-57).
+     *
+     * The hard rejection ceiling is device-scaled now: 80 MP on mobile and
+     * under 8 GB, scaling with real memory above that. So "oversized" is no
+     * longer an absolute — this 90 MP panorama is genuinely over the limit on a
+     * 4 GB machine and genuinely FINE on a 16 GB one, which is the entire point
+     * of the change.
+     *
+     * Making the fixture big enough to fail on any machine would need ~170 MP,
+     * about 700 MB of canvas backing store, on every run of this suite. Pinning
+     * the profile instead keeps the acceptance intact ("2 flagged with specific
+     * errors") and deterministic on any hardware, for free. It goes through
+     * setEnvironment — the store's own public action — and must happen BEFORE
+     * the first convert, because the WorkerPool is created lazily on start()
+     * and configures its workers from this profile.
+     *
+     * Both tiers are proven for real in tests/integration/pipeline.test.ts,
+     * where the same 90 MP image is refused at 4 GB and converts at 16 GB.
+     */
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        __noupload_store?: { getState(): Record<string, unknown> };
+      };
+      const state = w.__noupload_store?.getState();
+      if (state === undefined) throw new Error('store handle missing');
+      const device = state['device'] as Record<string, unknown>;
+      const setEnvironment = state['setEnvironment'] as (d: unknown, c: unknown) => void;
+      setEnvironment({ ...device, deviceMemoryGb: 4, isMobile: false }, state['codecs']);
+    });
+
     await convertButton.click();
 
     // The whole point of this suite: the batch reaches a terminal state for

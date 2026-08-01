@@ -154,7 +154,7 @@ export function Dropzone({ fromLabel, compact, onFiles }: Props) {
           or click to browse · or paste from clipboard
         </p>
         <p id="dropzone-constraints" class="mt-3 mb-0 text-sm text-text-muted">
-          No file size limit · No sign-up · No upload
+          No upload caps · No sign-up · No watermarks
         </p>
       </div>
     </>

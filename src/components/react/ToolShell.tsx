@@ -11,6 +11,7 @@ import { Dropzone } from './Dropzone';
 import { ErrorCard } from './ErrorCard';
 import { FileGrid } from './FileGrid';
 import { InstallPrompt } from './InstallPrompt';
+import { MetadataPanel } from './MetadataPanel';
 import { PrivacyIndicator } from './PrivacyIndicator';
 import { Button } from './primitives';
 
@@ -47,6 +48,9 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
   // JobView so the modal always reflects the CURRENT store state — a snapshot
   // would keep rendering a stale result if the job were retried while open.
   const [compareJobId, setCompareJobId] = useState<string | null>(null);
+  // Which source's metadata drawer is open (WO-10). Held by id for the same
+  // reason as compareJobId: the panel must follow live store state.
+  const [metadataSourceId, setMetadataSourceId] = useState<string | null>(null);
   // The construction-time DeviceProfile defaults hasOffscreenCanvas to false,
   // so the unsupported notice below must not render until the REAL probe has
   // run — otherwise every browser flashes it for a frame on first paint.
@@ -62,6 +66,21 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
     // browser's real, measured profile (docs/12 D-49) BEFORE the pool is ever
     // lazily created, so the very first WorkerPool this session spawns is
     // already sized off the real device, not the fallback.
+    /**
+     * A read handle on the store, for diagnostics and for the D-49 regression
+     * test in tests/e2e/smoke.spec.ts (WO-3).
+     *
+     * Deliberately unconditional rather than DEV-only: the e2e suite runs the
+     * REAL production build, so a DEV-gated handle would be absent exactly
+     * where the wiring most needs verifying — and D-49 (device/codecs never
+     * leaving their construction-time defaults) is precisely the class of bug
+     * that hid behind having nothing to assert against.
+     *
+     * It exposes no new information and no new risk: this is the user's own
+     * in-memory state, in their own tab, in an app that never transmits it.
+     */
+    (window as unknown as { __noupload_store?: typeof store }).__noupload_store = store;
+
     void store
       .getState()
       .hydrateEnvironment()
@@ -150,6 +169,24 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
 
   const compareOne = useCallback((jobId: string) => setCompareJobId(jobId), []);
 
+  const inspectMetadata = useCallback(
+    (sourceId: string) => setMetadataSourceId((current) => (current === sourceId ? null : sourceId)),
+    [],
+  );
+
+  /**
+   * Resolved from live state, so removing a file closes its drawer rather than
+   * leaving it showing a file that is gone.
+   *
+   * `metadata` is populated at INGEST (docs/12 D-33), not at conversion time —
+   * which is what lets this show GPS presence BEFORE anything is processed,
+   * the ordering docs/02 §5 actually asks for.
+   */
+  const metadataTarget = useMemo(() => {
+    if (metadataSourceId === null) return null;
+    return sources.get(metadataSourceId) ?? null;
+  }, [metadataSourceId, sources]);
+
   // Resolved from live state every render, so a retry, a removal or a Clear
   // while the modal is open closes it rather than leaving it on dead blobs.
   const compareTarget = useMemo(() => {
@@ -196,6 +233,7 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
     store.getState().clearAll();
     setRejected([]);
     setCompareJobId(null);
+    setMetadataSourceId(null);
   }, [store]);
 
   const applyPreset = useCallback(
@@ -339,6 +377,7 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
             onRemove={remove}
             onAllowResize={allowResize}
             onSelect={(id) => store.getState().selectSource(id)}
+            onInspect={inspectMetadata}
             onAddMore={() => setStep('results')}
           />
 
@@ -365,6 +404,20 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
           </div>
         </div>
       </div>
+
+      {metadataTarget !== null && (
+        <div class="fixed inset-y-0 right-0 z-40 flex max-w-full">
+          <MetadataPanel
+            filename={metadataTarget.name}
+            metadata={metadataTarget.metadata}
+            // metadata is extracted synchronously during ingestFiles (D-33),
+            // so by the time a card exists the read has already happened —
+            // null here means "this file has none", not "still loading".
+            loaded={true}
+            onClose={() => setMetadataSourceId(null)}
+          />
+        </div>
+      )}
 
       {compareTarget !== null && (
         <CompareView

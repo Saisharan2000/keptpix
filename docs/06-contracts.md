@@ -361,6 +361,24 @@ export function assessMemoryRisk(
 
 Budget: `deviceMemoryGb * 1024^3 * 0.25`, decoded cost estimated at `w * h * 4 * 2.2` (bitmap + working copies + encoder scratch). Mobile Safari gets an additional hard ceiling of **80 megapixels total in flight**, which is the empirical crash line.
 
+**Amended during Milestone 8 (docs/12 D-57, work order WO-1).** The 80 MP figure
+is a hard *rejection* ceiling — above it no prescale is attempted and
+`E_TOO_LARGE` is thrown — and it is now **device-scaled** rather than a single
+universal number, via `resolveHardPixelCeiling(device)` in `core/guards.ts`,
+which is the sole definition:
+
+| Device | Hard ceiling |
+|---|---|
+| Mobile, any memory | 80 MP (where the figure was actually measured) |
+| Desktop < 8 GB | 80 MP |
+| Desktop ≥ 8 GB | `min(80 MP × gb/4, 300 MP)` |
+
+D-43 originally applied 80 MP universally, which made a 32 GB workstation refuse
+a 100 MP panorama it could handle comfortably while the site advertised no such
+cap. The 300 MP absolute cap stays because past it the failure mode stops being
+"slow" and becomes a tab dying with no catchable error. Below the ceiling, the
+`04 §3` soft-budget PRESCALE tier is unchanged.
+
 ---
 
 ## 4. HTTP contract — Phase 4 license Worker (optional)
@@ -496,6 +514,37 @@ Never gate anything with legal or safety consequences behind this.
 | Worker protocol | Round-trip a real 4 MP JPEG; assert bytes were transferred (source buffer `byteLength === 0` after send) |
 | `assessMemoryRisk` | Boundary cases at 2/4/8/16 GB × 1/12/50/100 MP |
 | License verify | Valid token, tampered payload, wrong key, revoked keyId, expired |
-| **Privacy** | Playwright intercepting all network. Assert: (a) **zero** requests with a non-empty body, ever; (b) zero requests of **any** kind while a job is in flight; (c) every request's origin is in the allowlist — `self` only through Milestone 7; the Cloudflare Insights beacon is added in Milestone 8 and our R2 bucket in Phase 3. Nothing else, ever. |
+| **Privacy** | Playwright intercepting all network. Assert: (a) **zero** requests with a non-empty body, ever; (b) zero requests of **any** kind while a job is in flight; (c) every request's origin is in the allowlist — **`self` only.** See the constraint note below before adding anything to (c). |
 | `toJobResult` | Round-trip a `SerializableResult` and assert every `JobResult` field is populated, `compressionRatio` is correct, and `outputName` handles collisions |
 | `resolveDecoder` | Table test across all 11 input formats × 2 support matrices; unsupported format throws `E_UNSUPPORTED_FORMAT` |
+
+### 5.1 Standing constraint on any future telemetry (WO-9, docs/12 D-56)
+
+The allowlist in (c) was widened once, for the Cloudflare Web Analytics beacon,
+and then **narrowed back to `self` only**. Measured, that beacon issued:
+
+```
+POST https://cloudflareinsights.com/cdn-cgi/rum   body=933b
+```
+
+which fails assertion (a) outright. (a) is not scoped to file data — it is
+absolute, and `privacy.spec.ts` calls failing it a release blocker.
+
+**Therefore, any future ping — including the coarse global conversion counter in
+the traction plan — MUST be:**
+
+1. a **body-less GET**, never POST/PUT/PATCH and never with a request body; and
+2. to a **same-origin path** (a Pages Function or Worker on this app's own
+   zone), so assertion (c) needs no new entry at all; and
+3. **blocked while any job is in flight**, per assertion (b), which applies to
+   every origin including our own.
+
+A counter that cannot be built within those three rules should not be built.
+The number is worth less than the guarantee — that trade was already made once,
+deliberately, in D-56.
+
+**Also note the observation window.** A "nothing was sent" assertion is only as
+strong as the period it watches: the Cloudflare beacon fired at ~5 s while the
+privacy test finished at ~3 s, so the suite passed over a live violation. The
+test now settles for 7 s before asserting. Any new telemetry must be checked
+against that window, not merely against a page load.

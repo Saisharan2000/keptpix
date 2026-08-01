@@ -103,15 +103,32 @@ export const BASELINE_NATIVE_ENCODE: readonly OutputFormat[] = ['jpeg', 'png', '
 export const WASM_DECODE_FORMATS: readonly InputFormat[] = ['heic', 'heif', 'avif', 'tiff'];
 
 /**
- * An empty probe result means the PROBE failed, not that the browser cannot
- * encode anything — no engine that reaches this code lacks JPEG and PNG.
- * Trusting an empty result would report every format unsupported and silently
- * disable the whole tool, so the baseline is the floor.
+ * An empty probe result USUALLY means the PROBE failed, not that the browser
+ * cannot encode anything — no engine with a working OffscreenCanvas lacks JPEG
+ * and PNG. Trusting an empty result would report every format unsupported and
+ * silently disable the whole tool, so the baseline is the floor (docs/12 D-10).
  *
- * This bit us for real: an OffscreenCanvas whose 2d context was never obtained
+ * That bit us for real: an OffscreenCanvas whose 2d context was never obtained
  * produces nothing from convertToBlob, which read as "no formats supported".
+ *
+ * THE ONE EXCEPTION, and it is the opposite failure (docs/12 D-55, WO-2): when
+ * the engine has NO OffscreenCanvas at all, an empty probe is the literal
+ * truth. Every codec path encodes through OffscreenCanvas inside a worker, so
+ * such an engine genuinely cannot encode anything, and substituting the
+ * baseline states the exact opposite of reality — which is how a user ended up
+ * with one E_ENCODE_FAILED per file reading "try a different output format",
+ * advice that could never work because no format would.
+ *
+ * `hasOffscreenCanvas` is therefore REQUIRED rather than optional: the D-10
+ * heuristic is only valid where an OffscreenCanvas exists to have failed, and
+ * making callers state which world they are in is what stops this being
+ * rediscovered a third time.
  */
-export function withEncodeBaseline(probed: readonly OutputFormat[]): OutputFormat[] {
+export function withEncodeBaseline(
+  probed: readonly OutputFormat[],
+  hasOffscreenCanvas: boolean,
+): OutputFormat[] {
+  if (!hasOffscreenCanvas) return [];
   return probed.length > 0 ? [...probed] : [...BASELINE_NATIVE_ENCODE];
 }
 

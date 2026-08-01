@@ -41,8 +41,14 @@ const api: WorkerApi = {
     device = profile;
     // Ask the browser what canvas can really encode, then let the pure
     // resolver in core/ decide what that means (ADR-004 + ADR-006).
-    // withEncodeBaseline guards against a failed probe disabling everything.
-    const nativeEncode = withEncodeBaseline(await probeNativeEncodeFormats());
+    // withEncodeBaseline guards against a failed probe disabling everything —
+    // EXCEPT where there is no OffscreenCanvas to have failed, in which case an
+    // empty probe is the truth and must not be overwritten (docs/12 D-55, WO-2).
+    // `self` is the worker global; this is the same check pool.ts makes.
+    const nativeEncode = withEncodeBaseline(
+      await probeNativeEncodeFormats(),
+      typeof OffscreenCanvas !== 'undefined',
+    );
 
     // Real feature detection (docs/12 D-46): a browser that decodes AVIF for
     // free must not be routed through libavif's WASM decoder (ADR-004).

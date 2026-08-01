@@ -283,7 +283,7 @@ Every failure must map to one of these codes and produce a specific, actionable 
 |---|---|---|
 | `E_UNSUPPORTED_FORMAT` | Magic bytes match nothing supported | "We can't read {detected} files yet. Supported: …" |
 | `E_CORRUPT_FILE` | Decoder throws on valid-looking header | "This file appears to be damaged and couldn't be opened." |
-| `E_TOO_LARGE` | Estimated decoded bytes > device budget | "This image is {W}×{H} — too large for this device's memory. Try resizing first." |
+| `E_TOO_LARGE` | Decoded pixels > the device's hard ceiling (`06 §3.4`) | "This image is {W}×{H} — too large for this device's memory. Try resizing first." |
 | `E_OOM` | Allocation failure mid-process | "Ran out of memory. Close other tabs, or process fewer files at once." |
 | `E_TARGET_UNREACHABLE` | Target size unmet even at min quality + min scale | "Couldn't reach {target} without going below {W}×{H}. Best achieved: {actual}." |
 | `E_CODEC_LOAD_FAILED` | WASM fetch/instantiate failed | "Couldn't load the {format} engine. Check your connection and retry." |
