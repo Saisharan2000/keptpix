@@ -1,5 +1,16 @@
 # NoUpload — standing instructions
 
+## Rule 0 — meritocracy wins, otherwise the standard rule wins
+If there is a clearly better engineering answer, take it, even when it
+contradicts something below. "Clearly better" means you can show the evidence —
+a measurement, a failing case, a real user consequence — not that you prefer it.
+Absent that evidence, follow the documented rule exactly; a tie goes to the
+standard, never to improvisation.
+
+Overriding anything below is a DEVIATION: log it in `docs/12-deviations.md` with
+the reasoning and the evidence, and update the doc it contradicts in the same
+commit. The rule you broke stays in force for every other case.
+
 ## Non-negotiables
 1. NOTHING is ever uploaded. No fetch/XHR/WebSocket/beacon may carry user file
    data. If a task seems to need a server, stop and ask — do not improvise one.
