@@ -9,10 +9,12 @@
  * cannot do its job is precisely the doorway behaviour docs/09 §1.2 describes.
  */
 import type { APIRoute } from 'astro';
+import { SITE as SITE_URL } from '../content/site';
 import { publishedFormatPairRoutes } from '../content/formats';
 import { publishedSizePresetRoutes } from '../content/presets';
 
-const SITE = 'https://noupload.app';
+// Single source of truth — see src/core/site.ts (docs/12 D-63).
+const SITE = SITE_URL;
 
 interface Entry {
   path: string;

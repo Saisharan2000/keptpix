@@ -1850,6 +1850,53 @@ gate staying in the launch checklist permanently, not being retired once it
 passes.
 
 ---
+
+## 🔴 D-63 — The canonical URL was hardcoded, which would have made a validation deploy invisible to Google
+
+**Docs affected:** none — `09 §5` is unchanged; this makes it deployable anywhere
+**Milestone:** 8 — caught while planning the first deploy
+
+The production origin was hardcoded in **four** places: `astro.config.mjs`,
+`SeoHead.astro`'s canonical, `sitemap.xml.ts`, and `public/robots.txt`.
+
+Deploying that build to any other origin — a `*.pages.dev` validation
+deployment, a staging host — produces pages that each declare:
+
+```html
+<link rel="canonical" href="https://noupload.app/convert/heic-to-jpg">
+```
+
+**Google honours that.** It would crawl the deployment and then decline to
+index it, because every page says the real version lives somewhere else. The
+sitemap would list a different site's URLs and robots.txt would point crawlers
+at a different site's sitemap.
+
+**The failure mode is what makes this a 🔴.** Nothing errors. The site is up,
+every route returns 200, the build is green, and the traffic simply never
+arrives. For a product whose entire growth model is organic search, that is
+indistinguishable from "SEO takes a while" — and could have burned the whole
+validation window before anyone worked out why.
+
+**Fixed:** one source of truth in `content/site.ts`, read from `SITE_URL` at
+build time and defaulting to production, so the default build is byte-identical
+to before. `public/robots.txt` became `pages/robots.txt.ts` — as a static file
+its `Sitemap:` line could not follow the origin.
+
+```bash
+SITE_URL=https://noupload.pages.dev npm run build
+```
+
+Verified both ways: the default build still emits `noupload.app` canonicals,
+and a `SITE_URL` build is **fully self-referential** — canonical, `og:url`,
+sitemap and robots all agree, with zero remaining references to the other
+origin anywhere in `dist/`.
+
+**Placed in `content/` rather than `core/`** because `07 §2` grants `pages/`
+access to content but not core, and both new endpoints need it. Widening a
+layer boundary to place a single string was the worse trade — and the origin
+genuinely is site content, alongside `formats.ts` and `presets.ts`.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

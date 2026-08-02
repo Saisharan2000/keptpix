@@ -20,7 +20,10 @@ export const PREACT_ALIAS = {
 // ADR-003: no COOP/COEP headers are set anywhere — cross-origin isolation is
 // deliberately NOT enabled, so every WASM codec must work single-threaded.
 export default defineConfig({
-  site: 'https://noupload.app',
+  // Overridable so a validation deploy (e.g. *.pages.dev) emits canonicals and
+  // a sitemap pointing at ITSELF. A build whose canonical names a different
+  // origin is crawled and then declined for indexing, silently — docs/12 D-63.
+  site: process.env.SITE_URL ?? 'https://noupload.app',
   output: 'static',
   trailingSlash: 'never',
 
