@@ -25,11 +25,30 @@ import { detectFormat } from '../../src/core/detect';
 const UPRIGHT = { width: 3024, height: 4032 };
 
 /** iOS often supplies no MIME type at all, which is why detection matters. */
-const heicFile = (name = 'IMG_4650.HEIC'): Promise<File> =>
-  loadFixtureFile('IMG_4650.HEIC', name, '');
+/**
+ * The COMMITTED, scrubbed fixture first — so a fresh clone and CI exercise the
+ * flagship HEIC path instead of skipping it (docs/12 D-62). It is the same
+ * photo, run through scripts/scrub-fixture.mjs: GPS, the Apple MakerNote and
+ * its per-photo UUID, serials and timestamps removed; EXIF Orientation and the
+ * container irot transform deliberately KEPT, since those are what caught D-30
+ * and D-34.
+ *
+ * Falls back to the un-scrubbed original for anyone who still has it locally.
+ */
+const SCRUBBED = 'portrait-scrubbed.HEIC';
+const ORIGINAL = 'IMG_4650.HEIC';
+
+let fixtureName = SCRUBBED;
+
+const heicFile = (name = fixtureName): Promise<File> =>
+  loadFixtureFile(fixtureName, name, '');
 
 /** Git-ignored: real photos carry GPS. See tests/fixtures/images/README.md. */
-const available = await hasFixture('IMG_4650.HEIC');
+let available = await hasFixture(SCRUBBED);
+if (!available) {
+  available = await hasFixture(ORIGINAL);
+  if (available) fixtureName = ORIGINAL;
+}
 
 let controller: QueueController;
 

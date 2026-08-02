@@ -31,7 +31,32 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, copyFileSync } from 'node:fs';
 import { basename } from 'node:path';
 
-const [, , input, output] = process.argv;
+const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+const [input, output] = args;
+
+/**
+ * `--with-synthetic-metadata` re-adds GPS after scrubbing — with coordinates that
+ * are deliberately, verifiably NOT the photographer's.
+ *
+ * The point of a committed fixture is CI coverage, and one of the things worth
+ * covering is GPS DETECTION — the privacy demonstration in docs/02 §5, where
+ * the app shows someone the coordinates sitting inside their own photo. A
+ * fixture with no GPS cannot test that, and a fixture with REAL GPS cannot be
+ * published. Synthetic coordinates satisfy both.
+ *
+ * Greenwich Observatory, not (0, 0): Null Island is normalised away or treated
+ * as "absent" by enough tooling that it would test the wrong thing, and
+ * `hasGps` keys off presence rather than truthiness. This is a famous public
+ * landmark that is obviously nobody's home.
+ */
+const SYNTHETIC_GPS = { lat: 51.4778, latRef: 'N', lon: 0.0015, lonRef: 'W' };
+/**
+ * A capture timestamp is identifying too — it says when someone was somewhere.
+ * Stripped with everything else, then replaced with an obviously synthetic
+ * date so `dateTaken` extraction stays testable in CI.
+ */
+const SYNTHETIC_DATE = '2020:01:01 00:00:00';
+const withSynthetic = process.argv.includes('--with-synthetic-metadata');
 
 if (input === undefined || output === undefined) {
   console.error('usage: node scripts/scrub-fixture.mjs <in.HEIC> <out.HEIC>');
@@ -82,19 +107,112 @@ const REMOVE = [
   '-CreateDate=',
   '-ModifyDate=',
   '-SubSecDateTimeOriginal=',
+  /**
+   * The whole Apple MakerNote block.
+   *
+   * Not paranoia — the first run of this script left
+   * `[Apple] PhotoIdentifier: A35159F9-…` intact, a UUID that uniquely
+   * identifies the photo inside its owner's library. It was caught by dumping
+   * every surviving tag and grepping for identifiers, NOT by the script's own
+   * success message, which happily reported a clean scrub.
+   *
+   * Removing the block wholesale rather than naming PhotoIdentifier: Apple
+   * ships dozens of undocumented MakerNote fields and adds more each iOS
+   * release, so an allowlist of known-bad tags is a race this script cannot
+   * win. Orientation is unaffected — it lives in IFD0 and in the container's
+   * own irot/imir boxes, not in MakerNote.
+   */
+  '-MakerNotes:all=',
 ];
 
 exiftool([...REMOVE, '-overwrite_original', output]);
 
+if (withSynthetic) {
+  exiftool([
+    '-GPSLatitude=' + SYNTHETIC_GPS.lat,
+    '-GPSLatitudeRef=' + SYNTHETIC_GPS.latRef,
+    '-GPSLongitude=' + SYNTHETIC_GPS.lon,
+    '-GPSLongitudeRef=' + SYNTHETIC_GPS.lonRef,
+    '-DateTimeOriginal=' + SYNTHETIC_DATE,
+    '-CreateDate=' + SYNTHETIC_DATE,
+    '-overwrite_original',
+    output,
+  ]);
+  console.log(
+    'injected SYNTHETIC GPS (Greenwich Observatory) and date (' +
+      SYNTHETIC_DATE +
+      ') so CI can test metadata extraction',
+  );
+}
+
 // ── Verify, rather than trust ────────────────────────────────────────────
-const report = exiftool(['-s', '-GPSLatitude', '-GPSLongitude', '-Orientation', '-SerialNumber', output]);
-const remainingGps = /GPS(Latitude|Longitude)/.test(report);
-const keptOrientation = /Orientation/.test(report);
+/**
+ * Dump EVERY surviving tag and hunt for identifiers, rather than checking the
+ * handful of fields this script happens to know about.
+ *
+ * The narrow version of this check passed a file that still carried
+ * `[Apple] PhotoIdentifier`, a per-photo UUID. A scrubber that only inspects
+ * what it already removed cannot, by construction, discover what it missed.
+ */
+const all = exiftool(['-a', '-G1', '-s', output]);
+const IDENTIFYING = [
+  [/GPS(Latitude|Longitude|Position|Altitude)/i, 'GPS location'],
+  [/PhotoIdentifier|ImageUniqueID|ContentIdentifier|DocumentID|OriginalDocumentID/i, 'unique photo identifier'],
+  [/SerialNumber/i, 'device serial number'],
+  // Scoped to the EXIF/XMP groups on purpose. An unscoped /Copyright/ matches
+  // `[ICC_Profile] ProfileCopyright: Copyright Apple Inc., 2022` — a colour
+  // profile string present in every iPhone photo ever taken, which identifies
+  // Apple rather than the photographer. Flagging it made the script refuse a
+  // file that was genuinely clean.
+  [/\[(IFD0|ExifIFD|XMP[-\w]*)\][^\n]*\b(OwnerName|Artist|Copyright|Creator)\b/i, 'owner or author name'],
+  [/DateTimeOriginal|SubSecDateTimeOriginal/i, 'capture timestamp'],
+];
 
-console.log('\n' + report.trim());
+let checks = IDENTIFYING;
+if (withSynthetic) {
+  // GPS is expected — but prove it is the synthetic one. A real coordinate
+  // slipping through here is the exact failure this script exists to prevent,
+  // and "we meant to add GPS" must never become cover for leaving the real one.
+  // exiftool renders this as `GPSLatitude : 51 deg 28' 40.08"` — no space in
+  // the tag name, DMS in the value. Matching `GPS Latitude` instead failed a
+  // correctly-injected fixture, which is the right way round for a guard to
+  // be wrong.
+  const lat = /GPSLatitude\s*:\s*51 deg 28/.test(all);
+  if (!lat) {
+    console.error(
+      '\nFAILED — --with-synthetic-metadata was requested, but the GPS in the output' +
+        ' is not the synthetic coordinate:',
+    );
+    console.error(
+      all
+        .split('\n')
+        .filter((l) => /GPS/i.test(l))
+        .join('\n'),
+    );
+    process.exit(1);
+  }
+  // Same for the date: expected, but it must be the synthetic one.
+  if (!all.includes('2020:01:01')) {
+    console.error('\nFAILED — the capture timestamp is not the synthetic date.');
+    console.error(all.split('\n').filter((l) => /Date/i.test(l)).join('\n'));
+    process.exit(1);
+  }
+  checks = IDENTIFYING.filter(
+    ([, label]) => label !== 'GPS location' && label !== 'capture timestamp',
+  );
+}
 
-if (remainingGps) {
-  console.error('\nFAILED: GPS data survived the scrub. Not safe to commit.');
+const survivors = checks.filter(([pattern]) => pattern.test(all));
+const keptOrientation = /Orientation/.test(all);
+
+console.log('\n' + exiftool(['-s', '-FileType', '-Orientation', output]).trim());
+
+if (survivors.length > 0) {
+  console.error('\nFAILED — identifying data survived the scrub. NOT safe to commit:');
+  for (const [pattern, label] of survivors) {
+    const line = all.split('\n').find((l) => pattern.test(l));
+    console.error('  ' + label + ': ' + (line ?? '').trim());
+  }
   process.exit(1);
 }
 if (!keptOrientation) {

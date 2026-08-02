@@ -37,3 +37,18 @@ tests/fixtures/images/*.heic
 tests/fixtures/images/*.jpeg
 tests/fixtures/images/*.jpg
 tests/fixtures/images/*.png
+
+# EXCEPTION: files ending -scrubbed have been through scripts/scrub-fixture.mjs,
+# which strips GPS, the Apple MakerNote (including the per-photo PhotoIdentifier
+# UUID), serial numbers and capture timestamps, then FAILS unless it can prove
+# none survived. What it deliberately keeps is EXIF Orientation and the
+# container's irot transform — the two things that caught D-30 and D-34, and
+# without which the fixture would test nothing.
+#
+# Committing one lets a fresh clone and CI exercise the flagship HEIC path
+# instead of skipping it (docs/12 D-36, D-62).
+#
+# Anything matching this pattern is PUBLIC. Run the script, and check the photo
+# does not show a face or an identifiable place — the scrub removes metadata,
+# never image content.
+!tests/fixtures/images/*-scrubbed.HEIC

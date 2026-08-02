@@ -22,7 +22,14 @@ import { skipWithoutOffscreenCanvas } from './_capability';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const FIXTURE_HEIC = join(process.cwd(), 'tests/fixtures/images/IMG_4650.HEIC');
+/**
+ * Prefer the committed, scrubbed HEIC so this runs on a fresh clone and in CI
+ * (docs/12 D-62); fall back to the local original if someone still has it.
+ */
+const FIXTURE_DIR = join(process.cwd(), 'tests/fixtures/images');
+const FIXTURE_HEIC = existsSync(join(FIXTURE_DIR, 'portrait-scrubbed.HEIC'))
+  ? join(FIXTURE_DIR, 'portrait-scrubbed.HEIC')
+  : join(FIXTURE_DIR, 'IMG_4650.HEIC');
 
 interface StarRoute {
   slug: string;
