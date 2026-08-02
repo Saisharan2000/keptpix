@@ -61,7 +61,16 @@ export function summarise(views: readonly JobView[]): BatchSummary {
     if (job.finishedAt !== null) latest = Math.max(latest, job.finishedAt);
   }
 
-  const savedBytes = Math.max(0, totalInputBytes - totalOutputBytes);
+  /**
+   * SIGNED. Negative means the batch grew, which is a real and expected
+   * outcome converting from a more efficient format (HEIC → JPEG).
+   *
+   * This was `Math.max(0, ...)`, so a batch that grew reported "saved 0%" —
+   * the same dishonesty the per-file badge had. Clamping here hid the sign
+   * from every consumer at once, which is worse: the UI could not have told
+   * the truth even if it wanted to.
+   */
+  const savedBytes = totalInputBytes - totalOutputBytes;
   return {
     total: views.length,
     done,

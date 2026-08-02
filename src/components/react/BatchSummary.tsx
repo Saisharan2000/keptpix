@@ -33,7 +33,15 @@ export function BatchSummary({
         {summary.totalOutputBytes > 0 && (
           <p class="num m-0 text-sm text-text">
             {formatBytes(summary.totalInputBytes)} → {formatBytes(summary.totalOutputBytes)}{' '}
-            <span class="text-success">saved {summary.savedPercent.toFixed(1)}%</span>
+            {/* savedPercent is signed — a batch converting HEIC to JPEG
+                legitimately grows, and saying "saved 0%" would be a lie. */}
+            {summary.savedPercent >= 0 ? (
+              <span class="text-success">saved {summary.savedPercent.toFixed(1)}%</span>
+            ) : (
+              <span class="text-warning">
+                {Math.abs(summary.savedPercent).toFixed(1)}% larger
+              </span>
+            )}
           </p>
         )}
       </div>

@@ -136,10 +136,29 @@ export function FileCard({
               {formatBytes(source.sizeBytes)} → {formatBytes(job.result.sizeBytes)}
             </p>
             <p class="num m-0 text-xs text-text-muted">
-              <span class="text-success">
-                {Math.max(0, Math.round((1 - job.result.sizeBytes / source.sizeBytes) * 100))}%
-                ↓
-              </span>
+              {/*
+                Report growth honestly. This used to be
+                `Math.max(0, ...)` rendered in success green with a ↓ — so a
+                HEIC that legitimately grew 55% on the way to JPEG displayed
+                "0% ↓". Found on a real iPhone during the launch-gate test.
+
+                HEIC→JPEG growing the file is EXPECTED, not a failure: HEVC
+                intra-coding is roughly twice as efficient as JPEG, so the same
+                picture costs more bytes as a JPEG. The defect was claiming a
+                reduction that did not happen, in the colour reserved for wins.
+              */}
+              {job.result.sizeBytes <= source.sizeBytes ? (
+                <span class="text-success">
+                  {Math.round((1 - job.result.sizeBytes / source.sizeBytes) * 100)}% ↓
+                </span>
+              ) : (
+                <span
+                  class="text-warning"
+                  title="Expected when converting from a more efficient format — HEIC packs the same picture into fewer bytes than JPEG can."
+                >
+                  {Math.round((job.result.sizeBytes / source.sizeBytes - 1) * 100)}% ↑
+                </span>
+              )}
               {job.result.qualityUsed !== null && ' · q' + job.result.qualityUsed}
               {' · ' + job.result.dimensions.width + '×' + job.result.dimensions.height}
             </p>

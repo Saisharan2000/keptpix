@@ -409,6 +409,8 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
         <div class="fixed inset-y-0 right-0 z-40 flex max-w-full">
           <MetadataPanel
             filename={metadataTarget.name}
+            detectedFormat={metadataTarget.detectedFormat}
+            declaredMime={metadataTarget.declaredMime}
             metadata={metadataTarget.metadata}
             // metadata is extracted synchronously during ingestFiles (D-33),
             // so by the time a card exists the read has already happened —

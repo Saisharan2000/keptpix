@@ -1802,6 +1802,54 @@ that would look fine in a screenshot: unrendered HTML entities, mojibake, and
 `undefined` / `[object Object]` / `NaN` leaking into copy.
 
 ---
+
+## 🔴 D-61 — The UI reported "0% ↓" for a file that grew by half. Found on a real iPhone, first run
+
+**Docs affected:** `05 §4` (`BatchSummary.savedBytes` documented as SIGNED)
+**Milestone:** 8 — real-device launch-gate testing
+
+First real-device test of the flagship route, on an actual iPhone over LAN: a
+**2.2 MB HEIC converted to a 3.4 MB JPG**, and the card reported
+**`0% ↓` in success green**.
+
+**The growth is not the bug.** HEIC uses HEVC intra-frame coding and is roughly
+twice as efficient as JPEG, so the same photo genuinely costs more bytes as a
+JPEG. A 2 MB HEIC becoming a 3.5 MB JPG is correct behaviour and the expected
+trade for universal compatibility.
+
+**The bug was the app claiming a reduction that did not happen**, in the colour
+reserved for wins. Two clamps, both silently turning growth into "zero saved":
+
+| Location | Was | Effect |
+|---|---|---|
+| `FileCard` | `Math.max(0, 1 - out/in)` rendered `text-success` with `↓` | 55% growth displayed as `0% ↓` |
+| `selectors.summarise` | `savedBytes = Math.max(0, in - out)` | whole batch reported `saved 0%` |
+
+The `summarise` one was the worse of the two: clamping at the selector meant
+**no consumer could tell the truth even if it wanted to** — the sign was gone
+before any component saw it.
+
+**Fixed:** `savedBytes`/`savedPercent` are now SIGNED, documented as such in
+`05 §4` and `core/types.ts`, and both surfaces render growth explicitly —
+`+55% ↑` and `54.5% larger`, in warning rather than success, with a tooltip
+explaining that converting from a more efficient format is expected to grow the
+file. Locked in by `tests/unit/selectors.test.ts`, which asserts the specific
+lie ("saved 0%") can no longer be produced.
+
+**Content gap closed in the same pass.** `webp-to-jpg` already answered "Why is
+the JPG bigger than the WebP I started with?" — the identical question was
+missing from `heic-to-jpg`, the flagship route, where it will surprise far more
+people. Added, with the target-size mode offered as the remedy for anyone who
+needs the output under a specific limit.
+
+**Worth noting how this was caught.** 331 unit and integration tests, 334 e2e
+across four engines, and none of them looked at what the number *said* — they
+asserted conversions succeeded, not that the reported saving was honest. It
+took one real photo on one real phone. That is an argument for the real-device
+gate staying in the launch checklist permanently, not being retired once it
+passes.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

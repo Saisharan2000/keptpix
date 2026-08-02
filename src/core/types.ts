@@ -210,7 +210,15 @@ export interface BatchSummary {
   failed: number;
   totalInputBytes: number;
   totalOutputBytes: number;
+  /**
+   * SIGNED: input minus output. NEGATIVE means the batch grew, which is a
+   * real and expected outcome when converting from a more efficient format
+   * (HEIC → JPEG). Callers must not assume it is positive — it was clamped to
+   * zero once, and the result was a UI that reported "saved 0%" for a batch
+   * that had grown by half. See docs/12 D-61.
+   */
   savedBytes: number;
+  /** Signed, same convention as savedBytes. */
   savedPercent: number;
   elapsedMs: number;
 }

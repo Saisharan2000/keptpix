@@ -84,6 +84,10 @@ EXIF orientation is applied to the pixels before encoding, so photos do not come
       a: 'Yes, a little. HEIC is already lossy, so re-encoding to JPEG is a second lossy pass. At quality 85 and above the difference is not visible at normal viewing sizes. If you intend to edit the photo afterwards, convert to PNG instead and accept a much larger file — every additional lossy save compounds the loss.',
     },
     {
+      q: 'Why is my JPG bigger than the HEIC I started with?',
+      a: 'Because HEIC compresses better — that is the whole reason Apple adopted it. HEIC uses HEVC intra-frame coding, which is roughly twice as efficient as JPEG, so the same photo at the same visible quality typically comes out 1.5-2x larger as a JPEG. A 2 MB HEIC becoming a 3.5 MB JPG is normal, not a fault. You are trading file size for a format every device and website can actually open. If the result has to fit a limit — an upload form, an email attachment — switch to target-size mode and set the exact size you need.',
+    },
+    {
       q: 'Will my location data be removed?',
       a: 'Yes, by default. iPhone photos carry GPS coordinates accurate to within a few metres, along with the camera model and the exact capture time. All of it is stripped unless you turn stripping off. Orientation is the one exception: it is applied to the pixels first so the image stays the right way up, then discarded.',
     },

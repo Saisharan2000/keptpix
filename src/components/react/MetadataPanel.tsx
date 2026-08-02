@@ -1,9 +1,20 @@
-import type { ImageMetadata } from '../../core/types';
+import type { ImageMetadata, InputFormat } from '../../core/types';
 import { Button } from './primitives';
 
 interface Props {
   /** Filename the metadata belongs to — the panel is per-file. */
   filename: string;
+  /**
+   * Format detected from MAGIC BYTES, never the extension (docs/06 §3.2).
+   *
+   * Surfaced because iOS silently transcodes HEIC to JPEG when handing a photo
+   * to a web page from the Photo Library — so a user testing "HEIC support" on
+   * an iPhone can watch a conversion succeed without libheif ever running. The
+   * extension and the filename both lie in that case; this does not.
+   */
+  detectedFormat: InputFormat;
+  /** What the browser CLAIMED the type was, for the same comparison. */
+  declaredMime: string;
   metadata: ImageMetadata | null;
   /** True once metadata has actually been read, so "none" is distinguishable
    *  from "not read yet". */
@@ -22,7 +33,21 @@ interface Props {
  * privacy demonstration: showing someone the coordinates sitting in their own
  * photo is more convincing than any promise about what gets uploaded.
  */
-export function MetadataPanel({ filename, metadata, loaded, onClose }: Props) {
+export function MetadataPanel({
+  filename,
+  detectedFormat,
+  declaredMime,
+  metadata,
+  loaded,
+  onClose,
+}: Props) {
+  // e.g. picked a .HEIC but the bytes are JPEG — iOS transcoding, or a
+  // mislabelled file. Worth showing rather than silently trusting either.
+  const claimed = declaredMime.replace(/^image\//, '').toLowerCase();
+  const mismatch = claimed.length > 0 && claimed !== detectedFormat && !(
+    (detectedFormat === 'jpeg' && claimed === 'jpg')
+  );
+
   const rows: Array<[string, string]> =
     metadata === null
       ? []
@@ -54,6 +79,31 @@ export function MetadataPanel({ filename, metadata, loaded, onClose }: Props) {
         {loaded && metadata === null && (
           <p class="m-0">No metadata could be read from this file.</p>
         )}
+
+        {/*
+          Format leads, above even GPS, while the iPhone launch gate is being
+          run: it is the only thing on screen that can tell you whether the
+          codec path you think you are testing actually ran.
+        */}
+        <div
+          class={
+            'mb-4 rounded-md border p-3 ' +
+            (mismatch ? 'border-warning bg-warning-subtle' : 'border-border bg-bg-subtle')
+          }
+        >
+          <p class="m-0 text-sm font-semibold text-text">
+            Detected format: <span class="num uppercase">{detectedFormat}</span>
+          </p>
+          <p class="m-0 mt-1 text-xs">
+            {mismatch
+              ? 'The browser called this "' +
+                declaredMime +
+                '", but the actual bytes are ' +
+                detectedFormat.toUpperCase() +
+                '. Read from magic bytes, never the extension — so this is what really gets decoded.'
+              : 'Read from the file’s magic bytes, not its name or extension.'}
+          </p>
+        </div>
 
         {loaded && metadata !== null && (
           <>
