@@ -1,0 +1,36 @@
+# Cloudflare Pages headers.
+#
+# DELIBERATELY ABSENT: Cross-Origin-Opener-Policy / Cross-Origin-Embedder-Policy.
+# ADR-003 refuses cross-origin isolation on purpose, to keep OAuth and payment
+# popups working. Adding them here would silently switch every WASM codec onto a
+# multi-threaded path this app has never tested (docs/12 D-48) and unfreeze the
+# heap counter the perf suite deliberately treats as unreliable (D-45). If a
+# future change needs SharedArrayBuffer, that is an ADR revision, not a header.
+
+/sw.js
+  # The service worker must ALWAYS be revalidated. A cached sw.js pins users to
+  # whatever app version it was compiled against — and since the precache
+  # manifest is baked into its bytes (docs/12 D-52), a stale worker keeps
+  # serving a stale shell offline. Browsers cap SW script caching at 24h anyway;
+  # this makes it immediate rather than relying on that ceiling.
+  Cache-Control: public, max-age=0, must-revalidate
+  Service-Worker-Allowed: /
+
+/precache-manifest.json
+  # Read by tooling and diagnostics, never by the running worker (the manifest
+  # is compiled in). No reason to serve a stale copy.
+  Cache-Control: public, max-age=0, must-revalidate
+
+/_astro/*
+  # Fingerprinted by Astro — the filename changes whenever the bytes do, so
+  # these are safe to cache forever. This is where the WASM codecs live too.
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  # Sensible baseline for the HTML routes. No Content-Security-Policy is set
+  # here: the app is static and same-origin by construction, and the privacy
+  # suite asserts that as a release gate (docs/06 §5) rather than trusting a
+  # header. A CSP would be belt-and-braces, not the mechanism.
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY

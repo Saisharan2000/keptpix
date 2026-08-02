@@ -10,7 +10,8 @@
  * notice there is a new version to install — see the comment in sw.ts.
  */
 import esbuild from 'esbuild';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const ROOT = process.cwd();
@@ -42,6 +43,20 @@ async function main() {
   }
 
   await writeFile(OUT, withManifest);
+
+  /**
+   * Astro copies public/ verbatim, so the TypeScript SOURCE of the worker ends
+   * up deployed next to the compiled output. Browsers never execute it, but
+   * shipping it means every visitor's CDN edge stores a file that exists only
+   * to be compiled — and a reader hitting /sw.ts could reasonably think that is
+   * what runs. Removed once the real sw.js has been written.
+   */
+  const strayTs = path.join(ROOT, 'dist', 'sw.ts');
+  if (existsSync(strayTs)) {
+    await rm(strayTs);
+    console.log('removed dist/sw.ts (source, not shipped)');
+  }
+
   console.log(`dist/sw.js: ${(withManifest.length / 1024).toFixed(1)} KB, manifest ${manifest.version}`);
 }
 
