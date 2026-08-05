@@ -23,7 +23,23 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      # `npm install`, not `npm ci`, and this is a deliberate trade.
+      #
+      # `npm ci` fails here on a lockfile that is perfectly valid locally:
+      # `@tailwindcss/oxide-wasm32-wasi` (Tailwind's WASM fallback) records its
+      # `@emnapi/*` transitive deps at positions that differ between platforms,
+      # so a lock generated on Windows cannot satisfy a clean install on Linux.
+      # Regenerating it on Windows just inverts the problem — the two runs
+      # demanded HOISTED and NESTED positions respectively, at different
+      # versions. It is a known npm issue with that package, not a real
+      # dependency mismatch.
+      #
+      # Cost accepted: `npm install` may resolve a newer in-range version than
+      # the lock pins, so CI is not byte-identical to a local install. For a
+      # solo project with no reproducible-build requirement that is a smaller
+      # problem than a permanently red pipeline. Revisit if the lockfile ever
+      # needs to be authoritative — the fix then is to generate it on Linux.
+      - run: npm install --no-audit --no-fund
 
       # NOT optional (WO-3, docs/12 D-55). Four browser projects are configured;
       # for months only Chromium's binary was installed locally, so the suite
