@@ -13,7 +13,17 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 was not enough: the first full run was CANCELLED at 30m27s with E2E
+    # still going. Everything before it (typecheck, lint, 331 unit+integration,
+    # build, budgets) finishes in ~12 min; the e2e job runs ~90 tests across
+    # FOUR engines and CI forces workers:1, so it needs most of the rest.
+    #
+    # Raised rather than sharded per browser on purpose. A matrix job per engine
+    # would be faster, but the project-coverage reporter (WO-3) disables itself
+    # when only one project is configured — so sharding would silently switch
+    # off the very guard that exists to catch a missing engine (D-55). One job
+    # keeps that check meaningful.
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
