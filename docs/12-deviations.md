@@ -2004,6 +2004,74 @@ local suite models Cloudflare's URL handling, which is a real gap in what
 "tests pass" can tell you about a static host's behaviour.
 
 ---
+
+## 🔴 D-66 — Cloudflare injected an analytics beacon into production. The app now refuses it at the browser, not the dashboard
+
+**Docs affected:** `04 §1` (asset-origin policy — now enforced by a CSP, not only asserted), `06 §5` (assertion (a) upheld against an edge-injected script)
+**Milestone:** 8 — found by the first run of the privacy gate against production
+
+`privacy.spec.ts` had never run against a deployed origin, because its base URL
+was hardcoded to localhost. The first run against `keptpix.com` failed:
+
+```
+GET  https://static.cloudflareinsights.com/beacon.min.js   ← third-party script
+POST https://keptpix.com/cdn-cgi/rum            941 bytes   ← telemetry
+```
+
+**This is the exact beacon D-56 decided not to ship.** Cloudflare added it
+anyway, at the edge, on every HTML response. It is not in this repo — `grep`
+across `dist/` finds nothing, and `curl` does not even see it, because the
+injection is conditional on the request looking like a browser. It breaks
+**two** assertions at once: (a) zero requests with a non-empty body, and (c)
+same-origin only.
+
+**Nobody enabled it.** The account's only Web Analytics entry is a JS-snippet
+install for an unrelated pre-existing domain; the Pages project exposes no
+Web Analytics toggle at all. Cloudflare turns RUM on by default for proxied
+zones, so the dashboard offered nothing obvious to switch off.
+
+**Fix: a Content-Security-Policy in `_headers`, and this is a reversal.** That
+file previously said a CSP would be *"belt-and-braces, not the mechanism"*, on
+the reasoning that the app is same-origin by construction and the privacy suite
+already asserts it. That reasoning had a hole: **"same-origin by construction"
+is only true of code we wrote.** It says nothing about what the host adds on the
+way out. So the CSP IS the mechanism — `script-src 'self'` means the browser
+refuses the beacon whatever the dashboard says, and a future Cloudflare default
+cannot quietly reintroduce it.
+
+**Verified, not assumed** — and verifying it needed new tooling, because
+`astro preview` ignores `_headers` entirely. `scripts/serve-with-headers.mjs`
+serves `dist/` the way Pages does: applying `_headers` and resolving
+extensionless URLs to `.html`.
+
+| Check | Result |
+|---|---|
+| Full chromium e2e under the CSP | **95/95 pass** — WASM decode, workers, islands, service worker, a11y across 22 routes |
+| Injecting the beacon script by hand | **BLOCKED**, with a CSP violation naming `script-src 'self'` |
+
+Shipping an untested CSP is how you discover in production that you have
+blocked your own WASM codecs, so the first row matters as much as the second.
+
+**Three things this says about the earlier work:**
+
+- **The 7-second settle window from D-56 is what caught it.** That was widened
+  against a *hypothetical* beacon, because a real one fired at ~5 s while the
+  test finished at ~3 s. It just caught a real one nobody installed. Without it
+  this run goes green and the site is submitted to Search Console carrying a
+  live privacy violation.
+- **D-56's decision was right for a reason stronger than the one given.** It
+  refused this beacon on principle; production then added it by default. The
+  principle turned out to also need enforcement.
+- **The local gate cannot see the host.** 331 unit and integration tests, 95
+  e2e, all green, on a site that was loading third-party script and POSTing
+  941 bytes per pageview. D-65 was the same shape. `serve-with-headers.mjs`
+  closes part of that gap; the rest is why the production gate exists.
+
+**Still worth turning the toggle off** if it can be found — a blocked request
+is a wasted round trip and a console error on every visit. But the guarantee no
+longer depends on finding it.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

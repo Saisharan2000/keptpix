@@ -27,10 +27,37 @@
   Cache-Control: public, max-age=31536000, immutable
 
 /*
-  # Sensible baseline for the HTML routes. No Content-Security-Policy is set
-  # here: the app is static and same-origin by construction, and the privacy
-  # suite asserts that as a release gate (docs/06 §5) rather than trusting a
-  # header. A CSP would be belt-and-braces, not the mechanism.
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
+
+  # ── Content-Security-Policy ────────────────────────────────────────────
+  #
+  # This file previously said a CSP would be "belt-and-braces, not the
+  # mechanism", on the reasoning that the app is same-origin by construction
+  # and the privacy suite already asserts it. That reasoning was wrong in one
+  # specific way, and production proved it (docs/12 D-66):
+  #
+  #   Cloudflare injected `static.cloudflareinsights.com/beacon.min.js` into
+  #   every HTML response at the edge, which then POSTed ~940 bytes per
+  #   pageview to /cdn-cgi/rum. None of it is in this repo — `grep` across
+  #   dist/ finds nothing. "Same-origin by construction" is only true of code
+  #   we wrote; it says nothing about what the host adds on the way out.
+  #
+  # So the CSP IS the mechanism. `script-src 'self'` means a browser refuses
+  # the injected beacon whatever the dashboard says, and a future Cloudflare
+  # default cannot quietly reintroduce it.
+  #
+  # Each directive below is the minimum this app actually needs:
+  #   'unsafe-inline'      3 inline scripts — theme bootstrap (must run before
+  #                        first paint), SW registration, install-prompt capture.
+  #                        Does NOT permit external hosts, so the beacon stays
+  #                        blocked.
+  #   'wasm-unsafe-eval'   WebAssembly.compile for the libheif/avif/mozjpeg/
+  #                        oxipng codecs. Without it every WASM decode fails.
+  #   worker-src blob:     the image worker, and Vite's worker plumbing.
+  #   img-src blob: data:  thumbnails and results are object URLs; the AVIF
+  #                        capability probe is a data: URI.
+  #   connect-src 'self'   fetching WASM binaries. No remote origin — which is
+  #                        what stops the beacon's POST even if a script ran.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'

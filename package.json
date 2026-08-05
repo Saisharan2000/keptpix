@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "typecheck": "astro sync && tsc --noEmit",
     "test:integration": "vitest run --project integration",
-    "test:smoke": "playwright test --grep @smoke"
+    "test:smoke": "playwright test --grep @smoke",
+    "serve:headers": "node scripts/serve-with-headers.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",

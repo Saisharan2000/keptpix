@@ -33,7 +33,7 @@ async function findHtmlFiles(dir) {
 }
 
 /**
- * dist/about.html -> /about ; dist/index.html -> / ; dist/404.html -> /404.html
+ * dist/about.html -> /about ; dist/index.html -> / ; dist/404.html -> /404
  *
  * Handles BOTH Astro build formats. The project uses `format: 'file'` so that
  * served URLs match `trailingSlash: 'never'` (docs/12 D-65), but the
@@ -47,7 +47,11 @@ async function findHtmlFiles(dir) {
 function htmlFileToRoute(distRelativePath) {
   const posix = distRelativePath.split(path.sep).join('/');
   if (posix === 'index.html') return '/';
-  if (posix === '404.html') return '/404.html';
+  // Cloudflare Pages serves this at /404 and 308-redirects /404.html to it.
+  // Listing the .html form meant `cache.add` fetched a redirect, and cache.put
+  // rejects redirected responses — so the offline 404 page was silently never
+  // precached, swallowed by the loop's catch (docs/12 D-65).
+  if (posix === '404.html') return '/404';
   if (posix.endsWith('/index.html')) return '/' + posix.slice(0, -'/index.html'.length);
   if (posix.endsWith('.html')) return '/' + posix.slice(0, -'.html'.length);
   return '/' + posix;
