@@ -156,7 +156,11 @@ test.describe('service worker (docs/10 M8, docs/12 D-52)', () => {
       await page.reload();
       await expect(page.locator('h1')).toBeVisible();
     } finally {
-      await context.setOffline(false);
+      // Tolerant on purpose: when the test above fails or times out, the
+      // context may already be tearing down, and a throw here replaces the
+      // real failure with a confusing "Target page, context or browser has
+      // been closed" — which is what CI reported instead of the actual cause.
+      await context.setOffline(false).catch(() => undefined);
     }
   });
 });

@@ -2153,6 +2153,83 @@ present after, and that no Chromium-style Install button appears alongside it.
 
 Cost: baseline island 33.8 → **34.1 KB gz**, 57% of the `04 §7` budget.
 ---
+
+## 🟡 D-68 — iOS cannot be automated from Windows, so the device tests itself instead
+
+**Docs affected:** none — new diagnostic surface at `/selftest`, plus CI fixes
+**Milestone:** 8 — response to D-61 and D-67 both being found only by hand
+
+D-61 and D-67 were both found by tapping through a real iPhone, and both were
+invisible to 331 unit/integration tests and 96 e2e across four engines. The
+obvious response is to automate iOS. It is not available from this machine.
+
+| Approach | Windows? | Why |
+|---|---|---|
+| Appium + XCUITest | ✗ | driver requires the Xcode toolchain |
+| iOS Simulator | ✗ | Apple hardware only |
+| Playwright → real iPhone | ✗ | unsupported; its "webkit" is a build, not Safari |
+| Anthropic's Simulator integration | ✗ | real, but macOS only — it drives your Mac's Simulator, it does not supply one |
+| `ios-webkit-debug-proxy` | ~ | runs on Windows, but needs `usbmuxd` (iTunes install, admin), a hand-built binary, **and has no Input domain — you cannot tap** |
+
+**The last row is what reframed it.** Tapping was never the requirement: this
+project's own e2e suite drives conversions by assigning `input.files` and
+dispatching events in JS, not by clicking. What is actually needed on the device
+is a **JS execution context** — and the cheapest one is the page itself.
+
+**So `/selftest` runs the checks on-device.** Open it on any phone; it runs
+automatically and reports. No cable, no proxy, no admin, no macOS — and it
+executes in the REAL engine rather than a lookalike, which is the whole point.
+Playwright's WebKit has no `OffscreenCanvas` at all (D-55), so it could never
+have caught D-67 no matter how many engines were added.
+
+It checks exactly what real devices found and automation missed: engine
+capability (D-55), a real PNG→JPEG conversion through the actual pipeline, that
+the size delta is reported with the correct **sign** (D-61), that an install path
+exists for this platform (D-67), and that the offline shell is precached.
+
+**What it deliberately does NOT check:** HEIC decode and EXIF orientation. Those
+need a genuine camera file, and iOS hands a web page a transcoded JPEG when you
+pick from the Photo Library rather than Files. The page says so and points at the
+one manual step instead of pretending to cover it.
+
+Not indexed, three ways: `noindex`, absent from the sitemap, `Disallow` in
+robots.txt. It ships to production rather than hiding behind a dev flag because
+the entire value is checking the REAL deployed build on a REAL device.
+
+**Cost, recorded rather than waved through:** adding the route pushed the tool
+routes' baseline from 34.1 to **34.9 KB gz** — chunk splitting reshuffled, so a
+diagnostic page made the product pages 0.8 KB heavier. 58% of the `04 §7` budget,
+accepted, but it is the D-38 pattern and worth watching.
+
+### The same push finally ran CI, which found three more things
+
+The workflow built in WO-3 had never executed — no git remote. Pushing to GitHub
+ran it, and it failed three times before going green. Every failure was real and
+none was reproducible locally:
+
+1. **`npm ci` could not install the lockfile.** Valid on Windows, invalid on
+   Linux: `@tailwindcss/oxide-wasm32-wasi` records its `@emnapi/*` transitive
+   deps at positions that differ per platform. The first run wanted them
+   hoisted; regenerating with `--package-lock-only` made the second want them
+   nested, at different versions. A known npm issue with that package — which is
+   Tailwind's WASM fallback, dead weight on both platforms we build on, but
+   transitive and optional so it cannot be removed. CI now uses `npm install`,
+   with the trade documented in the workflow: not byte-identical to a local
+   install, which beats a permanently red pipeline.
+2. **A real race in `batch.spec.ts`.** It waited for "48 done" then immediately
+   asserted "2 failed" — but "48 done" only means the 48 GOOD files finished.
+   CI reported `48 done · 1 running · 1 failed`: the 90 MP decode was still in
+   flight. It now waits for `0 running` first. Passed locally every time; only
+   slower hardware exposed it.
+3. **`setOffline(false)` in a `finally` masked real failures.** When the test
+   above it timed out, the context was already tearing down, so the cleanup threw
+   "Target page, context or browser has been closed" — replacing the actual
+   cause with a confusing one. Now tolerant.
+
+Worth stating plainly: **CI earned its keep on its first three runs**, and every
+one of those defects had been sitting in a suite that was green on this laptop.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

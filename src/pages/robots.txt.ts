@@ -25,6 +25,11 @@ const BODY = `# docs/09-seo-content-plan.md §5 — AI crawlers are explicitly w
 User-agent: *
 Allow: /
 
+# Diagnostics, not content (docs/12 D-68). Also carries a noindex meta tag and
+# is absent from the sitemap — three independent signals, because an indexed
+# self-test page would be a doorway result for nothing.
+Disallow: /selftest
+
 User-agent: GPTBot
 Allow: /
 User-agent: OAI-SearchBot

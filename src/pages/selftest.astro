@@ -1,0 +1,49 @@
+---
+/**
+ * src/pages/selftest.astro  ->  /selftest
+ *
+ * On-device verification, openable on any phone (docs/12 D-68).
+ *
+ * DELIBERATELY NOT INDEXED: `noindex` below, absent from sitemap.xml.ts, and
+ * disallowed in robots.txt.ts. It is a diagnostic surface, not content — an
+ * indexed self-test page would be a doorway result for nothing.
+ *
+ * It ships to production on purpose rather than living behind a dev flag: the
+ * whole point is checking the REAL deployed build on a REAL device, which a
+ * localhost-only page cannot do. It carries its own island, so it adds nothing
+ * to any tool route's hydration budget.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+import SelfTest from '../components/react/SelfTest';
+---
+
+<ContentLayout
+  title="Self test — KeptPix"
+  description="On-device verification of engine capabilities, conversion, and install path."
+  path="/selftest"
+  h1="Self test"
+  lede="Runs automatically. Open this page on any device to check the deployed build actually works there."
+  noindex={true}
+>
+  <SelfTest client:load />
+
+  <section aria-labelledby="manual-heading" class="mt-8">
+    <h2 id="manual-heading" class="m-0 text-xl font-semibold text-text">
+      The one thing this cannot check for you
+    </h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      Everything above runs without a real photo. HEIC decode and EXIF
+      orientation cannot — they need a genuine camera file, and iOS hands a web
+      page a transcoded JPEG when you pick from the Photo Library rather than
+      from Files.
+    </p>
+    <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+      So for that one check: open
+      <a href="/convert/heic-to-jpg" class="font-medium text-accent">HEIC to JPG</a>, pick a real
+      HEIC via <strong class="font-medium text-text">Browse</strong> (not Photo Library), and tap
+      <strong class="font-medium text-text">Info</strong> on the card. It must say
+      <span class="num">Detected format: HEIC</span>. If it says JPEG, iOS converted the file on the
+      way in and nothing after that point is testing what you think it is.
+    </p>
+  </section>
+</ContentLayout>

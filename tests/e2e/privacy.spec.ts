@@ -280,7 +280,11 @@ test.describe('privacy — nothing is ever uploaded', () => {
       // demonstration that nothing is being sent anywhere.
       await expect(page.getByRole('status').first()).toContainText(/[1-9]\d* done/);
     } finally {
-      await context.setOffline(false);
+      // Tolerant on purpose: when the test above fails or times out, the
+      // context may already be tearing down, and a throw here replaces the
+      // real failure with a confusing "Target page, context or browser has
+      // been closed" — which is what CI reported instead of the actual cause.
+      await context.setOffline(false).catch(() => undefined);
     }
   });
 

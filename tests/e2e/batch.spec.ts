@@ -132,6 +132,20 @@ test.describe('batch of 50: one corrupt, one oversized', () => {
       new RegExp(GOOD_COUNT + ' done'),
       { timeout: 120_000 },
     );
+
+    /**
+     * Wait for NOTHING to be running before counting failures.
+     *
+     * "48 done" does not mean the batch is finished — it means the 48 good
+     * files are. The two bad ones can still be in flight, and the oversized
+     * 90 MP decode is by far the slowest item here. Asserting failures
+     * immediately after the successes passed locally and failed on CI's
+     * single-worker runner with "48 done · 1 running · 1 failed": a real race
+     * in the test, surfaced only by slower hardware.
+     */
+    await expect(page.getByRole('status').first()).toContainText('0 running', {
+      timeout: 120_000,
+    });
     await expect(page.getByRole('status').first()).toContainText('2 failed');
 
     // Both failures are named, specific, and offer a next action — never a
