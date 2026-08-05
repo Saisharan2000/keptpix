@@ -5,7 +5,7 @@
  *
  * An ENDPOINT rather than a static file in public/, for one reason: the
  * `Sitemap:` line has to name the origin this build is actually deployed to.
- * As a static file it hardcoded `https://noupload.app`, so any other
+ * As a static file it hardcoded a single origin, so any other
  * deployment pointed crawlers at a different site's sitemap — see docs/12 D-63,
  * where the same hardcoding in the canonical tags would have had Google decline
  * to index a validation deployment entirely.

@@ -11,8 +11,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 function getStashedEvent(): BeforeInstallPromptEvent | null {
-  const w = window as unknown as { __noupload_installEvent?: BeforeInstallPromptEvent | null };
-  return w.__noupload_installEvent ?? null;
+  const w = window as unknown as { __keptpix_installEvent?: BeforeInstallPromptEvent | null };
+  return w.__keptpix_installEvent ?? null;
 }
 
 interface Props {
@@ -35,15 +35,15 @@ export function InstallPrompt({ eligible }: Props) {
   useEffect(() => {
     setEvent(getStashedEvent());
     const onAvailable = (): void => setEvent(getStashedEvent());
-    window.addEventListener('noupload:install-available', onAvailable);
-    return () => window.removeEventListener('noupload:install-available', onAvailable);
+    window.addEventListener('keptpix:install-available', onAvailable);
+    return () => window.removeEventListener('keptpix:install-available', onAvailable);
   }, []);
 
   if (!eligible || event === null) return null;
 
   return (
     <div class="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3">
-      <p class="m-0 text-xs text-text-muted">Install NoUpload for faster access next time.</p>
+      <p class="m-0 text-xs text-text-muted">Install KeptPix for faster access next time.</p>
       <Button
         size="sm"
         variant="secondary"

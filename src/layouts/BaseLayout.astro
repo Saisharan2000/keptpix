@@ -56,7 +56,7 @@ const {
         const root = document.documentElement;
         let pref = 'system';
         try {
-          pref = localStorage.getItem('noupload-theme') || 'system';
+          pref = localStorage.getItem('keptpix-theme') || 'system';
         } catch {
           pref = 'system';
         }
@@ -123,7 +123,7 @@ const {
           const currentPref = root.getAttribute('data-theme-pref') || 'system';
           const next = order[(order.indexOf(currentPref) + 1) % order.length];
           try {
-            localStorage.setItem('noupload-theme', next);
+            localStorage.setItem('keptpix-theme', next);
           } catch {
             /* private browsing: the choice just will not persist */
           }
@@ -161,12 +161,12 @@ const {
       // preventDefault() below exists to stop.
       window.addEventListener('beforeinstallprompt', (event) => {
         event.preventDefault();
-        window.__noupload_installEvent = event;
-        window.dispatchEvent(new CustomEvent('noupload:install-available'));
+        window.__keptpix_installEvent = event;
+        window.dispatchEvent(new CustomEvent('keptpix:install-available'));
       });
       window.addEventListener('appinstalled', () => {
-        window.__noupload_installEvent = null;
-        window.dispatchEvent(new CustomEvent('noupload:install-available'));
+        window.__keptpix_installEvent = null;
+        window.dispatchEvent(new CustomEvent('keptpix:install-available'));
       });
     </script>
   </body>

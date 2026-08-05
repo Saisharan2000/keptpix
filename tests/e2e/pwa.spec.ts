@@ -49,7 +49,7 @@ async function addImages(page: Page, count: number): Promise<void> {
 async function shellCacheEntries(page: Page): Promise<string[] | null> {
   return page.evaluate(async () => {
     const names = await caches.keys();
-    const shellName = names.find((n) => n.startsWith('noupload-shell-'));
+    const shellName = names.find((n) => n.startsWith('keptpix-shell-'));
     if (shellName === undefined) return null;
     const cache = await caches.open(shellName);
     return (await cache.keys()).map((r) => new URL(r.url).pathname);

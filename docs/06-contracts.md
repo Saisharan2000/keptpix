@@ -388,14 +388,14 @@ The **only** sanctioned network endpoint, and it never touches user files. Deplo
 ```yaml
 openapi: 3.1.0
 info:
-  title: NoUpload License Service
+  title: KeptPix License Service
   version: 1.0.0
   description: >
     Issues Ed25519-signed offline license tokens on a verified purchase webhook.
     Handles no user content of any kind. Phase 4 only — the app is fully
     functional without it.
 servers:
-  - url: https://license.noupload.app
+  - url: https://license.keptpix.com
 
 paths:
   /webhook/purchase:
@@ -457,7 +457,7 @@ components:
       properties:
         keyId:    { type: string, description: UUID, appears in revoked.json }
         email:    { type: string, format: email }
-        product:  { type: string, enum: [noupload-pro] }
+        product:  { type: string, enum: [keptpix-pro] }
         issuedAt: { type: string, format: date-time }
         expiresAt:{ type: [string, 'null'], format: date-time }
         version:  { type: integer, const: 1 }

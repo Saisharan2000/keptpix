@@ -19,7 +19,7 @@ Three facts frame every idea below.
 
 ---
 
-## Candidate 1 — NoUpload Image Toolkit ⭐ WINNER
+## Candidate 1 — KeptPix Image Toolkit ⭐ WINNER
 
 **Convert between image formats and compress to an exact target file size, in batch, 100% locally.**
 
@@ -115,7 +115,7 @@ Weights reflect the stated constraints: high demand, fast dev cycle, no server, 
 
 | # | Idea | Demand /30 | Diff /20 | Speed /15 | Server fit /15 | Money /10 | Low risk /10 | **Total** |
 |---|---|---|---|---|---|---|---|---|
-| **1** | **NoUpload Image Toolkit** | **30** | **16** | **15** | **15** | **6** | **10** | **92** |
+| **1** | **KeptPix Image Toolkit** | **30** | **16** | **15** | **15** | **6** | **10** | **92** |
 | 2 | On-device background remover | 30 | 20 | 12 | 12 | 6 | 6 | **86** |
 | 3 | Local PDF toolkit | 30 | 16 | 9 | 12 | 8 | 6 | **81** |
 | 4 | ID / passport photo maker | 18 | 20 | 9 | 15 | 8 | 6 | **76** |

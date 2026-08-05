@@ -34,8 +34,8 @@ declare const __PRECACHE_URLS__: string[];
 const VERSION = __PRECACHE_VERSION__;
 const PRECACHE_URLS = __PRECACHE_URLS__;
 
-const SHELL_CACHE = 'noupload-shell-' + VERSION;
-const RUNTIME_CACHE = 'noupload-runtime-v1';
+const SHELL_CACHE = 'keptpix-shell-' + VERSION;
+const RUNTIME_CACHE = 'keptpix-runtime-v1';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -60,9 +60,29 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const names = await caches.keys();
+
+      /**
+       * Delete stale shell caches under the CURRENT prefix, and every cache
+       * left behind by the pre-rebrand `noupload-*` naming (docs/12 D-64).
+       *
+       * Without the legacy prefix, anyone who visited before the rename keeps
+       * an orphaned `noupload-shell-<hash>` cache forever: the filter would no
+       * longer match it, so nothing would ever evict it. That is a few MB of
+       * dead storage on a stranger's device, invisible and unreachable — and
+       * exactly the kind of litter a privacy-first tool should not leave.
+       *
+       * The legacy sweep is unconditional and cheap: `caches.keys()` is already
+       * being read, and on the overwhelming majority of devices it matches
+       * nothing. It can be removed once the old deployment is long gone.
+       */
+      const LEGACY_PREFIXES = ['noupload-shell-', 'noupload-runtime-'];
       await Promise.all(
         names
-          .filter((name) => name.startsWith('noupload-shell-') && name !== SHELL_CACHE)
+          .filter(
+            (name) =>
+              (name.startsWith('keptpix-shell-') && name !== SHELL_CACHE) ||
+              LEGACY_PREFIXES.some((prefix) => name.startsWith(prefix)),
+          )
           .map((name) => caches.delete(name)),
       );
       await self.clients.claim();

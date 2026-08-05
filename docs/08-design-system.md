@@ -230,7 +230,7 @@ graph TD
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  NoUpload          Convert  Compress  Resize  Metadata      [☀/☾]        │
+│  KeptPix          Convert  Compress  Resize  Metadata      [☀/☾]        │
 ├──────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │   Convert HEIC to JPG                                          ← h1      │
@@ -305,7 +305,7 @@ The original three-pane intent:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│  NoUpload                                                     [☀/☾]      │
+│  KeptPix                                                     [☀/☾]      │
 ├──────────────┬───────────────────────────────────────┬───────────────────┤
 │ SETTINGS     │  FILES (12)              [+ Add more] │  PREVIEW          │
 │              │                                       │                   │
@@ -338,7 +338,7 @@ The original three-pane intent:
 
 ```
 ┌───────────────────────┐   ┌───────────────────────┐   ┌───────────────────────┐
-│ NoUpload        [☰]   │   │ ← Settings            │   │ ← Results             │
+│ KeptPix        [☰]   │   │ ← Settings            │   │ ← Results             │
 ├───────────────────────┤   ├───────────────────────┤   ├───────────────────────┤
 │ Convert HEIC to JPG   │   │ Output                │   │ ✓ 12 files done       │
 │                       │   │ [JPG            ▾]    │   │ 46.1 MB → 1.1 MB      │
@@ -428,7 +428,7 @@ Automated gate: `@axe-core/playwright` on every route in CI, zero violations, pl
 ## 7. Claude Design prompt
 
 ```
-Design 5 screens for NoUpload, a browser-based image converter where all
+Design 5 screens for KeptPix, a browser-based image converter where all
 processing happens on the user's device (nothing is uploaded).
 
 Screens:

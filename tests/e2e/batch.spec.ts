@@ -115,9 +115,9 @@ test.describe('batch of 50: one corrupt, one oversized', () => {
      */
     await page.evaluate(() => {
       const w = window as unknown as {
-        __noupload_store?: { getState(): Record<string, unknown> };
+        __keptpix_store?: { getState(): Record<string, unknown> };
       };
-      const state = w.__noupload_store?.getState();
+      const state = w.__keptpix_store?.getState();
       if (state === undefined) throw new Error('store handle missing');
       const device = state['device'] as Record<string, unknown>;
       const setEnvironment = state['setEnvironment'] as (d: unknown, c: unknown) => void;

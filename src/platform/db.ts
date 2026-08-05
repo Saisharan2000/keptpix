@@ -27,25 +27,25 @@ export const SCHEMA_VERSION = 1;
 // which core/types.ts's own boundary reasoning explains, needed the move.
 export type { StoredSettings, StoredPreset, StoredLicense };
 
-interface NoUploadDb {
+interface KeptPixDb {
   settings: Table<StoredSettings, string>;
   presets: Table<StoredPreset, string>;
   license: Table<StoredLicense, string>;
 }
 
-let instance: NoUploadDb | null = null;
+let instance: KeptPixDb | null = null;
 
-async function getDb(): Promise<NoUploadDb> {
+async function getDb(): Promise<KeptPixDb> {
   if (instance !== null) return instance;
   const { default: Dexie } = await import('dexie');
 
-  class Impl extends Dexie implements NoUploadDb {
+  class Impl extends Dexie implements KeptPixDb {
     settings!: Table<StoredSettings, string>;
     presets!: Table<StoredPreset, string>;
     license!: Table<StoredLicense, string>;
 
     constructor() {
-      super('noupload');
+      super('keptpix');
       this.version(1).stores({
         settings: 'key',
         presets: 'id, name, usageCount',

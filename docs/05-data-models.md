@@ -143,7 +143,7 @@ export interface JobError {
 
 export type LicenseStatus =
   | { valid: true;  keyId: string; email: string;
-      product: 'noupload-pro'; expiresAt: string | null }
+      product: 'keptpix-pro'; expiresAt: string | null }
   | { valid: false;
       reason: 'malformed' | 'bad-signature' | 'expired' | 'revoked' | 'absent' };
 
@@ -265,13 +265,13 @@ export interface StoredLicense {          // Phase 4
   validatedAt: number;
 }
 
-export class NoUploadDB extends Dexie {
+export class KeptPixDB extends Dexie {
   settings!: Table<StoredSettings, string>;
   presets!: Table<StoredPreset, string>;
   license!: Table<StoredLicense, string>;
 
   constructor() {
-    super('noupload');
+    super('keptpix');
     this.version(1).stores({
       settings: 'key',
       presets: 'id, name, usageCount',

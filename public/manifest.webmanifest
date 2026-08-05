@@ -1,6 +1,6 @@
 {
-  "name": "NoUpload — private image converter",
-  "short_name": "NoUpload",
+  "name": "KeptPix — private image converter",
+  "short_name": "KeptPix",
   "description": "Batch image conversion and exact-target-size compression that runs 100% in your browser. Nothing is ever uploaded.",
   "start_url": "/",
   "scope": "/",

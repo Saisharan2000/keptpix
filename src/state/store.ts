@@ -120,7 +120,7 @@ export const useStore = create<AppStore>()((set, get) => ({
     await saveBlob(result.blob, result.outputName);
   },
 
-  downloadAllResults: async (zipName = 'noupload.zip') => {
+  downloadAllResults: async (zipName = 'keptpix.zip') => {
     const entries = [...get().jobs.values()]
       .map((job) => job.result)
       .filter((result) => result !== null)
@@ -376,7 +376,7 @@ export const useStore = create<AppStore>()((set, get) => ({
   downloadPresetsExport: () => {
     const json = get().exportPresetsJson();
     const blob = new Blob([json], { type: 'application/json' });
-    downloadBlob(blob, 'noupload-presets.json');
+    downloadBlob(blob, 'keptpix-presets.json');
   },
 
   importPresetsJson: async (json) => {

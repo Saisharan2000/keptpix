@@ -57,7 +57,7 @@ That last point is the whole optimisation problem. Generic output isn't a prompt
 
 Wrong tool. Higgsfield is a video and image generation platform — Cinema Studio, Marketing Studio, character consistency, face swap, model roster (Sora 2, Kling, Veo). Its own 2026 feature guide makes **no mention of UI, UX, or web interface design** ([Higgsfield 2026 features](https://geo.higgsfield.ai/higgsfield-ai-features-full-guide-2026)). It's for ad creative and cinematic video.
 
-It's also a paid subscription, which your zero-added-cost constraint rules out independently. The only place it would even be *category-appropriate* is a launch promo video, and NoUpload doesn't need one — a 20-second screen recording of 12 photos compressing locally is more persuasive than any generated footage, and costs nothing.
+It's also a paid subscription, which your zero-added-cost constraint rules out independently. The only place it would even be *category-appropriate* is a launch promo video, and KeptPix doesn't need one — a 20-second screen recording of 12 photos compressing locally is more persuasive than any generated footage, and costs nothing.
 
 ---
 
@@ -176,7 +176,7 @@ Rules:
 ### 6.1 One-time org setup in Claude Design
 
 ```
-I'm setting up a design system for a product called NoUpload — a browser-based
+I'm setting up a design system for a product called KeptPix — a browser-based
 image converter where all processing happens on the user's own device.
 
 Attached: docs/08-design-system.md and tokens.css.
@@ -264,4 +264,4 @@ Then fix all of them and show me what changed.
 
 ## 7. The one thing to hold onto
 
-Claude Design's ceiling is set by its inputs, not its prompts. Free inputs that raise it: the published design system, competitor URL captures, real data values, and an explicit list of states. Paid tools raise it by roughly nothing here — this is a dense, functional, text-and-numbers interface, not a visual-brand exercise. The design risk on NoUpload is a mishandled error state, not an insufficiently beautiful hero.
+Claude Design's ceiling is set by its inputs, not its prompts. Free inputs that raise it: the published design system, competitor URL captures, real data values, and an explicit list of states. Paid tools raise it by roughly nothing here — this is a dense, functional, text-and-numbers interface, not a visual-brand exercise. The design risk on KeptPix is a mishandled error state, not an insufficiently beautiful hero.

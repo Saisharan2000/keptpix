@@ -259,7 +259,7 @@ encoding garbage and layout explosions, not pixel-perfection.
    Launch gate.
 2. **HEIC source photos for WO-7** — 2–3 photos shot somewhere neutral with
    Settings → Photos → Transfer to Mac or PC → *Keep Originals*.
-3. **Cloudflare Pages deploy** (`noupload.app`) + post-deploy production run
+3. **Cloudflare Pages deploy** (`keptpix.com`) + post-deploy production run
    of `privacy.spec.ts`; read pageview numbers in the Cloudflare dashboard
    (D-56's edge-analytics decision — nothing to configure client-side).
 4. Re-enable **Smart App Control** once e2e runs in CI (WO-3).

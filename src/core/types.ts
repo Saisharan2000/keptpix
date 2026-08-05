@@ -178,7 +178,7 @@ export interface JobError {
 
 export type LicenseStatus =
   | { valid: true;  keyId: string; email: string;
-      product: 'noupload-pro'; expiresAt: string | null }
+      product: 'keptpix-pro'; expiresAt: string | null }
   | { valid: false;
       reason: 'malformed' | 'bad-signature' | 'expired' | 'revoked' | 'absent' };
 

@@ -7,7 +7,7 @@ Claude Code must create exactly this tree. Do not reorganise, do not add a `util
 ## 1. Tree
 
 ```
-noupload/
+keptpix/
 ├── docs/                              ← this blueprint set, committed
 │
 ├── public/
@@ -240,7 +240,7 @@ The rule that matters most: **`core/` must run in plain Node.** If `npx vitest r
 ## 4. `CLAUDE.md` — commit this at the repo root
 
 ```md
-# NoUpload — standing instructions
+# KeptPix — standing instructions
 
 ## Non-negotiables
 1. NOTHING is ever uploaded. No fetch/XHR/WebSocket/beacon may carry user file

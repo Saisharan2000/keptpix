@@ -1,4 +1,4 @@
-# 02 — Product Requirements: NoUpload
+# 02 — Product Requirements: KeptPix
 
 **Status:** approved for build
 **Owner:** Sai
@@ -126,6 +126,6 @@ Deliberately *not* a v1 metric: revenue. Phase 1–2 is an audience-building exe
 
 ## 9. Open questions for the operator
 
-1. **Domain — decided, confirm availability.** `noupload.app` is canonical across every doc, the sitemap, JSON-LD, and the Phase-4 Worker (`license.noupload.app`). A brandable name plus programmatic subpaths beats an exact-match keyword domain here, because the subpaths already carry the keywords. If `noupload.app` is taken, pick the replacement before Milestone 6 — it is baked into 21 routes' canonical URLs.
+1. **Domain — decided, confirm availability.** `keptpix.com` is canonical across every doc, the sitemap, JSON-LD, and the Phase-4 Worker (`license.keptpix.com`). A brandable name plus programmatic subpaths beats an exact-match keyword domain here, because the subpaths already carry the keywords. If `keptpix.com` is taken, pick the replacement before Milestone 6 — it is baked into 21 routes' canonical URLs.
 2. **Ads or no ads, ever.** Ads on a privacy-positioned tool site are a credibility tax and, per `01-market-scan.md` §Monetization reality, only worth ~$1–5 RPM. Recommend **no ads**, monetize via Phase-4 license keys.
 3. **Open source the engine?** It would make the "provably local" claim verifiable and could earn the Stirling-PDF/it-tools style GitHub distribution. Also invites clones. Recommend open-sourcing the engine core, keeping the SEO content and premium presets closed.

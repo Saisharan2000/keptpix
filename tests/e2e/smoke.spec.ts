@@ -125,8 +125,8 @@ test.describe('@smoke', () => {
         .poll(
           async () =>
             page.evaluate(() => {
-              const w = window as unknown as { __noupload_store?: { getState(): unknown } };
-              const state = w.__noupload_store?.getState() as
+              const w = window as unknown as { __keptpix_store?: { getState(): unknown } };
+              const state = w.__keptpix_store?.getState() as
                 | { device?: { hardwareConcurrency?: number } }
                 | undefined;
               return state?.device?.hardwareConcurrency ?? null;
@@ -139,8 +139,8 @@ test.describe('@smoke', () => {
       // construction-time baseline. `nativeDecode` is populated by a genuine
       // feature probe, so it must at minimum cover the universal five.
       const probed = await page.evaluate(() => {
-        const w = window as unknown as { __noupload_store?: { getState(): unknown } };
-        const state = w.__noupload_store?.getState() as
+        const w = window as unknown as { __keptpix_store?: { getState(): unknown } };
+        const state = w.__keptpix_store?.getState() as
           | { codecs?: { nativeDecode?: Record<string, boolean> } }
           | undefined;
         return state?.codecs?.nativeDecode ?? null;

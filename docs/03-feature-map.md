@@ -6,7 +6,7 @@
 
 ```mermaid
 graph TD
-    A[NoUpload] --> B[Ingest]
+    A[KeptPix] --> B[Ingest]
     A --> C[Transform]
     A --> D[Deliver]
     A --> E[Platform]

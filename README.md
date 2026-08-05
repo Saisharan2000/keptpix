@@ -1,9 +1,9 @@
-# NoUpload
+# KeptPix
 
 Batch image conversion and exact-target-size compression that runs **100% in your
 browser**. Nothing is ever uploaded.
 
-- **Canonical domain:** `noupload.app`
+- **Canonical domain:** `keptpix.app`
 - **Architecture:** static-first, layered client monolith with a worker-offloaded
   compute tier. No backend in v1.
 - **Marginal cost per user:** exactly zero — every conversion runs on the user's

@@ -1,6 +1,6 @@
-# NoUpload — Blueprint Set
+# KeptPix — Blueprint Set
 
-**Working codename:** NoUpload — canonical domain `noupload.app` (verify availability; every doc, sitemap, and OpenAPI server URL uses this)
+**Working codename:** KeptPix — canonical domain `keptpix.com` (verify availability; every doc, sitemap, and OpenAPI server URL uses this)
 **One-line:** Batch image conversion and exact-target-size compression that runs 100% in your browser. Nothing is ever uploaded.
 **Date:** 2026-07-28
 **Constraint envelope:** zero backend, static hosting, ~$0/month ops, fast build cycle, entering an existing high-demand category on a defensible wedge.

@@ -23,7 +23,7 @@ export default defineConfig({
   // Overridable so a validation deploy (e.g. *.pages.dev) emits canonicals and
   // a sitemap pointing at ITSELF. A build whose canonical names a different
   // origin is crawled and then declined for indexing, silently — docs/12 D-63.
-  site: process.env.SITE_URL ?? 'https://noupload.app',
+  site: process.env.SITE_URL ?? 'https://keptpix.com',
   output: 'static',
   trailingSlash: 'never',
 

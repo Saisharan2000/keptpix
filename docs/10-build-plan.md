@@ -320,7 +320,7 @@ Implement:
 - Cloudflare Web Analytics — pageview beacons only, loaded AFTER the tool
   island mounts, and hard-blocked while any job is in flight. Add its origin
   to the privacy-test allowlist in the same commit, and re-run that test.
-- Deploy config for Cloudflare Pages, domain noupload.app.
+- Deploy config for Cloudflare Pages, domain keptpix.com.
 ```
 
 **Acceptance:** app fully functional offline after first visit (test with DevTools offline mode) · install prompt appears only post-conversion · settings survive reload · preset export/import round-trips · deployed to Cloudflare Pages with all routes reachable · still zero outbound data requests (re-run the privacy test against production).

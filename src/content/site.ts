@@ -5,10 +5,11 @@
  *
  * WHY THIS IS CONFIGURABLE, and why it was nearly a silent disaster:
  *
- * The origin was hardcoded to `https://noupload.app` in four separate files —
+ * The origin was hardcoded (as `https://noupload.app`, the pre-rebrand domain)
+ * in four separate files —
  * the Astro config, SeoHead's canonical, the sitemap, and robots.txt. Deploying
  * that build anywhere else (a `*.pages.dev` preview, a staging origin) produces
- * pages that each declare `<link rel="canonical" href="https://noupload.app/…">`
+ * pages that each declare a canonical naming a DIFFERENT origin
  * — telling Google the real version lives at a domain that may not exist yet.
  *
  * Google honours that. The deployment would be crawled and then **declined for
@@ -21,7 +22,7 @@
  * subdomain (docs/12 D-63).
  *
  * Set it at build time:
- *   SITE_URL=https://noupload.pages.dev npm run build
+ *   SITE_URL=https://keptpix.pages.dev npm run build
  *
  * Lives in content/ rather than core/ because docs/07 §2 grants `pages/` access
  * to content/ but not to core/, and both the sitemap and robots.txt endpoints
@@ -35,7 +36,7 @@ function normalise(raw: string): string {
   return raw.replace(/\/+$/, '');
 }
 
-export const PRODUCTION_SITE = 'https://noupload.app';
+export const PRODUCTION_SITE = 'https://keptpix.com';
 
 /**
  * `import.meta.env` covers Astro components and anything Vite bundles;

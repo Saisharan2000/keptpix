@@ -79,7 +79,7 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
      * It exposes no new information and no new risk: this is the user's own
      * in-memory state, in their own tab, in an app that never transmits it.
      */
-    (window as unknown as { __noupload_store?: typeof store }).__noupload_store = store;
+    (window as unknown as { __keptpix_store?: typeof store }).__keptpix_store = store;
 
     void store
       .getState()
@@ -288,7 +288,7 @@ export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props)
           This browser can’t run the converter
         </h2>
         <p class="mx-auto mt-3 mb-0 max-w-[60ch] text-sm text-text-muted">
-          NoUpload converts images entirely on your device, which needs a
+          KeptPix converts images entirely on your device, which needs a
           browser feature called <code>OffscreenCanvas</code>. This browser
           doesn’t have it, so conversion would fail on every file rather than
           work partially.

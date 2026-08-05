@@ -75,7 +75,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
  */
 export async function downloadAllAsZip(
   entries: readonly DeliverableEntry[],
-  zipName = 'noupload.zip',
+  zipName = 'keptpix.zip',
 ): Promise<void> {
   if (entries.length === 0) return;
 

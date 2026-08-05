@@ -1897,6 +1897,68 @@ layer boundary to place a single string was the worse trade — and the origin
 genuinely is site content, alongside `formats.ts` and `presets.ts`.
 
 ---
+
+## 🔴 D-64 — Rebranded NoUpload → KeptPix: the name was already four other people's
+
+**Docs affected:** every forward-looking doc's brand and domain references; `06 §4` (licence worker → `license.keptpix.com`)
+**Milestone:** 8 — before first indexing
+
+Research before buying a domain found the name was not ownable. Every short
+`noupload` TLD was taken, and — the deciding finding — **four live products
+already use the name for the same thing**:
+
+| Domain | What it is |
+|---|---|
+| `noupload.app` | "No Upload Image Converter — .webp & .heic to .jpg, all done locally" — the same product, the same name, already indexed |
+| `no-upload.com` | a "noupload"-branded privacy image/PDF suite |
+| `noupload.io` | in-browser converter |
+| `noupload.tools` | in-browser converter |
+
+Zero US trademark registrations for "NoUpload" (Trademarkia + Justia; EUIPO and
+India could not be queried). That cuts both ways: nothing blocks us, and
+nothing can ever be defended — while four sites split every branded search.
+
+**Rebranded to KeptPix on `keptpix.com`** — coined, so it is genuinely ownable.
+Done now because it costs an hour at zero users, and a ranking rebuild later.
+
+**A blanket find-replace was not sufficient**, and the interesting part is what
+it broke or would have missed:
+
+- **It changed the TLD.** `noupload.app` → `keptpix.app` — a domain we do not
+  own. The new brand is on `.com`. Every occurrence had to be corrected by
+  hand, including inside D-63's own explanation.
+- **`favicon.svg` was missed entirely** — its `aria-label="NoUpload"` is
+  user-facing and read aloud by screen readers, but `.svg` was not in the set
+  of file types being rewritten.
+- **Three storage keys are breaking changes**, not cosmetics:
+  `localStorage['noupload-theme']`, the IndexedDB database name
+  (`super('noupload')`), and the service-worker cache prefixes. Renaming them
+  discards a returning visitor's theme, settings and presets. At ~0 users that
+  cost is zero, which is precisely why this had to happen now rather than after
+  launch.
+- **The service worker would have littered.** Its activate handler evicts
+  caches matching its own prefix, so renaming to `keptpix-shell-` would have
+  stranded every `noupload-shell-<hash>` cache permanently — invisible,
+  unreachable, a few MB on a stranger's device. It now sweeps the legacy
+  prefixes too.
+- `'noupload-pro'`, the licence product ID in `06 §4`, was renamed before any
+  key was ever issued. After issuance it would have been permanent.
+
+**`docs/12` is deliberately NOT rewritten.** This log is a record of decisions
+as they were made, and D-63's account is *about* `noupload.app` — rewriting it
+to say `keptpix.com` would describe a bug that never happened at a domain that
+did not then exist. Historical entries keep their original names; only
+forward-looking docs were updated.
+
+**On the finding itself:** four independent builders converging on the same
+name and the same pitch validates the positioning, but it also means the niche
+is contested rather than unserved. `01 §2`'s claimed gap was "batch + exact
+target size + provably local"; the *provably local* third is demonstrably
+served by others now. What remains genuinely differentiating is the
+exact-target-size search — which is the most heavily tested thing in this
+codebase, and is what the `/compress/jpg-to-*` routes have to earn traffic on.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

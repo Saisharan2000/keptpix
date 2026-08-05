@@ -192,10 +192,10 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-Sitemap: https://noupload.app/sitemap.xml
+Sitemap: https://keptpix.com/sitemap.xml
 ```
 
-Canonical domain is `noupload.app` everywhere — sitemap, OG URLs, JSON-LD, and the Phase-4 Worker at `license.noupload.app`.
+Canonical domain is `keptpix.com` everywhere — sitemap, OG URLs, JSON-LD, and the Phase-4 Worker at `license.keptpix.com`.
 
 Rationale: there is no content to protect, and being cited by an assistant as "a browser-based converter that doesn't upload your files" is *exactly* the distribution this product wants. Since our pages are real HTML, we are one of the few tool sites these crawlers can actually read.
 
