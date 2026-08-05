@@ -205,3 +205,51 @@ test.describe('install prompt (docs/10 M8)', () => {
     expect(calls).toBe(1);
   });
 });
+
+/**
+ * docs/12 D-67 — iOS Safari never fires `beforeinstallprompt`, so the install
+ * affordance has a second, manual path. Found on a real iPhone: the Install
+ * button simply never appeared, on the platform most likely to be converting
+ * HEIC in the first place.
+ *
+ * Driven with an iOS user agent in CHROMIUM rather than in the webkit project,
+ * deliberately: Playwright's WebKit has no OffscreenCanvas (D-55), so no
+ * conversion can complete there, so `eligible` is never true and this branch is
+ * unreachable. A real iPhone on Safari 16.4+ has OffscreenCanvas AND no
+ * beforeinstallprompt — a combination no bundled engine reproduces, so it is
+ * synthesised here.
+ */
+test.describe('iOS install hint (docs/12 D-67)', () => {
+  test.skip(({ browserName }) => browserName !== 'chromium', 'needs OffscreenCanvas + a forced iOS UA');
+
+  test('offers Add to Home Screen instructions instead of a dead silence', async ({ browser }) => {
+    const context = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 ' +
+        '(KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+    });
+    const page = await context.newPage();
+    try {
+      await page.goto(ROUTE);
+      await page.locator('#tool').scrollIntoViewIfNeeded();
+      await page.waitForSelector('astro-island:not([ssr])', { timeout: 30_000 });
+      await page.waitForFunction(
+        () => document.querySelector('input[type="file"][accept="image/*"]') !== null,
+        null,
+        { timeout: 30_000 },
+      );
+
+      // Nothing before a conversion — the docs/10 M8 rule applies to both paths.
+      await expect(page.getByText(/Add to Home Screen/i)).toHaveCount(0);
+
+      await addImages(page, 1);
+      await runConversion(page);
+
+      // And no Chromium-style button, since the event never fired.
+      await expect(page.getByText(/Add to Home Screen/i)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Install' })).toHaveCount(0);
+    } finally {
+      await context.close();
+    }
+  });
+});

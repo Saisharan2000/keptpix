@@ -2105,6 +2105,54 @@ request is still a wasted round trip and a console error on every visit. But
 the guarantee no longer depends on finding it.
 
 ---
+
+## 🔴 D-67 — iPhone users got no install affordance at all, on a tool built for iPhone users
+
+**Docs affected:** `10 §M8` (install prompt — a second, manual path documented)
+**Milestone:** 8 — found on a real device, by a human tapping through the checklist
+
+The real-device launch gate turned up a plain absence: **the Install button
+never appeared on iOS.**
+
+`beforeinstallprompt` is Chromium-only. Safari has never implemented it and
+Apple has no plans to. `InstallPrompt.tsx` waited for that event and returned
+`null` when it was missing — and its own docstring even said so, describing
+"degrades to rendering nothing" as if that were the graceful outcome.
+
+**It is not graceful. iOS CAN install a PWA** — Share → Add to Home Screen. It
+just cannot be asked programmatically. So the component silently withheld a
+feature that works, from the one platform most likely to want it: the flagship
+route is HEIC→JPG, and HEIC comes off an iPhone.
+
+Every automated test agreed with the code, because none of them could see the
+gap:
+
+| Engine | `OffscreenCanvas` | `beforeinstallprompt` | Reaches this branch? |
+|---|---|---|---|
+| Chromium | ✅ | ✅ | no — takes the button path |
+| Playwright WebKit | **✗** (D-55) | ✗ | no — cannot convert, so never `eligible` |
+| **Real iPhone, Safari 16.4+** | ✅ | ✗ | **yes** |
+
+That combination — OffscreenCanvas present, `beforeinstallprompt` absent —
+exists on no bundled engine. Playwright's WebKit misses it for the wrong
+reason: it cannot convert at all, so `eligible` never becomes true and the
+branch is unreachable. **A gap only a real device could show**, which is the
+argument for keeping the manual gate rather than retiring it once green.
+
+**Fixed:** on iOS, and only when not already installed, the same
+post-conversion slot now names the actual controls — "tap **Share** at the
+bottom of Safari, then **Add to Home Screen**". Named rather than "install this
+app" because iOS's Share control is an unlabelled icon; telling someone to
+install leaves them hunting. The `eligible` gate is unchanged, so `10 §M8`'s
+"never before a successful conversion" still holds on both paths.
+
+**Tested by synthesising the impossible combination**: an iOS user agent inside
+Chromium, which has OffscreenCanvas so a conversion can complete, while the
+forced UA takes the iOS branch. Asserts the hint is absent before conversion,
+present after, and that no Chromium-style Install button appears alongside it.
+
+Cost: baseline island 33.8 → **34.1 KB gz**, 57% of the `04 §7` budget.
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
