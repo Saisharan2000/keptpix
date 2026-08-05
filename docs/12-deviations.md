@@ -1959,6 +1959,51 @@ exact-target-size search — which is the most heavily tested thing in this
 codebase, and is what the `/compress/jpg-to-*` routes have to earn traffic on.
 
 ---
+
+## 🟠 D-65 — Every canonical URL 308-redirected, because the build format contradicted `trailingSlash`
+
+**Docs affected:** none — this makes the served URLs match what `09 §5` already assumed
+**Milestone:** 8 — caught by curl-ing production before submitting anything to Search Console
+
+`astro.config.mjs` declared `trailingSlash: 'never'`, and every canonical tag,
+sitemap entry and internal link followed that. But Astro's DEFAULT
+`build.format` is `'directory'`, which emits `convert/heic-to-jpg/index.html` —
+and Cloudflare Pages serves that at the **slashed** URL, 308-redirecting the
+unslashed one.
+
+Measured on the live site:
+
+```
+GET /convert/heic-to-jpg      -> 308 -> /convert/heic-to-jpg/
+GET /convert/heic-to-jpg/     -> 200, canonical: /convert/heic-to-jpg
+```
+
+So the sitemap listed URLs that redirect, and the page each one landed on
+declared a canonical pointing back at the redirecting URL. Google resolves that
+eventually, but it is a muddled signal on a site whose entire growth model is
+organic search — and a wasted round trip on every internal navigation.
+
+**Fixed with `build: { format: 'file' }`** — one line. The output becomes
+`convert/heic-to-jpg.html`, which Cloudflare serves at `/convert/heic-to-jpg`
+with no redirect. Nothing else changed, because every link, canonical and
+sitemap entry already assumed the unslashed form; it was the OUTPUT that
+disagreed with the config, not the URLs.
+
+**Two consumers were walking `dist/` for `index.html` and had to follow:**
+`build-precache-manifest.mjs` (a manifest of redirecting URLs would cache
+redirects rather than pages) and the a11y sweep's route discovery. **The a11y
+suite caught its own regression**: its guard asserts more than 15 routes are
+found, and it reported 2 — exactly the "silently scanned one page and passed"
+failure the guard was written for. Both now handle either build format, so
+revisiting this decision cannot silently break them.
+
+**Worth noting how it was found.** The full gate was green, the site was live,
+and every route returned 200 to a browser. It took `curl` against production —
+looking at status codes rather than rendered pages — to see it. Nothing in the
+local suite models Cloudflare's URL handling, which is a real gap in what
+"tests pass" can tell you about a static host's behaviour.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

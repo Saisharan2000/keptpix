@@ -26,7 +26,11 @@ function builtRoutes(): string[] {
     for (const entry of readdirSync(dir)) {
       const full = join(dir, entry);
       if (statSync(full).isDirectory()) walk(full);
-      else if (entry === 'index.html' || entry === '404.html') files.push(full);
+      // Every .html file is a route. The project builds with
+      // `format: 'file'` (docs/12 D-65), so routes are `about.html` rather
+      // than `about/index.html` — matching only index.html silently reduced
+      // this sweep from 22 routes to 2, which the guard below caught.
+      else if (entry.endsWith('.html')) files.push(full);
     }
   };
   try {
@@ -36,7 +40,10 @@ function builtRoutes(): string[] {
   }
   return files
     .map((f) => '/' + relative(DIST, f).split(sep).join('/'))
-    .map((r) => r.replace(/index\.html$/, '').replace(/\/$/, ''))
+    // 404.html is fetched by that exact name; every other page drops .html
+    // (or /index.html) to become the URL it is actually served at.
+    .map((r) => (r === '/404.html' ? r : r.replace(/index\.html$/, '').replace(/\.html$/, '')))
+    .map((r) => r.replace(/\/$/, ''))
     .map((r) => (r === '' ? '/' : r))
     .sort();
 }

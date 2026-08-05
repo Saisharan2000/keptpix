@@ -49,6 +49,23 @@ export default defineConfig({
   build: {
     // Keeps small critical CSS inline and out of the request waterfall.
     inlineStylesheets: 'auto',
+
+    /**
+     * 'file' emits `convert/heic-to-jpg.html`, NOT `convert/heic-to-jpg/index.html`.
+     *
+     * This has to match `trailingSlash: 'never'` above, and by default it did
+     * not. Astro's default 'directory' format made Cloudflare Pages serve every
+     * route at its SLASHED url and 308-redirect the unslashed one — so every
+     * canonical, every sitemap entry and every internal link pointed at a URL
+     * that immediately redirected, and the page it landed on declared a
+     * canonical back to the redirecting URL.
+     *
+     * Google resolves that eventually, but it is a muddled signal on a site
+     * whose entire growth model is organic search, and a wasted round trip on
+     * every internal navigation. Caught by curl-ing production before
+     * submitting anything to Search Console (docs/12 D-65).
+     */
+    format: 'file',
   },
 
   vite: {

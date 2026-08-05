@@ -32,11 +32,24 @@ async function findHtmlFiles(dir) {
   return found;
 }
 
-/** dist/about/index.html -> /about ; dist/index.html -> / ; dist/404.html -> /404.html */
+/**
+ * dist/about.html -> /about ; dist/index.html -> / ; dist/404.html -> /404.html
+ *
+ * Handles BOTH Astro build formats. The project uses `format: 'file'` so that
+ * served URLs match `trailingSlash: 'never'` (docs/12 D-65), but the
+ * directory-style branch is kept so this script stays correct if that is ever
+ * revisited — a precache manifest listing URLs that redirect would cache the
+ * redirect rather than the page.
+ *
+ * 404.html keeps its extension: it is fetched by that exact name as the error
+ * document, not routed to.
+ */
 function htmlFileToRoute(distRelativePath) {
   const posix = distRelativePath.split(path.sep).join('/');
   if (posix === 'index.html') return '/';
+  if (posix === '404.html') return '/404.html';
   if (posix.endsWith('/index.html')) return '/' + posix.slice(0, -'/index.html'.length);
+  if (posix.endsWith('.html')) return '/' + posix.slice(0, -'.html'.length);
   return '/' + posix;
 }
 
