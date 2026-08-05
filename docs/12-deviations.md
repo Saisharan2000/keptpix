@@ -2067,9 +2067,42 @@ blocked your own WASM codecs, so the first row matters as much as the second.
   941 bytes per pageview. D-65 was the same shape. `serve-with-headers.mjs`
   closes part of that gap; the rest is why the production gate exists.
 
-**Still worth turning the toggle off** if it can be found — a blocked request
-is a wasted round trip and a console error on every visit. But the guarantee no
-longer depends on finding it.
+**PRODUCTION GATE NOW PASSES — 4/4 against `keptpix.com`.** Confirmed live:
+the `POST /cdn-cgi/rum` is gone entirely, and the beacon script is refused with
+Chromium reporting `csp`.
+
+**Two test defects had to be fixed to get an honest result, and both were the
+test being wrong rather than the app:**
+
+1. **Playwright's `request` event fires on ATTEMPT, before CSP has ruled.** A
+   refused load looked identical to one that reached the network, so the suite
+   reported a leak that had not happened. Assertion (c) now scopes to requests
+   actually SENT — and additionally asserts that every foreign-origin attempt
+   WAS refused, which turns the edge injection from noise into a positive proof
+   the CSP is working. If Cloudflare ever stops injecting, that list is simply
+   empty and the assertion still holds.
+2. **The refusal detector matched the wrong string.** Chromium reports
+   `errorText` as exactly `csp` — not `net::ERR_BLOCKED_BY_CSP`, which is what
+   was first written and which never fires. The symptom was a genuinely blocked
+   beacon still failing the gate. Found by printing the raw `errorText` against
+   production rather than guessing at the constant.
+
+Neither change weakens anything: (a) zero-body and (b) zero-requests-in-flight
+remain absolute, and (c) now distinguishes "nothing was sent" from "nothing was
+attempted" — which is the honest reading of a guarantee about transmission.
+
+Verified in all three environments: production, local `astro preview` (no CSP),
+and local `serve-with-headers` (CSP applied). 4/4 in each.
+
+**One operational note:** running the four privacy tests in PARALLEL against
+production intermittently stalls a conversion at "0 done, 2 running" — four
+browsers fetching WASM codecs over the network at once. Serial (`--workers=1`)
+is reliable. That is contention in the harness, not the product; the same tests
+pass in parallel locally.
+
+**Still worth turning the RUM toggle off** if it can be found — a refused
+request is still a wasted round trip and a console error on every visit. But
+the guarantee no longer depends on finding it.
 
 ---
 ## Outstanding work, most consequential first
