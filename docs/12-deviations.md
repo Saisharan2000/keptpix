@@ -2230,6 +2230,203 @@ Worth stating plainly: **CI earned its keep on its first three runs**, and every
 one of those defects had been sitting in a suite that was green on this laptop.
 
 ---
+## 🟠 D-69 — `pages/` gets `core/tools.ts`, and nothing else from `core/`
+
+**Docs affected:** `07 §2` (boundary table, amended), `kepttools/03 §1`
+**Milestone:** KeptTools M0
+
+`kepttools/03 §1` puts the ToolManifest at `src/core/tools.ts`. `07 §2` denies
+`pages/` any access to `core/`. Both cannot hold: one route file generates every
+tool page, and its `getStaticPaths` has to read the manifest.
+
+Three options were on the table:
+
+1. **Copy the manifest into `content/`** — the precedent `content/site.ts` set
+   for exactly this reason. Rejected: site.ts is one string, while the manifest
+   is the property's single source of truth with pure lookup functions over it,
+   and `kepttools/03 §1` names the path. A copy in `content/` is either a second
+   source of truth or a re-export shim pretending not to be one.
+2. **Widen `pages/` → `core/`** wholesale. Rejected: that is the boundary doing
+   its most valuable work — keeping decode/encode/guard logic out of build-time
+   page code — traded away for one import.
+3. **A file-scoped element type**, which is what was done.
+
+`eslint.config.js` already had this exact pattern: `workers/pool.ts` and
+`workers/protocol.ts` are broken out as their own element types so `state/` can
+reach those two files and no more. `core-tools` follows it verbatim, and
+everything already allowed to read `core/` reads `core/tools.ts` too.
+
+Verified by probe rather than by reading the config: adding
+`import { ERROR_MESSAGES } from '../core/errors'` to a page still fails with
+`No rule allowing this dependency was found. File is of type 'pages'.
+Dependency is of type 'core'`. The grant is one file wide.
+
+---
+
+## ⚪ D-70 — SUPERSEDED — the image-pair routes were deleted in the fork, and are restored here
+
+**Docs affected:** `09 §2.1`, `kepttools/04 §2`
+**Milestone:** KeptTools M0, reversed at the merge
+
+The fork deleted `convert/[pair].astro`, `convert/index.astro`,
+`formats/[format].astro`, `content/formats.ts` and `FormatSpecTable.astro`,
+on the reasoning that serving them from a second domain would be duplicate
+content competing with the sibling property.
+
+That reasoning was correct *for a second domain*. There is no second domain.
+The tools merged into KeptPix instead, so the premise is gone and every one of
+those routes is restored — they are the pages that are actually indexed, and
+the only ones with any ranking history at all.
+
+What survives from D-70 is the part that was right regardless: `convert.spec.ts`
+choosing its output format from the settings rail rather than the route slug is
+a better test, because it exercises the control a real user touches. That change
+is what surfaced D-71, which is a genuine bug fix and is ported in full.
+
+Nothing here is owed at M3. The "still owed" clause in the original entry —
+retiring `/compress`, `/resize` and `/metadata` before launch — is void:
+those are KeptPix's own routes on KeptPix's own domain.
+
+---
+
+## 🔴 D-71 — a settings change after adding a file was silently discarded
+
+**Docs affected:** `06 §5` (QueueController.start, clarified)
+**Milestone:** KeptTools M0
+**Pre-existing in KeptPix.** Not introduced by the fork; found by it.
+
+`ToolShell` creates a job the moment a file is added, so the card can render in
+its `queued` state (D-39). `QueueController.start()` then reuses that queued job
+rather than creating a second one. The job carries the `JobConfig` it was
+created with — so **every settings change made between adding a file and
+clicking Convert was dropped on the floor.**
+
+On a format-pair route this was invisible: the slug set the format via
+`applyRouteDefaults` before any file existed, so the snapshot was always right.
+It is not invisible anywhere else, and `/compress` is the worst case — the
+settings rail does not render until a file has been added, so "add, then change
+a setting" is the *only* order the UI permits there. A user picking PNG got a
+JPG, with no error and no indication anything had been ignored.
+
+Found by the D-70 repointing: the four non-JPG rows of `convert.spec.ts` timed
+out waiting for a download whose extension never matched, while every JPG row
+passed. That asymmetry is the bug's signature.
+
+Fix: `start()` refreshes a reused job's config from `configFor(sourceId)` before
+queueing it. The job has not run yet, so re-reading its config is safe, and the
+job id survives — which is the whole reason the reuse exists.
+
+Covered at two levels, deliberately: `tests/integration/queue.test.ts` asserts
+the run-time config and the produced format directly, and the non-JPG rows of
+`convert.spec.ts` fail if it regresses through the real UI.
+
+---
+
+## 🟡 D-72 — the manifest shell is a second component, not a branch in the first
+
+**Docs affected:** `07 §1` (tree, amended), `08 §3`
+**Milestone:** KeptTools M0
+
+`07 §1` lists `ToolShell.tsx` as the only `client:visible` entry point and
+`08 §3` depends on that. KeptTools needs a manifest-driven shell that shares
+almost nothing with the image shell's pipeline — different state, different
+controls, no worker pool yet.
+
+`ToolShell` stays the single entry point and became a dispatcher: `tool` prop
+present → `ManifestToolShell`, absent → `ImageToolShell` (the inherited body,
+unchanged). It is a fork in the router, not a branch in a pipeline — no
+tool-specific logic sits on either side of it.
+
+Two new files, both added to `07 §1`:
+- `ManifestToolShell.tsx` — renders dropzone, settings rail and output
+  affordance from a `ToolManifestEntry`.
+- `ToolConfigPanel.tsx` — renders `ConfigFieldSpec[]`. `ConfigPanel.tsx` is
+  untouched: it is the image tool's hand-built panel, with format-aware controls
+  and preset management that no declarative spec should try to express.
+
+The dispatcher exists for a concrete reason: `ImageToolShell` calls a dozen
+hooks before its first return, so choosing between the two paths inside one
+component body would make hook order depend on a prop.
+
+`Dropzone` gained `accept`, `multiple`, `actionLabel` and `zoneLabel` props,
+all defaulting to the inherited values — including `zoneLabel`'s default of the
+exact string `a11y.spec.ts` locates the control by. Renaming a control that a
+suite finds by accessible name is how that assertion rots silently.
+
+Enforced by `tests/integration/manifest-shell.test.ts`, which renders **every**
+manifest entry through the shell and checks that each declared field produces a
+labelled control, that a dropzone appears only for tools that take files, and
+that `accept`/`multiple` match the entry. A tool the shell cannot express fails
+there, before a route or an engine exists.
+
+---
+
+## 🟡 D-73 — the licence claim is `kept-pro`, not per-property
+
+**Docs affected:** `05 §1` (LicenseStatus, amended), `kepttools/02 §6`
+**Milestone:** KeptTools M0
+
+The rebrand would have turned `keptpix-pro` into `kepttools-pro`.
+`kepttools/02 §6` is explicit that one $9 lifetime licence covers the whole Kept
+family under one Ed25519 key, which makes each property a sales channel for the
+other. A per-property claim forces a second key and makes every purchase dead on
+the sibling site. Set to `kept-pro` in `core/types.ts` and in the commented
+`wrangler.toml` vars. Nothing verifies licences yet — this is Phase 4 — but the
+claim string is the part that would have been expensive to change later.
+
+---
+
+## 🔴 D-74 — the WebKit skips were hiding the entire mobile layout, and a `mobile-chromium` project now covers it
+
+**Docs affected:** `07 §3` (dev deps / projects), `13` (WO-3)
+**Milestone:** KeptTools M0
+
+I reported M0 as "251 passed across all four engines" locally. That claim was
+wrong, and the way it was wrong is worth recording.
+
+Playwright's WebKit on **Windows** has no `OffscreenCanvas`, so
+`skipWithoutOffscreenCanvas` (D-55) skipped every `webkit` and `mobile-safari`
+test on this machine — 53 of them. The Linux runner's WebKit **does** have it,
+so CI ran them for real. Four engines were configured, four engines "executed",
+and the WO-3 project-coverage check passed — because it verifies that a project
+*started*, not that its tests did anything. Green locally, seven failures on CI.
+
+Every one of those seven was mine: `convert.spec.ts` now picks the output format
+from the settings rail (D-70), and below `lg` the shell is a **step flow**
+(docs/08 §4.3) where the rail is `hidden` until the Settings tab is chosen. The
+control existed in the DOM and was never actionable, so `selectOption` burned
+its full 30s timeout on an element it could see but not use.
+
+Two fixes:
+
+1. `convert.spec.ts` switches to the Settings step, sets the format, and
+   switches back to the file pane before clicking Convert. On the desktop
+   projects those tabs never render and both helpers are no-ops. The tab bar
+   also does not exist until a file registers, and `isVisible()` on a
+   not-yet-rendered element returns false *immediately* rather than waiting —
+   so the helpers run only after the Convert button confirms the file landed.
+   The first version of this fix got that ordering wrong and failed identically.
+2. A **`mobile-chromium` project** (Pixel 7) now runs the narrow-viewport layout
+   on every machine, because it is Chromium and cannot silently skip here.
+
+Adding it paid for itself immediately: it reproduced **two pre-existing KeptPix
+mobile failures** locally that had only ever appeared on CI as `mobile-safari`
+(`batch.spec.ts:85`, `smoke.spec.ts:83`). Those are not fixed here — they are
+KeptPix defects, unrelated to the fork, and listed under outstanding work.
+
+It also broke the visual-regression scoping, which guarded on
+`browserName !== 'chromium'`. `mobile-chromium` reports `browserName ===
+'chromium'`, so a 412px viewport began comparing itself against a 1280px
+baseline. The guard now checks the **project name**, so there is one baseline at
+one viewport, as intended.
+
+**The general lesson, which outlives this fix:** a skip that depends on the host
+OS is a silent hole in the matrix. WO-3 was built to catch "an engine never
+started"; it cannot catch "an engine started and skipped everything". Worth a
+follow-up that fails a run when a project skips more than some share of its
+tests.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
