@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ToolManifestEntry } from '../../core/tools';
 import type { JobConfig } from '../../core/types';
+import { ManifestToolShell } from './ManifestToolShell';
 import { ingestFiles, QueueController, type RejectedFile } from '../../state/queue';
 import { completedResults, isWarning, joinJobs, summarise } from '../../state/selectors';
 import { useStore } from '../../state/store';
@@ -23,6 +25,18 @@ interface Props {
   defaultConfig?: Partial<JobConfig>;
   /** Source format label for the dropzone copy, e.g. "HEIC". */
   fromLabel?: string;
+  /**
+   * A ToolManifestEntry, for the PDF/video/QR routes. When present the shell
+   * renders itself entirely from the manifest and the image pipeline below is
+   * not involved at all.
+   *
+   * The two paths coexist because they are genuinely different tools sharing
+   * one entry point: the image path is the original, still driving every
+   * `/convert/*`, `/compress/*` and `/resize/*` route; the manifest path is
+   * everything added since. This is a fork in the ROUTER, not a branch in a
+   * pipeline — no tool-specific logic sits on either side of it.
+   */
+  tool?: ToolManifestEntry;
 }
 
 /**
@@ -32,7 +46,22 @@ interface Props {
  * static Astro markup shipping zero JavaScript, so it is fully present in the
  * HTML that AI crawlers receive without rendering.
  */
-export default function ToolShell({ defaultConfig, fromLabel = 'image' }: Props) {
+export default function ToolShell({ defaultConfig, fromLabel = 'image', tool }: Props) {
+  // A dispatcher, not a branch inside the component body: the image shell below
+  // calls a dozen hooks before its first return, so choosing between the two
+  // paths mid-body would make hook order depend on a prop.
+  if (tool !== undefined) return <ManifestToolShell tool={tool} />;
+  return <ImageToolShell defaultConfig={defaultConfig} fromLabel={fromLabel} />;
+}
+
+/** The original image tool, unchanged, still serving every image route. */
+function ImageToolShell({
+  defaultConfig,
+  fromLabel = 'image',
+}: {
+  defaultConfig?: Partial<JobConfig>;
+  fromLabel?: string;
+}) {
   const store = useStore;
   const sources = useStore((s) => s.sources);
   const jobs = useStore((s) => s.jobs);

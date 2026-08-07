@@ -6,6 +6,21 @@ interface Props {
   fromLabel: string;
   compact: boolean;
   onFiles: (files: File[]) => void;
+  /**
+   * A manifest entry's `accept` list, joined. Defaults to the value the image
+   * routes have always used, so every existing call site — and the e2e
+   * selectors targeting `input[accept="image/*"]` — behave exactly as before.
+   */
+  accept?: string;
+  multiple?: boolean;
+  /** Verb in the file input's accessible name: "Choose PDF files to merge". */
+  actionLabel?: string;
+  /**
+   * Accessible name of the drop target itself. Defaults to the exact string it
+   * has always had — a11y.spec.ts targets it by name, and silently renaming a
+   * control a suite locates by accessible name is how that assertion rots.
+   */
+  zoneLabel?: string;
 }
 
 /** Recursively walk a dropped directory (docs/08 §5 folder drop). */
@@ -43,7 +58,15 @@ async function filesFromDrop(transfer: DataTransfer): Promise<File[]> {
   return out;
 }
 
-export function Dropzone({ fromLabel, compact, onFiles }: Props) {
+export function Dropzone({
+  fromLabel,
+  compact,
+  onFiles,
+  accept = 'image/*',
+  multiple = true,
+  actionLabel = 'convert',
+  zoneLabel = 'Choose images to convert',
+}: Props) {
   const [dragover, setDragover] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -72,12 +95,12 @@ export function Dropzone({ fromLabel, compact, onFiles }: Props) {
     <input
       ref={inputRef}
       type="file"
-      multiple
-      accept="image/*"
+      multiple={multiple}
+      accept={accept}
       // Visually hidden but still in the accessibility tree, so it needs its
       // own name — sr-only is not aria-hidden. Without this, axe reports a
       // "form element has no label" violation on every tool route.
-      aria-label={'Choose ' + fromLabel + ' files to convert'}
+      aria-label={'Choose ' + fromLabel + ' files to ' + actionLabel}
       class="sr-only"
       onChange={(event) => {
         const list = event.currentTarget.files;
@@ -108,7 +131,7 @@ export function Dropzone({ fromLabel, compact, onFiles }: Props) {
       <div
         role="button"
         tabIndex={0}
-        aria-label="Choose images to convert"
+        aria-label={zoneLabel}
         aria-describedby="dropzone-constraints"
         onClick={openPicker}
         onKeyDown={(event) => {

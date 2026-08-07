@@ -20,6 +20,12 @@ const elements = [
   { type: 'workers-protocol', pattern: 'src/workers/protocol.ts', mode: 'file' },
   { type: 'workers', pattern: 'src/workers/**/*', mode: 'file' },
 
+  // Broken out for the same reason as workers-pool above: docs/07 §2 denies
+  // `pages/` the whole of core/, but the ToolManifest is what every tool route
+  // generates itself from (docs/kepttools/03 §1), so getStaticPaths has to read
+  // it. Granting the ONE file keeps the rest of core/ closed to pages/ — see
+  // docs/12 D-69 for why the alternative (a content/ copy) was worse.
+  { type: 'core-tools', pattern: 'src/core/tools.ts', mode: 'file' },
   { type: 'core', pattern: 'src/core/**/*', mode: 'file' },
   { type: 'engines', pattern: 'src/engines/**/*', mode: 'file' },
   { type: 'state', pattern: 'src/state/**/*', mode: 'file' },
@@ -35,27 +41,32 @@ const elements = [
 /* The dependency table from docs/07 §2, verbatim. Anything not listed is denied. */
 const elementRules = [
   // core/ may import core/ only — no DOM, no window, no document.
-  { from: ['core'], allow: ['core'] },
+  // `core-tools` is core: it gets the same grant, and everything already
+  // allowed to read core/ keeps reading it without a second thought.
+  { from: ['core', 'core-tools'], allow: ['core', 'core-tools'] },
 
   // engines/ may import core/, engines/.
-  { from: ['engines'], allow: ['core', 'engines'] },
+  { from: ['engines'], allow: ['core', 'core-tools', 'engines'] },
 
   // workers/ may import core/, engines/, workers/.
   {
     from: ['workers', 'workers-pool', 'workers-protocol'],
-    allow: ['core', 'engines', 'workers', 'workers-pool', 'workers-protocol'],
+    allow: ['core', 'core-tools', 'engines', 'workers', 'workers-pool', 'workers-protocol'],
   },
 
   // state/ may import core/, platform/, workers/pool (+ the protocol types).
-  { from: ['state'], allow: ['core', 'platform', 'state', 'workers-pool', 'workers-protocol'] },
+  {
+    from: ['state'],
+    allow: ['core', 'core-tools', 'platform', 'state', 'workers-pool', 'workers-protocol'],
+  },
 
   // platform/ may import core/.
-  { from: ['platform'], allow: ['core', 'platform'] },
+  { from: ['platform'], allow: ['core', 'core-tools', 'platform'] },
 
   // components/react/ may import core/ (types), state/, content/.
   {
     from: ['components-react'],
-    allow: ['core', 'state', 'content', 'components-react', 'styles'],
+    allow: ['core', 'core-tools', 'state', 'content', 'components-react', 'styles'],
   },
 
   // components/astro/ may import content/ and core/ TYPES — nothing React or
@@ -64,22 +75,41 @@ const elementRules = [
   // Astro component rendering a ComparisonTable has to name that type. A type
   // is neither React nor stateful, and components/react/ already has the same
   // grant. docs/07 §2 updated to match.
-  { from: ['components-astro'], allow: ['core', 'content', 'components-astro', 'styles'] },
+  {
+    from: ['components-astro'],
+    allow: ['core', 'core-tools', 'content', 'components-astro', 'styles'],
+  },
 
-  // pages/ may import layouts/, components/, content/.
+  // pages/ may import layouts/, components/, content/ — plus core/tools.ts and
+  // nothing else from core/ (docs/12 D-69).
   {
     from: ['pages'],
-    allow: ['layouts', 'components-astro', 'components-react', 'content', 'styles', 'pages'],
+    allow: [
+      'layouts',
+      'components-astro',
+      'components-react',
+      'content',
+      'core-tools',
+      'styles',
+      'pages',
+    ],
   },
 
   // layouts/ is not in the docs/07 §2 table; it sits with pages/ in the
   // presentation layer and gets the same grants minus pages/.
   {
     from: ['layouts'],
-    allow: ['layouts', 'components-astro', 'components-react', 'content', 'styles'],
+    allow: [
+      'layouts',
+      'components-astro',
+      'components-react',
+      'content',
+      'core-tools',
+      'styles',
+    ],
   },
 
-  { from: ['content'], allow: ['core', 'content'] },
+  { from: ['content'], allow: ['core', 'core-tools', 'content'] },
   { from: ['styles'], allow: ['styles'] },
 ];
 

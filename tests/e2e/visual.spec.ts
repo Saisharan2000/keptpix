@@ -118,8 +118,23 @@ test.describe('text integrity — no escape artefacts in rendered copy (D-27)', 
   }
 });
 
-test.describe('visual regression (chromium only, coarse)', () => {
-  test.skip(({ browserName }) => browserName !== 'chromium', 'baseline is chromium-only by design');
+test.describe('visual regression (desktop chromium only, coarse)', () => {
+  /**
+   * Guards on the PROJECT, not on `browserName` alone: `mobile-chromium` also
+   * reports `browserName === 'chromium'`, and letting a 412px viewport compare
+   * itself against a 1280px baseline produces a guaranteed mismatch that says
+   * nothing about whether anything regressed. One baseline, one viewport.
+   *
+   * Playwright requires the first parameter to be an object destructuring
+   * pattern, and eslint rejects an empty one — so name a fixture we genuinely
+   * care about rather than reaching for a disable comment.
+   */
+  test.beforeEach(({ browserName }, testInfo) => {
+    test.skip(
+      browserName !== 'chromium' || testInfo.project.name !== 'chromium',
+      'baseline is desktop-chromium-only by design',
+    );
+  });
 
   test('idle tool route', async ({ page }) => {
     await ready(page);

@@ -38,6 +38,21 @@ export default defineConfig({
 
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    /**
+     * A PHONE-SIZED engine that actually runs everywhere.
+     *
+     * The mobile step flow (docs/08 §4.3) was previously reachable only via
+     * `mobile-safari`, and Playwright's WebKit has no OffscreenCanvas on
+     * Windows — so `skipWithoutOffscreenCanvas` (D-55) skipped every mobile
+     * test locally while the Linux runner's WebKit ran them for real. WO-3
+     * checks that a project STARTED, not that its tests did anything, so the
+     * hole was invisible. Two genuine mobile failures lived in it (docs/12
+     * D-74).
+     *
+     * Pixel 7 is Chromium, so this exercises the narrow-viewport layout on
+     * every machine, including Windows.
+     */
+    { name: 'mobile-chromium', use: { ...devices['Pixel 7'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 14'] } },

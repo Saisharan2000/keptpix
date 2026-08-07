@@ -111,6 +111,11 @@ export class QueueController {
     this.#store = store;
   }
 
+  /** Enqueue once — start() may be called again while work is still pending. */
+  #push(jobId: string): void {
+    if (!this.#pending.includes(jobId)) this.#pending.push(jobId);
+  }
+
   /** Lazily created so merely loading the island does not spawn workers. */
   #getPool(): WorkerPool {
     if (this.#pool === null) {
@@ -141,8 +146,32 @@ export class QueueController {
 
     for (const sourceId of ids) {
       const existing = queuedBySource.get(sourceId);
-      const jobId = existing ?? state.createJob(sourceId, state.configFor(sourceId)).id;
-      if (!this.#pending.includes(jobId)) this.#pending.push(jobId);
+
+      if (existing === undefined) {
+        this.#push(state.createJob(sourceId, state.configFor(sourceId)).id);
+        continue;
+      }
+
+      /**
+       * Refresh the reused job's config before running it (docs/12 D-71).
+       *
+       * ToolShell creates the job the moment a file is added, snapshotting the
+       * config as it stood THEN. Every settings change after that — output
+       * format, quality, target size — landed on the store's `config` and was
+       * silently dropped at Convert time, because this branch reused the job
+       * with its stale snapshot.
+       *
+       * On a format-pair route the bug was invisible: the slug set the format
+       * before any file existed, so the snapshot was always right. It is not
+       * invisible on a route where the settings rail is the only way to choose
+       * — and the rail does not even render until a file has been added, so
+       * "change a setting after adding" is the ONLY order available there.
+       *
+       * A queued job has not started, so re-reading its config is safe; the
+       * job id survives, which is what keeps the card from flickering.
+       */
+      state.patchJob(existing, { config: state.configFor(sourceId) });
+      this.#push(existing);
     }
 
     state.setView('processing');

@@ -1,0 +1,74 @@
+---
+/**
+ * src/pages/[category]/[tool].astro  ->  /pdf/merge, /video/compress, /qr/generate
+ *
+ * Spec: docs/kepttools/03 §1 (ToolManifest), docs/kepttools/04 §2 (route matrix)
+ *
+ * ONE route file generates every tool page in the property. getStaticPaths reads
+ * `publishedTools`, which has the `supported` gate already applied, so a tool
+ * whose engine does not exist yet builds nothing at all — no page, no sitemap
+ * entry, no internal link. At M0 every entry is `supported: false`, so this
+ * file correctly emits ZERO routes; that is the gate working, not a failure.
+ *
+ * Adding a tool is therefore a manifest edit. No file is created here, ever.
+ *
+ * The rich per-route SEO content (the five-block spec, 400+ words, FAQ) lands in
+ * M3 alongside the real copy. What exists now is the shell and the frame.
+ */
+import ToolLayout from '../../layouts/ToolLayout.astro';
+import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
+import ToolShell from '../../components/react/ToolShell';
+import { publishedTools } from '../../core/tools';
+
+export function getStaticPaths() {
+  return publishedTools.map((tool) => {
+    // '/pdf/merge' -> category 'pdf', tool 'merge'
+    const [, category, name] = tool.slug.split('/');
+    return { params: { category, tool: name }, props: { tool } };
+  });
+}
+
+const { tool } = Astro.props;
+
+const lede =
+  'Free, unlimited, and 100% in your browser. Your files are never uploaded.';
+
+const breadcrumbs = [
+  { name: 'Home', path: '/' },
+  { name: tool.name, path: tool.slug },
+];
+
+const webApp = {
+  name: tool.name,
+  featureList: [
+    tool.name + ' entirely in the browser',
+    'No upload — files never leave the device',
+    'No sign-up, no watermarks, no file-size caps',
+  ],
+};
+---
+
+<ToolLayout
+  title={tool.name + ' — nothing uploaded'}
+  description={tool.name + ' in your browser. Nothing is uploaded, nothing is stored.'}
+  path={tool.slug}
+  h1={tool.name}
+  lede={lede}
+  breadcrumbs={breadcrumbs}
+  webApp={webApp}
+>
+  <Fragment slot="tool">
+    <div id="tool" tabindex="-1" class="scroll-mt-20">
+      <ToolShell client:visible tool={tool} />
+
+      <noscript>
+        <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+          This tool needs JavaScript, because the work runs on your device rather
+          than on a server. Everything you can read on this page works without it.
+        </p>
+      </noscript>
+    </div>
+  </Fragment>
+
+  <PrivacyBanner />
+</ToolLayout>

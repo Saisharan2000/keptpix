@@ -12,6 +12,7 @@ import type { APIRoute } from 'astro';
 import { SITE as SITE_URL } from '../content/site';
 import { publishedFormatPairRoutes } from '../content/formats';
 import { publishedSizePresetRoutes } from '../content/presets';
+import { publishedTools } from '../core/tools';
 
 // Single source of truth — see src/core/site.ts (docs/12 D-63).
 const SITE = SITE_URL;
@@ -44,6 +45,11 @@ export const GET: APIRoute = () => {
       path: '/compress/' + r.slug,
       priority: '0.9',
     })),
+    // `publishedTools` has the `supported` gate already applied, so a tool
+    // whose engine is not built yet is absent here for the same reason it has
+    // no page: submitting a route we cannot perform is the doorway behaviour
+    // docs/09 §1.2 forbids. Empty until the first engine ships.
+    ...publishedTools.map((t) => ({ path: t.slug, priority: '0.9' })),
   ];
 
   const lastmod = new Date().toISOString().slice(0, 10);

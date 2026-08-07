@@ -204,3 +204,31 @@ describe('retry', () => {
     expect(after?.error?.code).toBe('E_CORRUPT_FILE');
   }, 30_000);
 });
+
+describe('a settings change after adding a file is honoured (docs/12 D-71)', () => {
+  it('runs the queued job with the CURRENT config, not the one it was created with', async () => {
+    const { accepted } = await ingestFiles([await jpegFile('photo.jpg')]);
+    const state = useStore.getState();
+    state.addSources(accepted);
+
+    // Exactly what ToolShell does the moment a file lands, snapshotting the
+    // config as it stands at that instant.
+    const source = accepted[0];
+    expect(source).toBeDefined();
+    if (source === undefined) return;
+    state.createJob(source.id, state.configFor(source.id));
+
+    // Then the user opens the settings rail — which on a phone is the first
+    // moment it exists at all — and picks a different output format.
+    useStore.getState().setConfig({ outputFormat: 'png' });
+
+    await controller.start([source.id]);
+
+    const job = [...useStore.getState().jobs.values()][0];
+    expect(job?.config.outputFormat, 'job config at run time').toBe('png');
+    expect(job?.result?.format, 'produced file format').toBe('png');
+    // The card must survive the refresh — the reason start() reuses the job at
+    // all is so it does not flicker away and back.
+    expect(useStore.getState().jobs.size).toBe(1);
+  }, 30_000);
+});
