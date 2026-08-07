@@ -2426,6 +2426,59 @@ started"; it cannot catch "an engine started and skipped everything". Worth a
 follow-up that fails a run when a project skips more than some share of its
 tests.
 
+## 🟠 D-75 — `images-to-pdf` writes its own PDF rather than pulling in a PDF library
+
+**Docs affected:** `kepttools/03 §2` (PDF engine libraries, amended), `07 §3`
+**Milestone:** KeptTools M1
+
+`kepttools/03 §2` names `@cantoo/pdf-lib` for the whole PDF engine. For merge,
+split, rotate and compress that is exactly right: those *parse* an arbitrary
+existing document, which is a hard problem with decades of malformed real-world
+input behind it, and nobody should re-solve it.
+
+`images-to-pdf` parses nothing. It writes the simplest document PDF can express
+— one image per page, no fonts, no transparency, no annotations. Measured, the
+library is ~130 KB gz to use roughly 3% of its surface.
+
+**The bundle size is the smaller half of the argument.** The larger half is
+output quality. A JPEG is *already* a PDF image stream: `/DCTDecode` takes the
+raw JPEG bytes verbatim. So the passthrough path does no image work at all —
+no decode, no re-encode, no generational loss, and a 40 MP photo costs a memory
+copy instead of a rasterise. Any route through a general library that decodes
+to a bitmap first produces a strictly worse file, slower.
+
+Three pure modules, all Node-testable under ADR-006:
+
+| | |
+|---|---|
+| `core/pdf/writer.ts` | Objects, xref, trailer; orientation applied through the `cm` matrix |
+| `core/pdf/layout.ts` | Page geometry — fit / A4 / Letter, orientation, margins, centring |
+| `core/pdf/jpeg.ts` | Frame-header parse; decides passthrough eligibility |
+
+68 tests, 98% lines on `core/pdf`. Two of them earned their place immediately:
+
+**EXIF 5 and 7 were transposed**, and review would not have caught it. PDF's
+origin is bottom-left, so the line `s = t` that `(s,t)→(t,s)` mirrors across is
+the image's *anti*-diagonal, not its main one — which swaps transpose and
+transverse. Both render a plausible rotated photo. Only asserting where each
+corner lands, derived from where EXIF places stored row 0 and column 0, finds
+it.
+
+**Passthrough is refused for progressive, arithmetic, 12-bit and CMYK JPEGs.**
+Real viewers cope with progressive almost always. "Almost always" is the wrong
+bar when the failure mode is a blank page with no error raised anywhere, and
+nobody re-reads a PDF they just made. Re-encoding a minority of inputs costs a
+little quality; guessing wrong costs someone their document silently.
+
+A third came from the fixtures: `IMG_4474.png` is a JPEG with the wrong
+extension, on purpose. The parser went by bytes and read it correctly, and the
+*test* was what needed fixing.
+
+**Scope limit, deliberately narrow:** this cannot read a PDF, edit one, embed a
+font, or draw text. When those are needed — merge, split, rotate, compress,
+sign — add `@cantoo/pdf-lib` for those tools. This file must never grow into a
+PDF implementation.
+
 ---
 ## Outstanding work, most consequential first
 

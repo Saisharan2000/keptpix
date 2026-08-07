@@ -26,6 +26,13 @@ export interface JpegFrameInfo {
   readonly frameMarker: number;
 }
 
+/**
+ * `noUncheckedIndexedAccess` types every `bytes[i]` as possibly undefined.
+ * Every read below is already bounds-checked, so this states that rather than
+ * scattering non-null assertions — which would also silence a real mistake.
+ */
+const at = (bytes: Uint8Array, index: number): number => bytes[index] ?? 0;
+
 /** Markers in C0-CF that are NOT start-of-frame. */
 const NOT_A_FRAME = new Set([0xc4 /* DHT */, 0xc8 /* JPG */, 0xcc /* DAC */]);
 
@@ -41,19 +48,19 @@ const ARITHMETIC = new Set([0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
  * describe. Null is not an error — it means "re-encode this one".
  */
 export function parseJpegFrame(bytes: Uint8Array): JpegFrameInfo | null {
-  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null; // no SOI
+  if (bytes.length < 4 || at(bytes, 0) !== 0xff || at(bytes, 1) !== 0xd8) return null; // no SOI
 
   let pos = 2;
   while (pos < bytes.length) {
     // Markers may be preceded by any number of 0xFF fill bytes.
-    if (bytes[pos] !== 0xff) {
+    if (at(bytes, pos) !== 0xff) {
       pos += 1;
       continue;
     }
-    while (pos < bytes.length && bytes[pos] === 0xff) pos += 1;
+    while (pos < bytes.length && at(bytes, pos) === 0xff) pos += 1;
     if (pos >= bytes.length) return null;
 
-    const marker = bytes[pos];
+    const marker = at(bytes, pos);
     pos += 1;
 
     // Standalone markers carry no length field.
@@ -61,16 +68,16 @@ export function parseJpegFrame(bytes: Uint8Array): JpegFrameInfo | null {
     if (marker === 0xd9) return null; // EOI before any frame header
 
     if (pos + 1 >= bytes.length) return null;
-    const segmentLength = (bytes[pos] << 8) | bytes[pos + 1];
+    const segmentLength = (at(bytes, pos) << 8) | at(bytes, pos + 1);
     if (segmentLength < 2) return null; // malformed
 
     if (isFrameMarker(marker)) {
       // SOFn payload: length(2) precision(1) height(2) width(2) components(1)
       if (pos + 7 >= bytes.length) return null;
-      const precision = bytes[pos + 2];
-      const height = (bytes[pos + 3] << 8) | bytes[pos + 4];
-      const width = (bytes[pos + 5] << 8) | bytes[pos + 6];
-      const components = bytes[pos + 7];
+      const precision = at(bytes, pos + 2);
+      const height = (at(bytes, pos + 3) << 8) | at(bytes, pos + 4);
+      const width = (at(bytes, pos + 5) << 8) | at(bytes, pos + 6);
+      const components = at(bytes, pos + 7);
 
       // A height of 0 is legal in JPEG (defined later by a DNL marker) and
       // useless to us — we need the real number for the page box.

@@ -121,6 +121,15 @@ export interface WorkerApi {
     onProgress: (p: JobProgressEvent) => void,   // Comlink.proxy()
   ): Promise<ProcessResponse>;
 
+  /** Prepare one image for embedding in a PDF (§2.1). */
+  prepareForPdf(source: PdfSourceImage): Promise<PreparedPdfImage>;
+
+  /** Assemble prepared images into one document (§2.1). */
+  assemblePdf(
+    images: readonly PreparedPdfImage[],
+    options: PdfLayoutOptions,
+  ): Promise<ArrayBuffer>;
+
   /** Cooperative cancellation — the pipeline checks between passes. */
   cancel(jobId: string): Promise<void>;
 
@@ -177,6 +186,55 @@ export interface SerializableResult {
 2. `ImageBitmap` never crosses back to the main thread. Close it inside the worker in a `finally` block.
 3. `onProgress` must be wrapped in `Comlink.proxy()` at the call site or it will not survive the boundary.
 4. Every worker method must be safe to call concurrently with `cancel`.
+
+### 2.1 The PDF pair — why images-to-pdf is not `process`
+
+`process` is one file in, one file out. `images-to-pdf` is N files in and **one**
+file out, so it is split across two calls instead of bent into that shape:
+
+```ts
+// src/core/pdf/types.ts — shared vocabulary, so the protocol does not
+// import it from an engine (docs/05 §1: no parallel shapes).
+
+export interface PdfSourceImage {
+  readonly bytes: ArrayBuffer;
+  readonly format: InputFormat;
+  readonly orientation: number;      // EXIF 1-8, read at ingest (D-33)
+}
+
+export interface PreparedPdfImage {
+  readonly bytes: ArrayBuffer;       // a /DCTDecode stream, ready to write
+  readonly width: number;            // STORED dimensions, before EXIF
+  readonly height: number;
+  readonly colorSpace: 'DeviceRGB' | 'DeviceGray';
+  readonly bitsPerComponent: number;
+  readonly orientation: number;      // applied by the placement matrix
+  readonly reencoded: boolean;       // false = the original bytes, untouched
+}
+```
+
+**`prepareForPdf` — one call per file.** Splitting per image is what lets the
+pool parallelise a batch and keeps one unreadable file from taking the whole
+document down with it (docs/04: one file failing must never abort a batch).
+
+- A baseline JPEG is **passed through byte for byte** as a `/DCTDecode` stream.
+  No decode, no re-encode, no quality loss. `reencoded: false`, and the returned
+  buffer IS the input buffer.
+- Anything else is decoded through the existing registry and encoded to JPEG by
+  the existing canvas encoder. No new codec is introduced by this tool.
+- The choice is made from the **bytes**, never the name or MIME type.
+- `orientation` on the way out is `1` when the decoder already baked EXIF into
+  its pixels (`Decoder.appliesOrientation`, docs/12 D-34), and the source
+  orientation otherwise. Getting this wrong rotates a correct photo twice.
+
+**`assemblePdf` — one call per document.** Pure byte work with no decoding, in
+a worker because concatenating several hundred megabytes on the main thread is
+a visible freeze.
+
+**Transfer rules 1 and 2 apply unchanged**, and rule 1 matters more here than
+anywhere: on the passthrough path the buffer being returned is the user's
+original photo, so cloning it would make the fast path the expensive one. Every
+`PreparedPdfImage.bytes` and the final `ArrayBuffer` go in the transfer list.
 
 ---
 

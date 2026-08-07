@@ -13,8 +13,11 @@ import {
   withEncodeBaseline,
   WASM_DECODE_FORMATS,
 } from '../core/capabilities';
+import type { PdfLayoutOptions } from '../core/pdf/layout';
+import type { PdfSourceImage, PreparedPdfImage } from '../core/pdf/types';
 import { canvasDecoder, probeNativeDecodeFormats } from '../engines/canvas/decoder';
 import { canvasEncoder, probeNativeEncodeFormats } from '../engines/canvas/encoder';
+import { assemblePdf, prepareImageForPdf } from '../engines/pdf/images-to-pdf';
 import { resolveDecoder } from '../engines/registry';
 import { runPipeline } from './pipeline';
 import {
@@ -93,6 +96,25 @@ const api: WorkerApi = {
     } finally {
       inFlight.delete(req.jobId);
     }
+  },
+
+  async prepareForPdf(source: PdfSourceImage): Promise<PreparedPdfImage> {
+    const prepared = await prepareImageForPdf(source, support);
+    // Transfer rather than clone — for the passthrough case this buffer is the
+    // original file, and copying a 40 MP photo back is the whole cost of the
+    // operation (CLAUDE.md: transfer ArrayBuffers to workers, never clone).
+    return Comlink.transfer(prepared, [prepared.bytes]);
+  },
+
+  async assemblePdf(
+    images: readonly PreparedPdfImage[],
+    options: PdfLayoutOptions,
+  ): Promise<ArrayBuffer> {
+    const document = assemblePdf(images, options);
+    // `buildPdf` allocates exactly once and the view spans the whole buffer,
+    // so the underlying ArrayBuffer can be handed over as-is.
+    const buffer = document.buffer as ArrayBuffer;
+    return Comlink.transfer(buffer, [buffer]);
   },
 
   async cancel(jobId: string): Promise<void> {

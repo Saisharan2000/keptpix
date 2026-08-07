@@ -9,6 +9,8 @@
  *  3. onProgress must be wrapped in Comlink.proxy() at the call site.
  *  4. Every method must be safe to call concurrently with cancel().
  */
+import type { PdfLayoutOptions } from '../core/pdf/layout';
+import type { PdfSourceImage, PreparedPdfImage } from '../core/pdf/types';
 import type {
   DeviceProfile,
   EncoderId,
@@ -31,6 +33,31 @@ export interface WorkerApi {
     req: ProcessRequest,
     onProgress: (p: JobProgressEvent) => void, // Comlink.proxy()
   ): Promise<ProcessResponse>;
+
+  /**
+   * Prepare one image for embedding in a PDF (docs/06 §2.1, docs/12 D-75).
+   *
+   * Separate from `process` because the shape differs: images-to-pdf is N
+   * files in and ONE file out, where `process` is one-to-one. Splitting it
+   * per-image is what lets the pool parallelise the batch and keeps a single
+   * bad file from taking the document down with it.
+   *
+   * The returned `bytes` must be in the transfer list — for the passthrough
+   * case they ARE the input buffer.
+   */
+  prepareForPdf(source: PdfSourceImage): Promise<PreparedPdfImage>;
+
+  /**
+   * Assemble prepared images into one document.
+   *
+   * Pure byte work with no decoding, but it runs here rather than on the main
+   * thread because concatenating several hundred megabytes is a visible
+   * freeze. Every input buffer and the result are transferred, never cloned.
+   */
+  assemblePdf(
+    images: readonly PreparedPdfImage[],
+    options: PdfLayoutOptions,
+  ): Promise<ArrayBuffer>;
 
   /** Cooperative cancellation — the pipeline checks between passes. */
   cancel(jobId: string): Promise<void>;

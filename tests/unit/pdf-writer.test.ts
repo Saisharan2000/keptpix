@@ -25,7 +25,7 @@ import {
 /** Byte-preserving decode — the output is binary and TextDecoder would mangle it. */
 function latin1(bytes: Uint8Array): string {
   let out = '';
-  for (let i = 0; i < bytes.length; i += 1) out += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i += 1) out += String.fromCharCode(bytes[i] ?? 0);
   return out;
 }
 
