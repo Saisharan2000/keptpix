@@ -155,12 +155,19 @@ describe('images-to-pdf — against real photos in a real browser', () => {
     const source = await sourceFrom('portrait-scrubbed.HEIC', 'heic');
     if (source === null) return;
 
-    let prepared;
-    try {
-      prepared = await prepareImageForPdf(source, support);
-    } catch {
-      return; // no HEIC decoder in this engine; heic.test.ts owns that case
-    }
+    /**
+     * NO silent catch here, deliberately.
+     *
+     * This started as a try/catch that returned on failure "in case the engine
+     * has no HEIC decoder". That was wrong twice over: `resolveDecoderId`
+     * returns `libheif` for heic unconditionally and the registry holds it
+     * statically, so there is no engine where it is absent — and iPhone
+     * photos through this tool are the single case the product exists for. A
+     * catch that never fires is a lie about the test's coverage; one that
+     * fires hides the most important failure it could find. D-74 is what
+     * reflexive skips cost.
+     */
+    const prepared = await prepareImageForPdf(source, support);
 
     expect(prepared.reencoded).toBe(true);
     // The decoder applied orientation to the pixels, so the matrix must not
