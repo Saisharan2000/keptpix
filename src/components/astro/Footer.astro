@@ -19,6 +19,9 @@ const groups = [
       { href: '/resize', label: 'Resize' },
       { href: '/metadata', label: 'Metadata' },
       ...publishedTools.map((tool) => ({ href: tool.slug, label: tool.name })),
+      // The hub must itself be reachable from every page, or it is an orphan
+      // that happens to link things (docs/12 D-79).
+      { href: '/all-tools', label: 'Every tool' },
     ],
   },
   {

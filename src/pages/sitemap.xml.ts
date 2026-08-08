@@ -29,6 +29,9 @@ const STATIC_ENTRIES: Entry[] = [
   { path: '/compress', priority: '0.8' },
   { path: '/resize', priority: '0.8' },
   { path: '/metadata', priority: '0.8' },
+  // The hub that links every route one click from one page. Higher than the
+  // other content pages because it is how a crawler reaches the long tail.
+  { path: '/all-tools', priority: '0.7' },
   { path: '/how-it-works', priority: '0.7' },
   { path: '/privacy', priority: '0.5' },
   { path: '/about', priority: '0.5' },

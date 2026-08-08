@@ -13,15 +13,24 @@
  * ZERO JavaScript.
  */
 import { publishedFormatPairRoutes } from '../../content/formats';
+import { publishedTools } from '../../core/tools';
 
 interface Props {
-  slugs: string[];
+  slugs?: string[];
   /** Slug of the current route, so a page never links to itself. */
   currentSlug?: string;
+  /**
+   * Absolute path of the current page, for routes that are not format pairs.
+   *
+   * The manifest tools are addressed by path (`/pdf/from-images`), not by a
+   * bare slug, so `currentSlug` cannot exclude them and the PDF page would
+   * list itself as a related tool.
+   */
+  currentPath?: string;
   headingId?: string;
 }
 
-const { slugs, currentSlug, headingId = 'related-heading' } = Astro.props;
+const { slugs = [], currentSlug, currentPath, headingId = 'related-heading' } = Astro.props;
 
 const pairLinks = slugs
   .filter((s) => s !== currentSlug)
@@ -29,15 +38,28 @@ const pairLinks = slugs
   .filter((r) => r !== undefined)
   .map((r) => ({ href: '/convert/' + r.slug, label: r.h1 }));
 
+/**
+ * Manifest tools, derived — so cross-linking between the image routes and the
+ * document tools happens by construction rather than by remembering (D-79).
+ *
+ * These come BEFORE the hubs because a specific tool is a better related link
+ * than a category page, and after the pairs because a page about HEIC is more
+ * related to other HEIC conversions than to a PDF builder.
+ */
+const toolLinks = publishedTools.map((tool) => ({ href: tool.slug, label: tool.name }));
+
 /* Hub routes always exist, so they are a safe backfill to a useful link count. */
 const hubLinks = [
+  { href: '/all-tools', label: 'Every tool' },
   { href: '/convert', label: 'All converters' },
   { href: '/compress', label: 'Compress to an exact size' },
   { href: '/metadata', label: 'Inspect EXIF and GPS data' },
   { href: '/how-it-works', label: 'How this works without uploading' },
 ];
 
-const links = [...pairLinks, ...hubLinks].slice(0, 6);
+const links = [...pairLinks, ...toolLinks, ...hubLinks]
+  .filter((link) => link.href !== currentPath)
+  .slice(0, 6);
 ---
 
 <section aria-labelledby={headingId}>

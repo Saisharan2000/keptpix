@@ -19,6 +19,7 @@
 import ToolLayout from '../../layouts/ToolLayout.astro';
 import FaqSection from '../../components/astro/FaqSection.astro';
 import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
+import RelatedTools from '../../components/astro/RelatedTools.astro';
 import { ManifestToolShell } from '../../components/react/ManifestToolShell';
 import { publishedTools } from '../../core/tools';
 import { copyForTool } from '../../content/tool-copy';
@@ -173,4 +174,14 @@ const webApp = {
   {copy?.faq && <FaqSection faq={[...copy.faq]} />}
 
   <PrivacyBanner />
+
+  {/*
+    Links back into the image routes, so the linking is bidirectional. The nav
+    points here; without this, nothing here points anywhere, and a page that
+    only receives links is a dead end for a crawler and for a person.
+
+    `currentPath` rather than `currentSlug`: manifest tools are addressed by
+    path, so a slug comparison would let this page list itself.
+  */}
+  <RelatedTools currentPath={tool.slug} />
 </ToolLayout>

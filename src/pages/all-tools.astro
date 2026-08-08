@@ -1,0 +1,139 @@
+---
+/**
+ * src/pages/all-tools.astro  ->  /all-tools
+ *
+ * Spec: docs/kepttools/04 §2 (content routes).
+ *
+ * One page listing every route the site actually has. It exists for three
+ * reasons, in descending order of how much they matter:
+ *
+ * 1. A visitor who lands on one tool has no way to discover the rest. The nav
+ *    holds five items and cannot hold thirty.
+ * 2. It is the strongest internal-linking surface on the site: every route one
+ *    click from one page, which is what makes them all crawlable rather than
+ *    merely present in a sitemap (docs/12 D-79 is what happens without that).
+ * 3. It is honest about what is NOT here. A list that only shows the wins reads
+ *    like marketing; one that says "PDF merge is not built yet" reads like
+ *    something maintained by a person.
+ *
+ * EVERY link is derived from published route data, so this page cannot list a
+ * route that does not build, and cannot omit one that does.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+import { publishedFormatPairRoutes, FORMAT_LABEL } from '../content/formats';
+import { publishedSizePresetRoutes, formatTarget } from '../content/presets';
+import { toolManifest, publishedTools } from '../core/tools';
+
+const pairs = publishedFormatPairRoutes.map((route) => ({
+  href: '/convert/' + route.slug,
+  label: route.h1,
+}));
+
+const sizes = publishedSizePresetRoutes.map((route) => ({
+  href: '/compress/' + route.slug,
+  label: 'Compress ' + (FORMAT_LABEL[route.format] ?? route.format) + ' to ' + formatTarget(route.targetBytes),
+}));
+
+const documents = publishedTools.map((tool) => ({ href: tool.slug, label: tool.name }));
+
+/** Declared in the manifest, engine not built. Named rather than hidden. */
+const notYet = toolManifest.filter((tool) => !tool.supported).map((tool) => tool.name);
+
+const groups = [
+  {
+    id: 'convert',
+    title: 'Convert between formats',
+    blurb:
+      'Pick the pair you need. Each page explains what the conversion actually costs you — alpha channels, colour depth, and where the quality goes.',
+    links: [...pairs, { href: '/convert', label: 'All converters' }],
+  },
+  {
+    id: 'compress',
+    title: 'Compress to an exact size',
+    blurb:
+      'For the forms that demand "under 100 KB" and reject everything else without saying how. These search quality and dimensions together until the file genuinely fits.',
+    links: [...sizes, { href: '/compress', label: 'Any target size' }],
+  },
+  {
+    id: 'documents',
+    title: 'Build a document',
+    blurb:
+      'Photos and screenshots into one PDF, assembled on your device. JPEGs go in exactly as they are, so nothing is re-compressed.',
+    links: documents,
+  },
+  {
+    id: 'other',
+    title: 'Resize and inspect',
+    blurb:
+      'Change dimensions, or look at what a photo is carrying before you send it anywhere — EXIF, GPS coordinates, camera serial numbers.',
+    links: [
+      { href: '/resize', label: 'Resize an image' },
+      { href: '/metadata', label: 'View and strip metadata' },
+    ],
+  },
+  {
+    id: 'about',
+    title: 'How and why',
+    blurb: 'The parts that are not a tool.',
+    links: [
+      { href: '/how-it-works', label: 'How this works without uploading' },
+      { href: '/privacy', label: 'Privacy' },
+      { href: '/about', label: 'About' },
+    ],
+  },
+].filter((group) => group.links.length > 0);
+---
+
+<ContentLayout
+  title="Every tool — KeptPix"
+  description="Every image and document tool on KeptPix, in one list. All of them run in your browser; none of them upload your files."
+  path="/all-tools"
+  h1="Every tool"
+  lede="All of it runs in your browser. Nothing here uploads your files, and nothing here asks you to sign in."
+>
+  {
+    groups.map((group) => (
+      <section aria-labelledby={group.id + '-heading'}>
+        <h2
+          id={group.id + '-heading'}
+          class="m-0 text-2xl font-semibold tracking-tight text-text"
+        >
+          {group.title}
+        </h2>
+        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">{group.blurb}</p>
+        <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+          {group.links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+
+  {
+    notYet.length > 0 && (
+      <section aria-labelledby="not-yet-heading">
+        <h2 id="not-yet-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+          Not built yet
+        </h2>
+        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+          These are planned and deliberately absent rather than half-finished.
+          There is no page for any of them, because a page for a tool that
+          cannot run is worse than no page: {notYet.join(', ')}.
+        </p>
+        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+          When one ships it appears in the list above on its own — the site is
+          built from a manifest of what genuinely works, so nothing can be
+          advertised ahead of its engine.
+        </p>
+      </section>
+    )
+  }
+</ContentLayout>
