@@ -2718,6 +2718,35 @@ as the failure, one `console.log` — answered it immediately. When a bug only
 appears in one harness configuration, instrument that configuration rather than
 rebuilding it.
 
+## 🟡 D-81 — a 60-second allowance inside a 30-second test
+
+**Docs affected:** `11 §4`
+**Milestone:** KeptTools M1
+
+`convert.spec.ts`'s HEIC case failed roughly half of local Firefox runs with
+`0 done · 1 running · 0 failed`, which reads exactly like a product flake.
+
+It is not. The conversion step asks for 60 s, and the enclosing test kept
+Playwright's 30 s default — so the 60 s was unreachable and the test was killed
+mid-conversion. **An assertion allowance longer than its test timeout is always
+a mistake, because the smaller one wins silently.** Same shape as the reporter
+that overrode the config in D-55, and the `launchOptions` that were ignored on
+the wrong object.
+
+Raised to 120 s, which costs nothing when things are fast — the canvas
+conversions still finish in seconds. HEIC is the case that genuinely needs it:
+it fetches and instantiates ~1 MB of libheif WASM and decodes a 2.2 MB camera
+file.
+
+**What remains, and why it is not chased further.** At 120 s it still fails
+occasionally with six Firefox workers in parallel, and passes every time at
+`--workers=1`. It needs six simultaneous WASM instantiations to reproduce.
+**CI runs `workers: 1` with `retries: 2`, so that contention cannot occur
+there** — this is a local-dev artifact of running the whole matrix at once, not
+a defect a user or CI can reach. Recorded rather than papered over: if it ever
+appears at one worker, it is a real hang in the pool under contention and
+should be treated as one.
+
 ---
 ## Outstanding work, most consequential first
 

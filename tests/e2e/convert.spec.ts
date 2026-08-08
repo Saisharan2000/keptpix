@@ -113,6 +113,26 @@ for (const route of STAR_ROUTES) {
       'real HEIC fixture not present locally — see tests/fixtures/images/README.md',
     );
 
+    /**
+     * A test timeout large enough for the allowances inside it (docs/12 D-81).
+     *
+     * The conversion step below already asks for 60s, but the enclosing test
+     * kept Playwright's 30s default — so that 60s was unreachable and the test
+     * was killed mid-conversion with "0 done · 1 running · 0 failed". It failed
+     * roughly half the time on Firefox and passed everywhere else, which reads
+     * exactly like a product flake and is not one.
+     *
+     * 120s, and it costs nothing when things are fast: the canvas conversions
+     * finish in seconds and only pay this when they genuinely need it. HEIC is
+     * the case that does — it fetches and instantiates ~1 MB of libheif WASM and
+     * decodes a 2.2 MB camera file, and Firefox runs six of these at once here.
+     *
+     * An assertion allowance longer than its test timeout is always a mistake,
+     * because the smaller one wins silently. Same shape as the reporter that
+     * overrode the config in D-55.
+     */
+    test.setTimeout(120_000);
+
     test(
       'drop a file, convert, and download a real ' + route.outputExtension + ' file',
       async ({ page }) => {
