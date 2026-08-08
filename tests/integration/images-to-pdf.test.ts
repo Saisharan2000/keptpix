@@ -41,6 +41,27 @@ const asBlob = (bytes: Uint8Array, type: string): Blob => {
   return new Blob([copy.buffer as ArrayBuffer], { type });
 };
 
+/**
+ * Byte equality without vitest's deep-equal.
+ *
+ * These are 2.6 MB camera photos, and `toEqual` on typed arrays that size took
+ * long enough that the multi-page test blew a 15s timeout doing two of them.
+ * A loop is orders of magnitude faster and reports the first differing index,
+ * which is more useful than a truncated diff of two million bytes.
+ */
+function expectSameBytes(actual: Uint8Array | undefined, expected: Uint8Array, label: string): void {
+  expect(actual, label + ': missing').toBeDefined();
+  expect(actual!.length, label + ': length').toBe(expected.length);
+  let firstDiff = -1;
+  for (let i = 0; i < expected.length; i += 1) {
+    if (actual![i] !== expected[i]) {
+      firstDiff = i;
+      break;
+    }
+  }
+  expect(firstDiff, label + ': first differing byte index').toBe(-1);
+}
+
 function latin1(bytes: Uint8Array): string {
   let out = '';
   for (let i = 0; i < bytes.length; i += 1) out += String.fromCharCode(bytes[i] ?? 0);
@@ -89,8 +110,7 @@ describe('images-to-pdf — against real photos in a real browser', () => {
     expect(streams).toHaveLength(1);
 
     // The whole claim of the passthrough path, stated as bytes.
-    expect(streams[0]?.length).toBe(original.length);
-    expect(streams[0]).toEqual(original);
+    expectSameBytes(streams[0], original, 'embedded stream vs original file');
   });
 
   it('produces a stream the browser can decode, at the page dimensions', async () => {
@@ -171,7 +191,9 @@ describe('images-to-pdf — against real photos in a real browser', () => {
     expect(prepared.reencoded).toBe(false);
   });
 
-  it('builds a multi-page document with each page in order', async () => {
+  // Two 2.6 MB photos through the full path, so the default 15s is genuinely
+  // tight on a cold worker rather than hiding a performance regression.
+  it('builds a multi-page document with each page in order', { timeout: 40_000 }, async () => {
     const a = await sourceFrom('IMG_4650.jpeg', 'jpeg');
     const b = await sourceFrom('IMG_4651.jpeg', 'jpeg');
     if (a === null || b === null) return;
@@ -188,11 +210,11 @@ describe('images-to-pdf — against real photos in a real browser', () => {
 
     const streams = extractImageStreams(pdf);
     expect(streams).toHaveLength(2);
-    expect(streams[0]).toEqual(originals[0]);
-    expect(streams[1]).toEqual(originals[1]);
+    expectSameBytes(streams[0], originals[0]!, 'page 1');
+    expectSameBytes(streams[1], originals[1]!, 'page 2');
   });
 
-  it('lays a sideways photo out as a portrait page without touching its pixels', async () => {
+  it('lays a sideways photo out as a portrait page without touching its pixels', { timeout: 40_000 }, async () => {
     const blob = await loadFixture('IMG_4650.jpeg');
     if (blob === null) return;
     const bytes = await blob.arrayBuffer();
@@ -209,7 +231,11 @@ describe('images-to-pdf — against real photos in a real browser', () => {
 
     // Neither was re-encoded, so the streams are identical...
     expect(sideways.reencoded).toBe(false);
-    expect(new Uint8Array(sideways.bytes)).toEqual(new Uint8Array(upright.bytes));
+    expectSameBytes(
+      new Uint8Array(sideways.bytes),
+      new Uint8Array(upright.bytes),
+      'same file, different declared orientation',
+    );
 
     // ...but the pages they produce are transposed.
     const uprightPage = /\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/.exec(
