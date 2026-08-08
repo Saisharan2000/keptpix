@@ -18,7 +18,9 @@
     "typecheck": "astro sync && tsc --noEmit",
     "test:integration": "vitest run --project integration",
     "test:smoke": "playwright test --grep @smoke",
-    "serve:headers": "node scripts/serve-with-headers.mjs"
+    "serve:headers": "node scripts/serve-with-headers.mjs",
+    "check:seo": "node scripts/check-seo.mjs",
+    "og:image": "node scripts/make-og-image.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",

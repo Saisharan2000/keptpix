@@ -53,7 +53,7 @@ export interface ToolCopy {
 const imagesToPdf: ToolCopy = {
   title: 'Images to PDF — nothing uploaded | KeptPix',
   metaDescription:
-    'Combine JPG, PNG and HEIC photos into one PDF in your browser. JPEGs are embedded without re-encoding, so nothing loses quality. No upload, no sign-up, no page limit.',
+    'Combine JPG, PNG and HEIC photos into one PDF in your browser. JPEGs are embedded without re-encoding, so nothing loses quality. Nothing is uploaded.',
   lede:
     'Drop your images in, put them in the order you want, get one PDF back. It all happens on your device — the files are never uploaded.',
 
