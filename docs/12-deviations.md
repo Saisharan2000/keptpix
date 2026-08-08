@@ -2843,6 +2843,62 @@ making them — has to accept them before any assertion runs. 17 tests, and spli
 producing one file per range is asserted directly, because handing back a single
 merged range is the thing most tools get wrong.
 
+## ⚪ D-84 — the Astro 7 upgrade is attempted, blocked, and deliberately parked
+
+**Docs affected:** none changed. `07 §3` dependency versions stand.
+**Milestone:** continuous maintenance
+
+Astro 5.18.2 is two majors behind 7.2.0 and carries eight high-severity XSS
+advisories. Attempted on branch `astro-7-upgrade`, **not merged**, and the branch
+is kept so resuming does not repeat the investigation.
+
+**First, the advisories were checked rather than assumed.** All eight require
+either SSR or user-controlled data reaching an Astro template. This site has
+`output: 'static'`, and greps confirmed **zero** `define:vars`, zero server
+islands, zero spread props in `.astro` files, zero view transitions, and zero
+dynamic slot names. Every vector is unreachable, so this is drift management, not
+an incident.
+
+**What worked:** `astro@7` and `@astrojs/preact@6.0.2` install cleanly, and
+`vitest@4.1.10` already accepts Vite 6, 7 *or* 8, so the test runner needed
+nothing. That was the risk that could have made this genuinely expensive.
+
+**Where it stops.** The build compiles every entrypoint and then fails at
+`generating static routes`:
+
+```
+Cannot find package 'react' imported from zustand/esm/react.mjs
+```
+
+Which is precisely the failure `ssr.noExternal: ['zustand']` was added to
+prevent. The cause is that **Vite 8 moved the option** — its own types say *"Only
+works in server environments for now. Previously this was `ssr.noExternal`"*, and
+it now lives at `environments.ssr.resolve.noExternal`. The old key is silently
+ignored rather than warned about, so a load-bearing setting simply stopped being
+read.
+
+Moving it there did not fix it. Neither did `noExternal: true`, which bundles
+every dependency. So Astro 7's prerender is not honouring that environment
+config: the bare `react` specifier survives into the server bundle and Node
+resolves it directly, outside Vite, where no alias exists.
+
+**Two candidate fixes, neither attempted:**
+
+| | Approach | Trade |
+|---|---|---|
+| 1 | A vendored `react` package re-exporting `preact/compat`, so Node can resolve the bare specifier | Cheap and permanent; adds a confusing artifact, and ships no extra bytes |
+| 2 | Move `state/store.ts` to `zustand/vanilla` and bind with `useSyncExternalStore` from `preact/compat` | Removes the problem class entirely; touches every `useStore` call site |
+
+**Why parked.** No user-visible benefit, every advisory unreachable, and the
+remaining work is unbounded bundler archaeology at a moment when the site has
+three visitors. Worth doing when there is a reason: a reachable advisory, a
+dependency that requires Astro 7, or Astro 8 forcing the question. Option 2 is
+the better fix if it is ever done properly, because it removes the coupling
+rather than working around it.
+
+**Recorded as a white entry, not a coloured one:** nothing was deviated from and
+nothing was built. This is a decision not to act, with the evidence for it.
+
 ---
 ## Outstanding work, most consequential first
 
