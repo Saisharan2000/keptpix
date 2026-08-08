@@ -28,7 +28,6 @@ async function ready(page: Page): Promise<void> {
 }
 
 const box = (page: Page) => page.locator('#query-matcher');
-const results = (page: Page) => page.locator('#query-matcher ~ ul a, ul a[href^="/"]').first();
 
 test.describe('the query matcher', () => {
   test('a natural sentence reaches the right tool @smoke', async ({ page }) => {

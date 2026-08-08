@@ -22,11 +22,29 @@ export interface ToolCopySection {
   readonly paragraphs: readonly string[];
 }
 
+/**
+ * A general table, unlike `ComparisonTable` in core/types which is fixed to a
+ * from/to format pair.
+ *
+ * Worth having for two reasons that point the same way. Users' first question
+ * about a converter is always "what happens to MY file", and a table answers it
+ * in one glance where three paragraphs do not. And measurements through early
+ * 2026 find LLMs extract tabular data far more reliably than prose, so the
+ * facts most worth being quoted on are the ones to put in a table.
+ */
+export interface ToolCopyTable {
+  readonly caption: string;
+  readonly headers: readonly string[];
+  readonly rows: readonly (readonly string[])[];
+}
+
 export interface ToolCopy {
   /** <title>. Under 60 characters so it is not truncated in results. */
   readonly title: string;
   readonly metaDescription: string;
   readonly lede: string;
+  /** Optional; rendered after the first prose section. */
+  readonly table?: ToolCopyTable;
   readonly sections: readonly ToolCopySection[];
   readonly useCases: readonly string[];
   readonly faq: ReadonlyArray<{ readonly q: string; readonly a: string }>;
@@ -38,6 +56,26 @@ const imagesToPdf: ToolCopy = {
     'Combine JPG, PNG and HEIC photos into one PDF in your browser. JPEGs are embedded without re-encoding, so nothing loses quality. No upload, no sign-up, no page limit.',
   lede:
     'Drop your images in, put them in the order you want, get one PDF back. It all happens on your device — the files are never uploaded.',
+
+  /**
+   * The question everyone actually has, answered without reading prose.
+   *
+   * It is also the most quotable thing on the page: these are checkable facts
+   * about behaviour, not claims about quality, and the JPEG row is the one that
+   * separates this from every tool that re-compresses everything on the way in.
+   */
+  table: {
+    caption: 'What happens to each format',
+    headers: ['You add', 'What we do with it', 'Quality'],
+    rows: [
+      ['JPG / JPEG', 'Embedded in the PDF exactly as it is', 'Identical — byte for byte'],
+      ['HEIC / HEIF (iPhone)', 'Decoded once, written as JPEG at high quality', 'One conversion; PDF cannot carry HEIC'],
+      ['PNG', 'Decoded once, written as JPEG; transparency flattened to white', 'One conversion; transparency is lost, because a PDF page is opaque'],
+      ['WebP / AVIF', 'Decoded once, written as JPEG at high quality', 'One conversion; PDF cannot carry either'],
+      ['TIFF', 'Decoded once, written as JPEG at high quality', 'One conversion'],
+      ['Progressive or CMYK JPEG', 'Decoded once, written as a baseline JPEG', 'One conversion, on purpose — embedding these directly can render as a blank page in some readers'],
+    ],
+  },
 
   sections: [
     {

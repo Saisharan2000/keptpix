@@ -95,6 +95,64 @@ const webApp = {
   }
 
   {
+    copy?.table && (
+      <section aria-labelledby="table-heading">
+        <h2 id="table-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+          {copy.table.caption}
+        </h2>
+        {/*
+          `role="region"` + `tabindex="0"` on the scroll container is the WCAG
+          pattern axe's `scrollable-region-focusable` requires: without it a
+          keyboard user cannot reach content that is only visible by scrolling
+          sideways, which is exactly what happens to a three-column table at
+          390px (docs/12 D-55).
+        */}
+        <div
+          role="region"
+          tabindex="0"
+          aria-labelledby="table-heading"
+          class="mt-5 overflow-x-auto rounded-md border border-border"
+        >
+          <table class="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr>
+                {copy.table.headers.map((header) => (
+                  <th
+                    scope="col"
+                    class="border-b border-border bg-bg-subtle px-4 py-3 font-semibold text-text"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {copy.table.rows.map((row) => (
+                <tr>
+                  {row.map((cell, column) =>
+                    column === 0 ? (
+                      <th
+                        scope="row"
+                        class="border-b border-border px-4 py-3 align-top font-medium text-text"
+                      >
+                        {cell}
+                      </th>
+                    ) : (
+                      <td class="border-b border-border px-4 py-3 align-top text-text-muted">
+                        {cell}
+                      </td>
+                    ),
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  {
     copy?.useCases && copy.useCases.length > 0 && (
       <section aria-labelledby="uses-heading">
         <h2 id="uses-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
