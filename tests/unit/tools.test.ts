@@ -143,7 +143,12 @@ describe('the supported gate', () => {
    *
    * `images-to-pdf` is the first through (docs/12 D-75).
    */
-  const PUBLISHED: readonly ToolId[] = ['images-to-pdf'];
+  const PUBLISHED: readonly ToolId[] = [
+    'pdf-merge',
+    'images-to-pdf',
+    'pdf-split',
+    'pdf-rotate',
+  ];
 
   it('publishes exactly the tools whose engines are built', () => {
     expect(publishedTools.map((t) => t.id)).toEqual([...PUBLISHED]);

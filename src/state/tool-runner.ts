@@ -14,13 +14,14 @@
  * reached through.
  */
 import { detectFormat, MIN_DETECT_BYTES } from '../core/detect';
+import { parsePageSelection, resolvePageIndices, selectedIndicesOrAll } from '../core/pdf/pages';
 import { assessPdfBudget, formatBytes } from '../core/pdf/budget';
 import { extractMetadata } from '../core/metadata';
 import type { PdfLayoutOptions, PdfPageOrientation, PdfPageSize } from '../core/pdf/layout';
 import type { PreparedPdfImage } from '../core/pdf/types';
 import { sanitiseBaseName } from '../core/naming';
 import type { ToolConfig, ToolId } from '../core/tools';
-import { downloadBlob } from '../platform/deliver';
+import { downloadAllAsZip, downloadBlob } from '../platform/deliver';
 import { WorkerPool } from '../workers/pool';
 
 export interface ToolRunProgress {
@@ -217,8 +218,156 @@ const imagesToPdf: ToolRunner = async ({ files, config, pool, onProgress, signal
   };
 };
 
+/** Reads a File, or records why it could not be used. */
+async function readPdf(
+  file: File,
+  failures: ToolRunFailure[],
+): Promise<ArrayBuffer | null> {
+  try {
+    const bytes = await file.arrayBuffer();
+    // Content, not extension — the same discipline as the image tools. A .pdf
+    // that is actually a Word document must fail here, not deep inside a parser.
+    const head = new Uint8Array(bytes.slice(0, 5));
+    if (String.fromCharCode(...head) !== '%PDF-') {
+      failures.push({ name: file.name, reason: 'This is not a PDF.' });
+      return null;
+    }
+    return bytes;
+  } catch (cause) {
+    failures.push({ name: file.name, reason: messageFor(cause) });
+    return null;
+  }
+}
+
+const mergePdf: ToolRunner = async ({ files, pool, onProgress, signal }) => {
+  const failures: ToolRunFailure[] = [];
+  const sources: ArrayBuffer[] = [];
+
+  for (let index = 0; index < files.length; index += 1) {
+    if (signal.aborted) throw new ToolRunAborted();
+    const file = files[index];
+    if (file === undefined) continue;
+    onProgress({ done: index, total: files.length, phase: 'reading' });
+    const bytes = await readPdf(file, failures);
+    if (bytes !== null) sources.push(bytes);
+  }
+
+  if (signal.aborted) throw new ToolRunAborted();
+  if (sources.length === 0) {
+    throw new Error('None of those files could be read as a PDF.');
+  }
+  if (sources.length === 1) {
+    // Merging one file is a copy, and saying so beats silently handing back
+    // the same document as if work had been done.
+    throw new Error('Add a second PDF — merging one file would just copy it.');
+  }
+
+  onProgress({ done: files.length, total: files.length, phase: 'assembling' });
+  const merged = await pool.mergePdfs(sources);
+
+  return {
+    blob: new Blob([merged], { type: 'application/pdf' }),
+    filename: 'merged.pdf',
+    failures,
+  };
+};
+
+const splitPdfRunner: ToolRunner = async ({ files, config, pool, onProgress, signal }) => {
+  const failures: ToolRunFailure[] = [];
+  const file = files[0];
+  if (file === undefined) throw new Error('Add a PDF first.');
+
+  onProgress({ done: 0, total: 1, phase: 'reading' });
+  const bytes = await readPdf(file, failures);
+  if (bytes === null) throw new Error('That file could not be read as a PDF.');
+  if (signal.aborted) throw new ToolRunAborted();
+
+  // Probe first so the range is validated against the real page count. Doing
+  // this before the split means "1-40" on a 12-page file is answered rather
+  // than silently clamped.
+  const { pageCount } = await pool.probePdf(bytes.slice(0));
+  const raw = typeof config.ranges === 'string' ? config.ranges : '';
+  const selection = parsePageSelection(raw, pageCount);
+
+  if (selection.ranges.length === 0) {
+    throw new Error(
+      'Enter the pages to extract, like "1-3, 7". This PDF has ' + pageCount + ' pages.',
+    );
+  }
+  for (const fragment of selection.invalid) {
+    failures.push({ name: fragment, reason: 'Not a page range we could read.' });
+  }
+
+  // GROUPS, not a flat list: each range must become its own file, which is what
+  // the manifest's help text promises.
+  const groups = selection.ranges.map((range) =>
+    resolvePageIndices({ ranges: [range], invalid: [] }),
+  );
+
+  onProgress({ done: 1, total: 1, phase: 'assembling' });
+  const parts = await pool.splitPdf(bytes, groups);
+
+  const base = sanitiseBaseName(file.name);
+  const entries = parts.map((part) => {
+    const first = (part.indices[0] ?? 0) + 1;
+    const last = (part.indices[part.indices.length - 1] ?? 0) + 1;
+    const label = first === last ? String(first) : first + '-' + last;
+    return {
+      name: base + '-pages-' + label + '.pdf',
+      blob: new Blob([part.bytes], { type: 'application/pdf' }),
+    };
+  });
+
+  await downloadAllAsZip(entries, base + '-split.zip');
+
+  // The ZIP has already been delivered, so the returned blob is the archive's
+  // stand-in for the UI's "download again" affordance.
+  return {
+    blob: new Blob([], { type: 'application/zip' }),
+    filename: base + '-split.zip',
+    failures,
+  };
+};
+
+const rotatePdfRunner: ToolRunner = async ({ files, config, pool, onProgress, signal }) => {
+  const failures: ToolRunFailure[] = [];
+  const file = files[0];
+  if (file === undefined) throw new Error('Add a PDF first.');
+
+  onProgress({ done: 0, total: 1, phase: 'reading' });
+  const bytes = await readPdf(file, failures);
+  if (bytes === null) throw new Error('That file could not be read as a PDF.');
+  if (signal.aborted) throw new ToolRunAborted();
+
+  const { pageCount } = await pool.probePdf(bytes.slice(0));
+  const raw = typeof config.pages === 'string' ? config.pages : '';
+  // Empty means every page — the manifest's help text says so, and
+  // selectedIndicesOrAll is the single place that rule lives.
+  const { indices, invalid } = selectedIndicesOrAll(raw, pageCount);
+  for (const fragment of invalid) {
+    failures.push({ name: fragment, reason: 'Not a page range we could read.' });
+  }
+  if (indices.length === 0) {
+    throw new Error('No pages matched. This PDF has ' + pageCount + ' pages.');
+  }
+
+  const angle = Number(config.angle ?? 90);
+
+  onProgress({ done: 1, total: 1, phase: 'assembling' });
+  const rotated = await pool.rotatePdf(bytes, indices, angle);
+
+  return {
+    blob: new Blob([rotated], { type: 'application/pdf' }),
+    filename: sanitiseBaseName(file.name) + '-rotated.pdf',
+    failures,
+  };
+};
+
 const RUNNERS: Partial<Record<ToolId, ToolRunner>> = {
   'images-to-pdf': imagesToPdf,
+  'pdf-merge': mergePdf,
+  'pdf-split': splitPdfRunner,
+  'pdf-rotate': rotatePdfRunner,
 };
 
 /** Whether a tool has an implementation behind it, for the shell's gate. */

@@ -20,10 +20,12 @@ import {
 } from '../core/capabilities';
 import { probeNativeEncodeFormats } from '../engines/canvas/encoder';
 import { probeNativeDecodeFormats } from '../engines/canvas/decoder';
+import type { PdfProbe } from '../engines/pdf/document';
 import type {
   JobProgressEvent,
   ProcessRequest,
   ProcessResponse,
+  SerializableSplitPart,
   WorkerApi,
 } from './protocol';
 
@@ -217,6 +219,56 @@ export class WorkerPool {
         Comlink.transfer(images, images.map((image) => image.bytes)),
         options,
       );
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  /**
+   * The PDF document operations (docs/06 §2.2).
+   *
+   * One slot each, same discipline as everything else here. `probePdf` is
+   * separate so the UI can validate a page range against a real page count
+   * before the user commits to anything.
+   */
+  async probePdf(bytes: ArrayBuffer): Promise<PdfProbe> {
+    const slot = await this.#acquire();
+    try {
+      return await slot.api.probePdf(Comlink.transfer(bytes, [bytes]));
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  async mergePdfs(sources: readonly ArrayBuffer[]): Promise<ArrayBuffer> {
+    const slot = await this.#acquire();
+    try {
+      return await slot.api.mergePdfs(Comlink.transfer(sources, [...sources]));
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  async splitPdf(
+    bytes: ArrayBuffer,
+    groups: readonly (readonly number[])[],
+  ): Promise<SerializableSplitPart[]> {
+    const slot = await this.#acquire();
+    try {
+      return await slot.api.splitPdf(Comlink.transfer(bytes, [bytes]), groups);
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  async rotatePdf(
+    bytes: ArrayBuffer,
+    indices: readonly number[],
+    angle: number,
+  ): Promise<ArrayBuffer> {
+    const slot = await this.#acquire();
+    try {
+      return await slot.api.rotatePdf(Comlink.transfer(bytes, [bytes]), indices, angle);
     } finally {
       this.#release(slot);
     }

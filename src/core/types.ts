@@ -160,7 +160,10 @@ export interface JobResult {
 export type JobErrorCode =
   | 'E_UNSUPPORTED_FORMAT' | 'E_CORRUPT_FILE' | 'E_TOO_LARGE' | 'E_OOM'
   | 'E_TARGET_UNREACHABLE' | 'E_CODEC_LOAD_FAILED' | 'E_WORKER_CRASHED'
-  | 'E_ENCODE_FAILED';
+  | 'E_ENCODE_FAILED'
+  // PDF-specific, per docs/kepttools/03 §2. Both are distinct from
+  // E_CORRUPT_FILE: the file IS a readable PDF, it just cannot be operated on.
+  | 'E_PDF_ENCRYPTED' | 'E_PDF_MALFORMED';
 
 export interface JobError {
   code: JobErrorCode;

@@ -11,6 +11,7 @@
  */
 import type { PdfLayoutOptions } from '../core/pdf/layout';
 import type { PdfSourceImage, PreparedPdfImage } from '../core/pdf/types';
+import type { PdfProbe } from '../engines/pdf/document';
 import type {
   DeviceProfile,
   EncoderId,
@@ -59,11 +60,50 @@ export interface WorkerApi {
     options: PdfLayoutOptions,
   ): Promise<ArrayBuffer>;
 
+  /**
+   * The PDF document operations (docs/06 §2.2, docs/kepttools/03 §2).
+   *
+   * All four run in the worker because @cantoo/pdf-lib parses and re-serialises
+   * the whole document — on a 200-page scan that is seconds of synchronous
+   * work, and on the main thread it would freeze the tab (CLAUDE.md
+   * non-negotiable 3). The library is dynamically imported inside the engine,
+   * so a worker that only ever converts images never downloads it.
+   *
+   * Every ArrayBuffer in and out is transferred, never cloned.
+   */
+  probePdf(bytes: ArrayBuffer): Promise<PdfProbe>;
+
+  mergePdfs(sources: readonly ArrayBuffer[]): Promise<ArrayBuffer>;
+
+  /** Each group of page indices becomes its own document. */
+  splitPdf(
+    bytes: ArrayBuffer,
+    groups: readonly (readonly number[])[],
+  ): Promise<SerializableSplitPart[]>;
+
+  rotatePdf(
+    bytes: ArrayBuffer,
+    indices: readonly number[],
+    angle: number,
+  ): Promise<ArrayBuffer>;
+
   /** Cooperative cancellation — the pipeline checks between passes. */
   cancel(jobId: string): Promise<void>;
 
   /** Free codec instances and buffers. Called before termination. */
   teardown(): Promise<void>;
+}
+
+/**
+ * A split result on its way back across the boundary.
+ *
+ * `SplitPart` in the engine carries a `Uint8Array`; this carries the underlying
+ * `ArrayBuffer` so it can go in a Comlink transfer list rather than being
+ * structured-cloned, which for a hundred-page document matters.
+ */
+export interface SerializableSplitPart {
+  readonly indices: readonly number[];
+  readonly bytes: ArrayBuffer;
 }
 
 export interface ProbeResult {

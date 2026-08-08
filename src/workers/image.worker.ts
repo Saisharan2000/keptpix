@@ -18,6 +18,7 @@ import type { PdfSourceImage, PreparedPdfImage } from '../core/pdf/types';
 import { canvasDecoder, probeNativeDecodeFormats } from '../engines/canvas/decoder';
 import { canvasEncoder, probeNativeEncodeFormats } from '../engines/canvas/encoder';
 import { assemblePdf, prepareImageForPdf } from '../engines/pdf/images-to-pdf';
+import { mergePdfs, probePdf, rotatePdf, splitPdf, type PdfProbe } from '../engines/pdf/document';
 import { resolveDecoder } from '../engines/registry';
 import { runPipeline } from './pipeline';
 import {
@@ -26,6 +27,7 @@ import {
   type ProcessRequest,
   type ProcessResponse,
   type JobProgressEvent,
+  type SerializableSplitPart,
   type WorkerApi,
 } from './protocol';
 
@@ -114,6 +116,41 @@ const api: WorkerApi = {
     // `buildPdf` allocates exactly once and the view spans the whole buffer,
     // so the underlying ArrayBuffer can be handed over as-is.
     const buffer = document.buffer as ArrayBuffer;
+    return Comlink.transfer(buffer, [buffer]);
+  },
+
+  async probePdf(bytes: ArrayBuffer): Promise<PdfProbe> {
+    return probePdf(bytes);
+  },
+
+  async mergePdfs(sources: readonly ArrayBuffer[]): Promise<ArrayBuffer> {
+    const merged = await mergePdfs(sources);
+    const buffer = merged.buffer as ArrayBuffer;
+    return Comlink.transfer(buffer, [buffer]);
+  },
+
+  async splitPdf(
+    bytes: ArrayBuffer,
+    groups: readonly (readonly number[])[],
+  ): Promise<SerializableSplitPart[]> {
+    const parts = await splitPdf(bytes, groups);
+    const serialisable = parts.map((part) => ({
+      indices: part.indices,
+      bytes: part.bytes.buffer as ArrayBuffer,
+    }));
+    return Comlink.transfer(
+      serialisable,
+      serialisable.map((part) => part.bytes),
+    );
+  },
+
+  async rotatePdf(
+    bytes: ArrayBuffer,
+    indices: readonly number[],
+    angle: number,
+  ): Promise<ArrayBuffer> {
+    const rotated = await rotatePdf(bytes, indices, angle);
+    const buffer = rotated.buffer as ArrayBuffer;
     return Comlink.transfer(buffer, [buffer]);
   },
 

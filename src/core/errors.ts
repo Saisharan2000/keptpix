@@ -53,6 +53,25 @@ const SPECS: Record<JobErrorCode, ErrorSpec> = {
     template: "Couldn't save as {format}. Try a different output format.",
     recoverable: true,
   },
+  /**
+   * Recoverable, because the fix is in the user's hands: a password-protected
+   * PDF becomes workable the moment they remove the password in whatever opened
+   * it. Says which file, because this arrives mid-batch.
+   */
+  E_PDF_ENCRYPTED: {
+    template: 'This PDF is password-protected, so it cannot be opened here.',
+    recoverable: true,
+  },
+  /**
+   * Distinct from E_CORRUPT_FILE on purpose. E_CORRUPT_FILE means "this is not
+   * a readable file"; this means "this IS a PDF, and it breaks the spec in a way
+   * we cannot work around". Conflating them sends people to re-download a file
+   * that will fail again the same way.
+   */
+  E_PDF_MALFORMED: {
+    template: "This PDF is damaged in a way we can't work around.",
+    recoverable: false,
+  },
 };
 
 /** Any {placeholder} left unfilled would leak into the UI, so it is stripped. */

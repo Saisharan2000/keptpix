@@ -2792,6 +2792,57 @@ card would beat a generic one when that specific link is shared, but it means 25
 PNGs and about a megabyte of assets, and right now the marginal value over
 *having a card at all* is small. Revisit if sharing ever becomes a real channel.
 
+## 🟠 D-83 — a `keepBookmarks` toggle that could not have worked, and the real chunk size
+
+**Docs affected:** `07 §3` (dependency table), `04 §6` (error taxonomy),
+`kepttools/03 §2`, `06 §2.2`
+**Milestone:** KeptTools M1
+
+`@cantoo/pdf-lib` added, approved by the founder, for merge / split / rotate.
+Those read an arbitrary PDF someone else produced, which is a genuinely hard
+problem; `images-to-pdf` only *writes* and still has no parser (D-75).
+
+**Two corrections to what was approved.**
+
+**The chunk is 269 KB gz, not the ~130 KB I estimated.** Off by 2x, and the
+approval was given on my number, so it was reported immediately. Verified
+genuinely lazy rather than assumed: the built worker contains
+`import("./index-BcivbndO.js")` and **zero** occurrences of `class PDFDocument`.
+Baseline island JS moved 42.6 → 43.7 KB (runner code only) against the 60 KB
+budget, and `/pdf/from-images` never loads it at all, because that tool uses our
+own writer.
+
+**The manifest's `keepBookmarks` toggle is deleted.** The library has no outline
+API — checked the type surface, the only `Outline` in it is a text-rendering
+enum — so `copyPages` drops bookmarks and the toggle could not have done
+anything whichever way it was set. That is exactly the control `smoke.spec`'s
+WO-4 check exists to keep off the settings rail. Merging needs no settings, so it
+now has none, and the page says outlines are lost instead of implying a choice
+that does not exist.
+
+**Two new error codes**, `E_PDF_ENCRYPTED` and `E_PDF_MALFORMED`, added to
+docs/04 §6 in the same commit — the taxonomy test failed until the table was
+updated, which is the gate working. Both are deliberately not `E_CORRUPT_FILE`:
+that means "this is not a readable file", these mean "this IS a readable PDF and
+cannot be operated on". Conflating them sends someone to re-download a file that
+will fail again identically.
+
+`ignoreEncryption` stays **false**. Passing true lets the library open a
+protected file and emit subtly wrong output — blank pages, still-encrypted text
+— which is worse than refusing, because the user receives a file and believes it
+worked.
+
+**Rotation adds rather than sets.** A page a scanner already marked 90° that the
+user rotates 90° must land on 180°. Setting absolutely would silently
+un-rotate pages that were already correct, turning one problem into two on a
+mixed document.
+
+**The integration tests double as a check on our own writer.** Their fixtures are
+built by `core/pdf/writer.ts`, so a real PDF parser — one that had no part in
+making them — has to accept them before any assertion runs. 17 tests, and split
+producing one file per range is asserted directly, because handing back a single
+merged range is the thing most tools get wrong.
+
 ---
 ## Outstanding work, most consequential first
 

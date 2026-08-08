@@ -229,7 +229,7 @@ The rule that matters most: **`core/` must run in plain Node.** If `npx vitest r
 
 | Package | Reason |
 |---|---|
-| `pdf-lib` | Last published **2021-11-06** despite 10M weekly downloads. If PDF work ever happens, use `@cantoo/pdf-lib`. |
+| `pdf-lib` | Last published **2021-11-06** despite 10M weekly downloads. Superseded here by `@cantoo/pdf-lib`, which IS now a dependency (MIT, actively published) for `/pdf/merge`, `/pdf/split` and `/pdf/rotate` — dynamically imported, 269 KB gz, never in the baseline. See docs/12 D-83. |
 | `mupdf` (WASM) | **AGPL-3.0 / commercial dual license.** Do not add without buying a licence. |
 | `@ffmpeg/ffmpeg` | 0.04–0.08× native speed, memory-bound, multithread needs COOP/COEP (ADR-003). Not in v1. If video ever ships, use `mediabunny`. |
 | `sharp` | Native bindings; there is no browser equivalent. Use canvas. |

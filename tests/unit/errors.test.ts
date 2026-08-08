@@ -17,10 +17,14 @@ const ALL: JobErrorCode[] = [
   'E_CODEC_LOAD_FAILED',
   'E_WORKER_CRASHED',
   'E_ENCODE_FAILED',
+  // Added with the PDF tools. Both mean "this IS a readable PDF and cannot be
+  // operated on", which is not E_CORRUPT_FILE (docs/04 §6).
+  'E_PDF_ENCRYPTED',
+  'E_PDF_MALFORMED',
 ];
 
 describe('the taxonomy is complete and closed', () => {
-  it('covers exactly the eight codes in docs/04 §6', () => {
+  it('covers exactly the ten codes in docs/04 §6', () => {
     expect([...JOB_ERROR_CODES].sort()).toEqual([...ALL].sort());
   });
 

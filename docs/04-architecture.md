@@ -289,6 +289,16 @@ Every failure must map to one of these codes and produce a specific, actionable 
 | `E_CODEC_LOAD_FAILED` | WASM fetch/instantiate failed | "Couldn't load the {format} engine. Check your connection and retry." |
 | `E_WORKER_CRASHED` | Worker terminated unexpectedly | "Processing stopped unexpectedly. Retrying…" (auto-retry once) |
 | `E_ENCODE_FAILED` | Encoder returned null/empty | "Couldn't save as {format}. Try a different output format." |
+| `E_PDF_ENCRYPTED` | PDF is password-protected (`isEncrypted`) | "This PDF is password-protected, so it cannot be opened here." |
+| `E_PDF_MALFORMED` | PDF parses as a PDF but violates the spec unrecoverably | "This PDF is damaged in a way we can't work around." |
+
+**The two PDF codes are deliberately not `E_CORRUPT_FILE`** (added with the PDF
+tools, docs/kepttools/03 §2). `E_CORRUPT_FILE` means "this is not a readable
+file". These mean "this IS a readable PDF, and it cannot be operated on" —
+either because it is locked, or because it breaks the spec in a way no
+workaround covers. Conflating them tells someone to re-download a file that will
+fail again in exactly the same way. `E_PDF_ENCRYPTED` is recoverable because the
+fix is genuinely in the user's hands: remove the password in whatever opens it.
 
 **Special case — `E_TARGET_UNREACHABLE` is a soft failure.** The domain function never throws (invariant I-5 in `06-contracts.md` §3.1); it returns `targetMet: false` with the closest under-target result. The pipeline then sets **both** `Job.error = { code: 'E_TARGET_UNREACHABLE', recoverable: true, bestEffort: <result> }` **and** `Job.status = 'done'`. The UI renders the file as a usable result with a warning badge and a one-tap "Allow resizing to reach target" action — not as a failed file. This is the one documented exception to the `result` xor `error` rule in `05-data-models.md` §4.
 

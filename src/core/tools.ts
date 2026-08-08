@@ -189,19 +189,23 @@ export const toolManifest: readonly ToolManifestEntry[] = [
     accept: PDF_ACCEPT,
     multiFile: true,
     output: 'single',
-    configFields: [
-      {
-        kind: 'toggle',
-        id: 'keepBookmarks',
-        label: 'Keep bookmarks and outlines',
-        help: 'Preserves each source document’s outline entries under the merged document.',
-        default: true,
-      },
-    ],
-    defaultConfig: { keepBookmarks: true },
+    /**
+     * NO config fields, and the absence is deliberate (docs/12 D-83).
+     *
+     * This declared a `keepBookmarks` toggle. @cantoo/pdf-lib has no outline
+     * API at all — checked, the only `Outline` in its types is a text-rendering
+     * enum — so `copyPages` drops bookmarks and the toggle could not have done
+     * anything whichever way it was set. That is precisely the control
+     * `smoke.spec`'s WO-4 check exists to keep off the settings rail.
+     *
+     * Merging needs no settings, so it has none. The page says outlines are
+     * lost rather than implying they are preserved.
+     */
+    configFields: [],
+    defaultConfig: {},
     targetSizeCapable: false,
     licenseTier: 'free',
-    supported: false,
+    supported: true,
   },
   {
     id: 'pdf-compress',
@@ -347,7 +351,7 @@ export const toolManifest: readonly ToolManifestEntry[] = [
     defaultConfig: { ranges: '' },
     targetSizeCapable: false,
     licenseTier: 'free',
-    supported: false,
+    supported: true,
   },
   {
     id: 'pdf-rotate',
@@ -381,7 +385,7 @@ export const toolManifest: readonly ToolManifestEntry[] = [
     defaultConfig: { angle: '90', pages: '' },
     targetSizeCapable: false,
     licenseTier: 'free',
-    supported: false,
+    supported: true,
   },
   {
     id: 'pdf-sign',
