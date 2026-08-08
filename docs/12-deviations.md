@@ -2479,6 +2479,60 @@ font, or draw text. When those are needed — merge, split, rotate, compress,
 sign — add `@cantoo/pdf-lib` for those tools. This file must never grow into a
 PDF implementation.
 
+## 🔴 D-76 — the e2e suite tested a different product and reported 73 passed
+
+**Docs affected:** `11 §4` (e2e harness, amended)
+**Milestone:** KeptTools M1
+
+`playwright.config.ts` had `const PORT = 4321` — Astro's default — together with
+`reuseExistingServer: !process.env.CI`. A sibling Astro project was serving on
+4321. Playwright adopted it, never built this site, and ran the entire suite
+against someone else's product.
+
+It reported **73 passed, 2 failed**. The two failures were
+`/convert/heic-to-jpg` timing out, because the other site does not have that
+route. I read that as a pre-existing defect from the KeptTools merge and said so.
+It was not: re-run against the right origin, **75 passed**.
+
+The 73 passes were worth exactly as little as the 2 failures. A11y assertions,
+SEO structure checks, theme sweeps — all green, all about a different build.
+
+**Nothing in the output named the site under test.** The only evidence was
+another product's brand string inside a failure snapshot, and that snapshot only
+exists because two tests happened to fail. A fully green run against the wrong
+build leaves no trace at all, and would have been believed.
+
+**The fix is a `globalSetup` origin guard** (`tests/e2e/_origin-guard.ts`): every
+route in `dist/` must return 200 at the target origin before any test runs.
+
+Chosen over sniffing for a brand string because it needs no marker to maintain
+and it fails for the right reasons — a foreign server fails on the first route
+it lacks, a stale server fails on whatever was added since it started, and a
+deployment behind the local build fails too, which matters because `E2E_BASE_URL`
+makes "am I testing what I just built" just as easy to get wrong. `redirect:
+'manual'` on those requests, so a 308 to a slashed variant still fails: that is
+D-65, and laundering it into a pass here would undo that fix.
+
+Verified against the actual hazard rather than a hypothetical: serving the
+sibling project's own `dist/` and pointing the guard at it produces
+
+```
+origin guard: http://localhost:4398 is not serving this build (docs/12 D-76).
+  /convert/heic-to-jpg -> 404
+  /convert/jpg-to-webp -> 404
+  /convert/png-to-jpg -> 404
+```
+
+`PORT` also moved off 4321. The guard makes the collision loud; not colliding is
+still better.
+
+**This is the fourth time the local gate has been green about the wrong thing** —
+D-63 (canonicals pointing at a domain that did not exist), D-65 (308 on every
+canonical), D-66 (a beacon `curl` could not see), and now an entire suite aimed
+at another product. The pattern is not carelessness in any one case; it is that
+"the tests pass" is a claim about the harness as much as the code, and the
+harness is the part nobody re-reads.
+
 ---
 ## Outstanding work, most consequential first
 

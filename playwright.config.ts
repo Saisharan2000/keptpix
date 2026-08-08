@@ -1,6 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4321;
+/**
+ * NOT 4321. That is Astro's default, so every Astro project on this machine
+ * wants it — and `reuseExistingServer` below will happily adopt whichever one
+ * got there first (docs/12 D-76). The origin guard catches that now; not
+ * colliding in the first place is still better.
+ */
+const PORT = 4329;
 
 /**
  * Point the suite at a DEPLOYED origin with `E2E_BASE_URL`, e.g.
@@ -19,6 +25,14 @@ const BASE_URL = REMOTE && REMOTE.length > 0 ? REMOTE : `http://localhost:${PORT
 
 export default defineConfig({
   testDir: './tests/e2e',
+  /**
+   * Fails the run if the target origin is not serving THIS build (docs/12 D-76).
+   *
+   * `reuseExistingServer` below plus a port that is Astro's default means a
+   * sibling project already on 4321 gets silently adopted, and the whole suite
+   * reports on someone else's site. That happened, and it read as 73 passed.
+   */
+  globalSetup: './tests/e2e/_origin-guard.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
