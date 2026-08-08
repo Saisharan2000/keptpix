@@ -169,6 +169,46 @@ test.describe('images to PDF, as a user does it', () => {
     expect(height).toBeGreaterThan(width);
   });
 
+  test('shows a thumbnail per page, so the order is visible', async ({ page }) => {
+    await ready(page);
+    await addJpegs(page, 3);
+
+    // Reordering pages named IMG_4650.jpg by their four-digit suffix is
+    // guesswork; this is the interaction the tool exists for.
+    const thumbs = page.locator('ol li img');
+    await expect(thumbs).toHaveCount(3);
+    for (let i = 0; i < 3; i += 1) {
+      await expect(thumbs.nth(i)).toHaveAttribute('src', /^blob:/);
+    }
+  });
+
+  test('revokes a thumbnail URL when its file is removed', async ({ page }) => {
+    await ready(page);
+    await addJpegs(page, 2);
+
+    const first = page.locator('ol li img').first();
+    await expect(first).toHaveAttribute('src', /^blob:/);
+    const url = (await first.getAttribute('src')) ?? '';
+    expect(url.startsWith('blob:')).toBe(true);
+
+    // A live blob URL fetches; a revoked one cannot. This is the only way to
+    // assert the revoke actually happened rather than trusting the cleanup
+    // function exists (docs/05 §4 invariant 1 — leaked object URLs are the top
+    // memory-leak source in this class of app).
+    expect(await page.evaluate(async (u) => {
+      const r = await fetch(u).then(() => true).catch(() => false);
+      return r;
+    }, url)).toBe(true);
+
+    await page.getByRole('button', { name: 'Remove page-1.jpg' }).click();
+    await expect(page.locator('ol li')).toHaveCount(1);
+
+    expect(
+      await page.evaluate(async (u) => fetch(u).then(() => true).catch(() => false), url),
+      'the object URL for the removed file should have been revoked',
+    ).toBe(false);
+  });
+
   test('the action is absent until there is something to act on', async ({ page }) => {
     await ready(page);
     await expect(page.getByRole('button', { name: 'Images to PDF', exact: true })).toHaveCount(0);

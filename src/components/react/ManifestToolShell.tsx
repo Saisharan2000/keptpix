@@ -17,6 +17,7 @@ import {
   type ToolRunResult,
 } from '../../state/tool-runner';
 import { Dropzone } from './Dropzone';
+import { FileThumbnail } from './FileThumbnail';
 import { PrivacyIndicator } from './PrivacyIndicator';
 import { ProgressBar } from './ProgressBar';
 import { ToolConfigPanel } from './ToolConfigPanel';
@@ -239,6 +240,16 @@ export function ManifestToolShell({ tool }: Props) {
                   >
                     {index + 1}
                   </span>
+                  {/*
+                    Shown when the file IS an image, which is a property of the
+                    file rather than of the tool — so this stays manifest-driven
+                    and needs no branch on `tool.id`. A PDF gets the labelled
+                    placeholder, because previewing one would mean shipping a
+                    renderer, and pdf.js is far too large to add for a 56px box.
+                  */}
+                  {item.file.type.startsWith('image/') ? (
+                    <FileThumbnail file={item.file} />
+                  ) : null}
                   <span class="min-w-0 flex-1 truncate text-sm text-text">{item.file.name}</span>
                   {tool.multiFile && queued.length > 1 && (
                     <>
