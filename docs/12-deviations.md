@@ -2665,12 +2665,65 @@ Two lessons, and the second is the general one:
    cannot detect that the question is wrong. Whoever writes the criterion owns
    its validity — the executor cannot recover it.
 
+## 🟠 D-80 — the batch test's device pin leaked one field, and that decided the outcome
+
+**Docs affected:** `11 §4`
+**Milestone:** KeptTools M1
+
+`batch.spec.ts` passed on chromium and reported `49 done · 0 running · 1 failed`
+on `mobile-chromium`, where the acceptance is `48 done, 2 flagged`. It sat red
+for a day, through two wrong hypotheses of mine, before being measured properly.
+
+**What it actually was.** The oversized fixture came out as **`Done`, at
+9428×8485** — 80.0 MP, not the 90 MP that went in. It had been silently
+downscaled to exactly the ceiling.
+
+That is D-43 working as designed. There are two tiers: under the soft budget the
+DECODER pre-scales via `device.maxDecodedPixels`, silently and for free, and only
+above the hard ceiling is a decode refused. The hard-ceiling check reads the
+dimensions **after** that pre-scale — so on a profile declaring an 80 MP decode
+cap, 90 MP becomes 80 MP first, `80M > 80M` is false, and the file converts. The
+product was right; the test was measuring the wrong path.
+
+**The leak.** The pin was `{ ...device, deviceMemoryGb: 4, isMobile: false }`,
+and `maxDecodedPixels` rode through the spread from whatever real device the
+project emulates — absent on a desktop, 80 MP on an emulated phone. So the test
+exercised outright rejection on one project and silent pre-scaling on another,
+while claiming in its own comment to be "deterministic on any hardware". Fixed by
+pinning `maxDecodedPixels: 0`, which disables the pre-scale tier so the
+hard-ceiling path is what runs everywhere. Green on all five projects.
+
+### Two wrong turns worth recording, because both were confidently reasoned
+
+**I moved the pin earlier and broke it.** Hypothesis: ingest ran before the pin,
+so it saw the real profile. I moved the pin to immediately after hydration — and
+the diagnostic then showed `deviceMemoryGb: 16`, i.e. not pinned at all.
+`ToolShell` calls `hydrateEnvironment()` on mount, which REPLACES device and
+codecs with the real measured profile; pinning before that resolves gets
+overwritten. The original placement was load-bearing for a reason its comment did
+not state. Reverted.
+
+**I trusted `window.__keptpix_store` and it was empty.** Both diagnostics
+reported `jobCount: 0, sourceCount: 0` with fifty cards on screen. The `device`
+field read correctly, so the handle is live — but its job and source maps were
+empty, which cannot be the store driving that UI. Reading the DOM instead gave
+the answer in one run. **The store handle is not a trustworthy diagnostic
+surface, and smoke.spec's D-49 assertion rests on it** — that assertion happens
+to read `device`, which is populated, so it is not currently wrong. Worth
+understanding before anything else leans on that handle.
+
+**The general lesson.** Three probes I wrote failed to reproduce the ingest at
+all, and I kept refining them. The instrumented real test — the same code path
+as the failure, one `console.log` — answered it immediately. When a bug only
+appears in one harness configuration, instrument that configuration rather than
+rebuilding it.
+
 ---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
 |---|---|---|
-| 🔴 | **`batch.spec.ts` fails on `mobile-chromium` only** — reports `49 done · 0 running · 1 failed` where the acceptance is `48 done, 2 flagged`. One of the two deliberately-bad files converts successfully under Pixel 7 emulation. Ruled out by direct measurement: the 4 GB device pin *does* apply (verified in the live store), and the 90 MP canvas *is* genuinely 90 MP there (verified — mobile Chromium does not clamp it). Not caused by the M1 work: nothing in the path `batch.spec` exercises — `ToolShell`, `ConfigPanel`, `FormatSelect`, the guards, `process` — was modified. Still unexplained: **which** of the two files passes, and why. A single-file repro showed the 90 MP PNG never reaching `sources` at all on desktop, i.e. refused at ingest, which would make the batch 49 files rather than 50 — yet mobile accounts for 50. That asymmetry is the thread to pull. Each run costs ~20 min on one worker, which is why it is parked rather than solved | One red test on one project; the same acceptance passes on chromium, firefox, webkit and mobile-safari |
+| 🟡 | **`window.__keptpix_store` reports empty `jobs`/`sources` while the UI shows fifty cards** (D-80). `device` reads correctly, so the handle is live but is evidently not the instance driving the UI. Nothing depends on the broken part today — `smoke.spec`'s D-49 assertion reads `device` — but it is a diagnostic surface that lies, and the next test to reach for it will be misled exactly as I was | Trustworthy in-browser diagnostics |
 | ✅ | ~~D-03 SVG~~, ~~D-34 HEIC orientation~~, ~~privacy.spec.ts~~, ~~real HEIC decode~~ — all **done** and verified against real files | — |
 | ✅ | ~~D-42 Smart App Control~~, ~~a11y sweep~~ — resolved, 69/69 passing across all 22 routes | — |
 | ✅ | ~~Milestone 6~~ (all content), ~~Milestone 7~~ (all suites, D-43/44/45) — **done**, 372 tests green | — |

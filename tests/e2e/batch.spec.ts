@@ -84,6 +84,14 @@ async function addBatch(page: Page, goodCount: number): Promise<void> {
 test.describe('batch of 50: one corrupt, one oversized', () => {
   test('completes with 48 done, 2 flagged, and never aborts', async ({ page }) => {
     await waitForHydration(page, '/convert/png-to-jpg');
+    await addBatch(page, GOOD_COUNT);
+
+    await expect(page.getByRole('heading', { name: 'Files (' + TOTAL_COUNT + ')' })).toBeVisible({
+      timeout: 20_000,
+    });
+
+    const convertButton = page.getByRole('button', { name: /^Convert \d+ files?$/ });
+    await expect(convertButton).toBeVisible();
 
     /**
      * Pin a 4 GB device profile before converting (WO-1, docs/12 D-57).
@@ -99,19 +107,26 @@ test.describe('batch of 50: one corrupt, one oversized', () => {
      * the profile instead keeps the acceptance intact ("2 flagged with specific
      * errors") and deterministic on any hardware, for free. It goes through
      * setEnvironment — the store's own public action — and must happen BEFORE
-     * THE FILES ARE ADDED, not merely before the convert (docs/12 D-80).
+     * the first convert, because the WorkerPool is created lazily on start()
+     * and configures its workers from this profile.
      *
-     * It was placed after `addBatch`, which left ingest running against the
-     * REAL profile of whatever machine or emulated device the project uses.
-     * That is not a constant: the hard ceiling is device-scaled, so a 16 GB
-     * desktop admits the 90 MP file at ingest and rejects it later at the
-     * pinned limit, while a mobile-emulated project takes a different path at
-     * ingest entirely. The suite passed on chromium and reported
-     * "49 done, 1 failed" on mobile-chromium — a test that measured the
-     * harness rather than the product.
+     * `maxDecodedPixels: 0` is the load-bearing part, and its absence is why
+     * this passed on chromium and reported "49 done, 1 failed" on
+     * mobile-chromium (docs/12 D-80).
      *
-     * Pinning first makes ingest and conversion see the same profile, which is
-     * what this block always claimed to be for.
+     * D-43 defines two tiers: under the soft budget the DECODER silently
+     * pre-scales via `maxDecodedPixels`, and only above the hard ceiling is a
+     * decode refused. The ceiling is checked against the dimensions AFTER that
+     * pre-scale. So on a profile declaring an 80 MP decode cap, the 90 MP
+     * panorama is quietly scaled to 9428x8485 first, `80M > 80M` is false, and
+     * it converts successfully — correct behaviour, and not the path this test
+     * means to exercise.
+     *
+     * `...device` was leaking that field from whatever real device the project
+     * emulates: absent on desktop, 80 MP on a phone. Pinning it to 0 disables
+     * the pre-scale tier, so the hard-ceiling rejection is what runs, on every
+     * project. That is what "deterministic on any hardware" above always
+     * claimed and did not deliver.
      *
      * Both tiers are proven for real in tests/integration/pipeline.test.ts,
      * where the same 90 MP image is refused at 4 GB and converts at 16 GB.
@@ -124,17 +139,11 @@ test.describe('batch of 50: one corrupt, one oversized', () => {
       if (state === undefined) throw new Error('store handle missing');
       const device = state['device'] as Record<string, unknown>;
       const setEnvironment = state['setEnvironment'] as (d: unknown, c: unknown) => void;
-      setEnvironment({ ...device, deviceMemoryGb: 4, isMobile: false }, state['codecs']);
+      setEnvironment(
+        { ...device, deviceMemoryGb: 4, isMobile: false, maxDecodedPixels: 0 },
+        state['codecs'],
+      );
     });
-
-    await addBatch(page, GOOD_COUNT);
-
-    await expect(page.getByRole('heading', { name: 'Files (' + TOTAL_COUNT + ')' })).toBeVisible({
-      timeout: 20_000,
-    });
-
-    const convertButton = page.getByRole('button', { name: /^Convert \d+ files?$/ });
-    await expect(convertButton).toBeVisible();
 
     await convertButton.click();
 
