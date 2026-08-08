@@ -91,11 +91,20 @@ describe('the shell renders every manifest entry', () => {
         expect(fileInput?.hasAttribute('multiple'), tool.id + ' multiFile').toBe(tool.multiFile);
       });
 
-      it('shows the honest notice and no action button while unsupported', () => {
-        // The real entry, gate untouched — the D-55 pattern: say it cannot run
-        // rather than offer a button that fails on click.
+      it('matches its own gate — notice while unsupported, tool once built', () => {
+        // The real entry, gate untouched.
         const el = mount(tool);
 
+        if (tool.supported) {
+          // Once an engine exists the notice must be gone, or a working tool
+          // is telling people it does not work.
+          expect(el.textContent, tool.id).not.toContain('isn’t ready yet');
+          expect(el.querySelector('input[type="file"]'), tool.id).not.toBeNull();
+          return;
+        }
+
+        // The D-55 pattern: say it cannot run rather than offer a button that
+        // fails on click.
         expect(el.textContent).toContain('isn’t ready yet');
         expect(el.querySelector('button'), tool.id).toBeNull();
         expect(el.querySelector('input[type="file"]'), tool.id).toBeNull();

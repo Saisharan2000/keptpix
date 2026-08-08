@@ -1,0 +1,220 @@
+/**
+ * src/state/tool-runner.ts
+ *
+ * Where a manifest tool's actual work is looked up.
+ *
+ * `ManifestToolShell` must never branch on `tool.id` — docs/kepttools/03 §1
+ * makes "adding a tool is a manifest edit and nothing else" a tested property.
+ * A registry keeps that true while still letting each tool do something
+ * genuinely different: the shell asks for a runner by id and calls it, and a
+ * new tool adds an entry here rather than a branch there.
+ *
+ * A tool with no runner is not a broken tool — it is an unbuilt one, and its
+ * manifest entry is still `supported: false`, so no route exists for it to be
+ * reached through.
+ */
+import { detectFormat, MIN_DETECT_BYTES } from '../core/detect';
+import { extractMetadata } from '../core/metadata';
+import type { PdfLayoutOptions, PdfPageOrientation, PdfPageSize } from '../core/pdf/layout';
+import type { PreparedPdfImage } from '../core/pdf/types';
+import { sanitiseBaseName } from '../core/naming';
+import type { ToolConfig, ToolId } from '../core/tools';
+import { downloadBlob } from '../platform/deliver';
+import { WorkerPool } from '../workers/pool';
+
+export interface ToolRunProgress {
+  /** Files finished, successfully or not. */
+  readonly done: number;
+  readonly total: number;
+  readonly phase: 'reading' | 'assembling';
+}
+
+export interface ToolRunInput {
+  readonly files: readonly File[];
+  readonly config: ToolConfig;
+  readonly pool: WorkerPool;
+  readonly onProgress: (progress: ToolRunProgress) => void;
+  readonly signal: AbortSignal;
+}
+
+/**
+ * The pool lives here rather than in the component.
+ *
+ * docs/07 §2 does not grant `components/react/` access to `workers/pool`, and
+ * eslint-plugin-boundaries enforced that the moment it was tried. It is the
+ * right rule: worker lifecycle is state, not view, and a component that spawns
+ * threads in an effect leaks them the first time a re-render is mistimed.
+ *
+ * Lazy, because a page nobody uses should cost zero threads, and long-lived,
+ * because spawning discards the WASM instantiation the next file would reuse.
+ */
+let sharedPool: WorkerPool | null = null;
+
+function getPool(): WorkerPool {
+  sharedPool ??= new WorkerPool();
+  return sharedPool;
+}
+
+/** Called when the island unmounts — three idle workers is three idle threads. */
+export async function disposeToolPool(): Promise<void> {
+  const pool = sharedPool;
+  sharedPool = null;
+  await pool?.dispose();
+}
+
+export interface ToolRunFailure {
+  readonly name: string;
+  readonly reason: string;
+}
+
+export interface ToolRunResult {
+  readonly blob: Blob;
+  readonly filename: string;
+  /** Files that could not be included. The rest of the batch still ran. */
+  readonly failures: readonly ToolRunFailure[];
+}
+
+export type ToolRunner = (input: ToolRunInput) => Promise<ToolRunResult>;
+
+/** Cancellation raised between files; the caller treats it as "not an error". */
+export class ToolRunAborted extends Error {
+  constructor() {
+    super('cancelled');
+    this.name = 'ToolRunAborted';
+  }
+}
+
+function messageFor(cause: unknown): string {
+  if (typeof cause === 'object' && cause !== null && 'message' in cause) {
+    const { message } = cause as { message: unknown };
+    if (typeof message === 'string' && message.length > 0) return message;
+  }
+  return 'This file could not be read.';
+}
+
+/** Narrows a free-form config value to a known page size. */
+function pageSizeFrom(value: unknown): PdfPageSize {
+  return value === 'a4' || value === 'letter' ? value : 'fit';
+}
+
+function orientationFrom(value: unknown): PdfPageOrientation {
+  return value === 'portrait' || value === 'landscape' ? value : 'auto';
+}
+
+function marginFrom(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * The output name.
+ *
+ * One image gives its own name to the document, which is what someone
+ * converting a single scan expects. Several fall back to a generic name rather
+ * than picking one file's name arbitrarily and implying the rest are inside it
+ * as an afterthought.
+ */
+function pdfNameFor(files: readonly File[]): string {
+  if (files.length === 1 && files[0] !== undefined) {
+    return sanitiseBaseName(files[0].name) + '.pdf';
+  }
+  return 'images.pdf';
+}
+
+const imagesToPdf: ToolRunner = async ({ files, config, pool, onProgress, signal }) => {
+  const options: PdfLayoutOptions = {
+    pageSize: pageSizeFrom(config.pageSize),
+    orientation: orientationFrom(config.orientation),
+    marginMm: marginFrom(config.marginMm),
+  };
+
+  const prepared: PreparedPdfImage[] = [];
+  const failures: ToolRunFailure[] = [];
+
+  // Sequential on purpose. The pool would happily run these in parallel, but
+  // every prepared image stays in memory until the document is assembled, so
+  // parallelism here buys a little wall-clock time in exchange for a much
+  // higher peak — and this is the tool most likely to be handed forty photos
+  // on a phone.
+  for (let index = 0; index < files.length; index += 1) {
+    if (signal.aborted) throw new ToolRunAborted();
+
+    const file = files[index];
+    if (file === undefined) continue;
+
+    onProgress({ done: index, total: files.length, phase: 'reading' });
+
+    try {
+      const bytes = await file.arrayBuffer();
+
+      const format = detectFormat(new Uint8Array(bytes.slice(0, MIN_DETECT_BYTES)));
+      if (format === null) {
+        failures.push({ name: file.name, reason: 'Not an image we can read.' });
+        continue;
+      }
+
+      // Read on the main thread, per docs/12 D-33 — the worker must not
+      // re-parse EXIF, and for HEIC it cannot do so reliably anyway.
+      const metadata = await extractMetadata(bytes);
+
+      prepared.push(
+        await pool.prepareForPdf({ bytes, format, orientation: metadata.orientation }),
+      );
+    } catch (cause) {
+      // One unreadable file must never cost the user the other thirty-nine.
+      failures.push({ name: file.name, reason: messageFor(cause) });
+    }
+  }
+
+  if (signal.aborted) throw new ToolRunAborted();
+  if (prepared.length === 0) {
+    throw new Error(
+      failures.length > 0
+        ? 'None of those files could be read, so there is no document to make.'
+        : 'Add at least one image first.',
+    );
+  }
+
+  onProgress({ done: files.length, total: files.length, phase: 'assembling' });
+  const document = await pool.assemblePdf(prepared, options);
+
+  return {
+    blob: new Blob([document], { type: 'application/pdf' }),
+    filename: pdfNameFor(files),
+    failures,
+  };
+};
+
+const RUNNERS: Partial<Record<ToolId, ToolRunner>> = {
+  'images-to-pdf': imagesToPdf,
+};
+
+/** Whether a tool has an implementation behind it, for the shell's gate. */
+export function hasToolRunner(id: ToolId): boolean {
+  return RUNNERS[id] !== undefined;
+}
+
+/**
+ * Run a tool. The pool is supplied here so no caller has to know one exists.
+ */
+export async function runTool(
+  id: ToolId,
+  input: Omit<ToolRunInput, 'pool'>,
+): Promise<ToolRunResult> {
+  const runner = RUNNERS[id];
+  if (runner === undefined) {
+    throw new Error('No runner is registered for ' + id + '.');
+  }
+  return runner({ ...input, pool: getPool() });
+}
+
+/**
+ * Hands the finished document to the browser.
+ *
+ * Re-exported through state/ because docs/07 §2 does not grant
+ * `components/react/` access to `platform/`, and rightly so — a component
+ * should not be reaching for the filesystem. `downloadBlob` owns the object-URL
+ * revoke that docs/05 §4 invariant 1 requires.
+ */
+export function deliverToolResult(result: ToolRunResult): void {
+  downloadBlob(result.blob, result.filename);
+}

@@ -132,11 +132,28 @@ describe('tool manifest', () => {
 });
 
 describe('the supported gate', () => {
-  it('publishes nothing at M0 — every engine is still unbuilt', () => {
-    // This flips as M1/M2/M4/M5 land. It failing is the reminder to move the
-    // assertion forward deliberately, not to delete it.
-    expect(toolManifest.every((t) => !t.supported)).toBe(true);
-    expect(publishedTools).toHaveLength(0);
+  /**
+   * The exact set of tools with a working engine, listed by hand.
+   *
+   * This started as "nothing is published at M0" and moves forward one entry
+   * at a time as engines land — deliberately, by editing this list, which is
+   * the point. A tool becomes reachable by a human writing its id here after
+   * its acceptance criteria are green, never as a side effect of someone
+   * flipping a boolean in the manifest.
+   *
+   * `images-to-pdf` is the first through (docs/12 D-75).
+   */
+  const PUBLISHED: readonly ToolId[] = ['images-to-pdf'];
+
+  it('publishes exactly the tools whose engines are built', () => {
+    expect(publishedTools.map((t) => t.id)).toEqual([...PUBLISHED]);
+  });
+
+  it('keeps every other tool gated', () => {
+    for (const tool of toolManifest) {
+      const shouldBePublished = PUBLISHED.includes(tool.id);
+      expect(tool.supported, tool.id).toBe(shouldBePublished);
+    }
   });
 
   it('never exposes an unsupported tool through any lookup', () => {

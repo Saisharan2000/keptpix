@@ -279,7 +279,9 @@ export const toolManifest: readonly ToolManifestEntry[] = [
     defaultConfig: { pageSize: 'fit', orientation: 'auto', marginMm: 0 },
     targetSizeCapable: false,
     licenseTier: 'free',
-    supported: false,
+    // The first tool through the gate (docs/12 D-75). Its engine writes PDF
+    // directly with no library, and a baseline JPEG goes in byte for byte.
+    supported: true,
   },
   {
     id: 'pdf-to-images',

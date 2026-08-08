@@ -31,6 +31,16 @@ const support: CodecSupport = resolveCodecSupport({
   wasmDecode: [],
 });
 
+/**
+ * `Uint8Array<ArrayBufferLike>` is not a `BlobPart` under the current lib
+ * types, and every array here is a fresh `slice` that owns its buffer.
+ */
+const asBlob = (bytes: Uint8Array, type: string): Blob => {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return new Blob([copy.buffer as ArrayBuffer], { type });
+};
+
 function latin1(bytes: Uint8Array): string {
   let out = '';
   for (let i = 0; i < bytes.length; i += 1) out += String.fromCharCode(bytes[i] ?? 0);
@@ -109,7 +119,7 @@ describe('images-to-pdf — against real photos in a real browser', () => {
     // our writer, and "fixing" the writer to satisfy it would emit a squashed
     // page. What this test is for is that the stream is real, decodable image
     // data of the right shape at the offset the document claims.
-    const bitmap = await createImageBitmap(new Blob([stream!], { type: 'image/jpeg' }), {
+    const bitmap = await createImageBitmap(asBlob(stream!, 'image/jpeg'), {
       imageOrientation: 'none',
     });
     try {
@@ -139,7 +149,7 @@ describe('images-to-pdf — against real photos in a real browser', () => {
 
     const pdf = assemblePdf([prepared], FIT);
     const stream = extractImageStreams(pdf)[0];
-    const bitmap = await createImageBitmap(new Blob([stream!], { type: 'image/jpeg' }), {
+    const bitmap = await createImageBitmap(asBlob(stream!, 'image/jpeg'), {
       imageOrientation: 'none',
     });
     try {

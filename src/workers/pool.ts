@@ -8,6 +8,8 @@
  * away the WASM instantiation cost that Milestone 5 will start paying.
  */
 import * as Comlink from 'comlink';
+import type { PdfLayoutOptions } from '../core/pdf/layout';
+import type { PdfSourceImage, PreparedPdfImage } from '../core/pdf/types';
 import type { CodecSupport, DeviceProfile } from '../core/types';
 import {
   resolveCodecSupport,
@@ -174,6 +176,47 @@ export class WorkerPool {
         this.#replace(slot);
       }
       throw cause;
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  /**
+   * Prepare one image for a PDF (docs/06 §2.1).
+   *
+   * Same slot discipline as `process`, so a batch spreads across the pool and
+   * the caller can simply fire one of these per file. `bytes` is transferred
+   * in both directions: on the passthrough path it is the user's original
+   * photo, and copying it would make the fast path the expensive one.
+   */
+  async prepareForPdf(source: PdfSourceImage): Promise<PreparedPdfImage> {
+    const slot = await this.#acquire();
+    try {
+      const prepared = await slot.api.prepareForPdf(
+        Comlink.transfer(source, [source.bytes]),
+      );
+      slot.consecutiveFailures = 0;
+      return prepared;
+    } catch (cause) {
+      slot.consecutiveFailures += 1;
+      if (slot.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) this.#replace(slot);
+      throw cause;
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  /** Assemble prepared images into one document (docs/06 §2.1). */
+  async assemblePdf(
+    images: readonly PreparedPdfImage[],
+    options: PdfLayoutOptions,
+  ): Promise<ArrayBuffer> {
+    const slot = await this.#acquire();
+    try {
+      return await slot.api.assemblePdf(
+        Comlink.transfer(images, images.map((image) => image.bytes)),
+        options,
+      );
     } finally {
       this.#release(slot);
     }
