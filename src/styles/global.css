@@ -106,6 +106,28 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+
+    /*
+     * The page background lives on BOTH html and body, deliberately.
+     *
+     * It was on body alone, which is the usual advice and renders fine — the
+     * background propagates to the canvas. But on iOS WebKit, `body` on a page
+     * containing a native form control reports as completely unstyled to
+     * `getComputedStyle`: no background, no colour, not even the inherited
+     * custom properties, while its own children report correctly. The page
+     * still LOOKS right, because the dark canvas comes from `color-scheme`.
+     *
+     * That broke the a11y gate rather than the page: axe walks up from each
+     * text node looking for a background, found none, assumed white, and
+     * reported 31 serious contrast violations on a page that is genuinely
+     * fine (docs/12 D-77).
+     *
+     * Declaring it here as well costs nothing, is what several design systems
+     * do anyway, and means nothing — a checker, an extension, a future
+     * browser quirk — can fail to find the real background.
+     */
+    background-color: var(--color-bg);
+    color: var(--color-text);
   }
 
   :root {

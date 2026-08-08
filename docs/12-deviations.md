@@ -2533,11 +2533,86 @@ at another product. The pattern is not carelessness in any one case; it is that
 "the tests pass" is a claim about the harness as much as the code, and the
 harness is the part nobody re-reads.
 
+## 🟠 D-77 — 31 "serious" contrast violations on a page that is visually perfect
+
+**Docs affected:** `08 §6` (a11y gate scope, amended), `11 §4`
+**Milestone:** KeptTools M1
+
+`/pdf/from-images` failed `dark:` a11y on `mobile-safari` with
+`color-contrast (serious) x31 — h1`. Deterministic, 3 runs out of 3. Every other
+route passed, and the same route passed in light and on every other engine.
+
+A screenshot settled what it was not: the page renders correctly — dark
+background, light text, comfortable contrast.
+
+**What axe was actually seeing.** Under Playwright's WebKit `isMobile`
+emulation, WebKit stops resolving author CSS for *some* elements on the page:
+`body`, `main` and `<select>` report no background, no colour, and not even the
+inherited custom properties — while `header`, and `main`'s own child `h1`,
+report correctly. axe walks up from each text node looking for a background,
+finds none, assumes white, and calls every text node on the page a failure.
+
+Bisected to one flag. Not the viewport (390px alone is fine), not touch, not
+device pixel ratio, not the engine — `isMobile: true` and nothing else. Chromium's
+Pixel 7 sets it too and is unaffected. The page renders dark because
+`color-scheme` gives WebKit a dark canvas, which is why it looks right while
+measuring wrong.
+
+**Why this route and no other:** it is the first page in the site to contain a
+`<select>`. Every existing control is a radio group or a button. Twelve routes
+of a11y coverage never reached this combination.
+
+**Two real fixes, kept regardless of the tooling problem:**
+
+| | |
+|---|---|
+| `html` now carries the background | It was on `body` alone — the usual advice, and it renders fine. Declaring it on both costs nothing and means nothing walking up the tree can fail to find a real background. Cut the violations from 31 to 2 on its own. |
+| `Select` owns its colours | `appearance: none` plus its own arrow. Left native, iOS paints the control from the system appearance and reports its text as `#000000` whatever `color` says. Owning it makes rendered and reported the same thing, and makes the control look identical on every platform instead of three different ways. |
+
+**The remaining 2 could not be fixed in CSS**, because under that flag no author
+CSS applies to a `<select>` at all. So `color-contrast` — and only that rule — is
+disabled for `mobile-safari` alone.
+
+That is a narrowing, not a hole:
+- every other project still checks contrast, **including `mobile-chromium`** — a
+  mobile-emulated engine at a mobile width, which is the actual risk
+- `webkit` desktop exercises the identical stylesheet
+- every other axe rule still runs on `mobile-safari`
+
+**Owed:** this is Playwright's WebKit, not Safari. Whether real iOS Safari
+resolves that CSS correctly is unverified and cannot be verified from Windows
+(D-68). It folds into the existing on-device check: open `/pdf/from-images` on a
+real iPhone in dark mode and confirm the settings rail is readable. The evidence
+says emulation artifact — the same build is correct on five other
+engine/viewport combinations — but "the emulator is wrong" is a claim that
+deserves a real device behind it.
+
+## 🟡 D-78 — the smoke settings check only ever ran at one viewport
+
+**Docs affected:** `11 §4`
+**Milestone:** KeptTools M1
+
+`smoke.spec.ts`'s WO-4 check ("the settings surface exposes no control that does
+nothing") asserted the settings rail was visible and then searched it. Below
+`lg` the tool is a two-step flow and that rail starts collapsed, so the
+assertion could only ever pass on a desktop viewport. It went red the moment a
+`mobile-chromium` project existed (added in D-74).
+
+Fixed by opening the disclosure first, which is also the more honest test: a
+control that does nothing is just as wrong on a phone, and tapping Settings is
+how a phone user reaches it. Green on both projects now.
+
+Worth noting the interaction that made this non-obvious: on mobile, opening
+Settings *hides* the files panel, so a test that opens Settings and then looks
+for the convert button will not find it. The two panels are alternatives below
+`lg`, not siblings.
+
 ---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
 |---|---|---|
+| 🔴 | **`batch.spec.ts` fails on `mobile-chromium` only** — reports `49 done · 0 running · 1 failed` where the acceptance is `48 done, 2 flagged`. One of the two deliberately-bad files converts successfully under Pixel 7 emulation. Ruled out by direct measurement: the 4 GB device pin *does* apply (verified in the live store), and the 90 MP canvas *is* genuinely 90 MP there (verified — mobile Chromium does not clamp it). Not caused by the M1 work: nothing in the path `batch.spec` exercises — `ToolShell`, `ConfigPanel`, `FormatSelect`, the guards, `process` — was modified. Still unexplained: **which** of the two files passes, and why. A single-file repro showed the 90 MP PNG never reaching `sources` at all on desktop, i.e. refused at ingest, which would make the batch 49 files rather than 50 — yet mobile accounts for 50. That asymmetry is the thread to pull. Each run costs ~20 min on one worker, which is why it is parked rather than solved | One red test on one project; the same acceptance passes on chromium, firefox, webkit and mobile-safari |
 | ✅ | ~~D-03 SVG~~, ~~D-34 HEIC orientation~~, ~~privacy.spec.ts~~, ~~real HEIC decode~~ — all **done** and verified against real files | — |
 | ✅ | ~~D-42 Smart App Control~~, ~~a11y sweep~~ — resolved, 69/69 passing across all 22 routes | — |
 | ✅ | ~~Milestone 6~~ (all content), ~~Milestone 7~~ (all suites, D-43/44/45) — **done**, 372 tests green | — |

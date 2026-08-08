@@ -106,6 +106,19 @@ test.describe('@smoke', () => {
      * This asserts it stays absent until the write-through lands, rather than
      * relying on nobody adding it by reflex when wiring the settings panel.
      */
+    /**
+     * Below `lg` the tool is a two-step flow and the settings rail starts
+     * collapsed, so it has to be opened before anything in it can be asserted.
+     * Asserting visibility directly passed on desktop and failed the moment a
+     * `mobile-chromium` project existed (docs/12 D-74 added it, D-78 fixed
+     * this) — the check was only ever running at one viewport.
+     *
+     * Opening it is also the honest test: a control that does nothing is just
+     * as wrong on a phone, and this is how a phone user gets there.
+     */
+    const settingsTab = page.getByRole('button', { name: 'Settings', exact: true });
+    if (await settingsTab.isVisible()) await settingsTab.click();
+
     const settings = page.getByRole('complementary', { name: 'Settings' });
     await expect(settings).toBeVisible();
     await expect(settings.getByText(/keep files|keep.*session|retain/i)).toHaveCount(0);

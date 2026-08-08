@@ -11,15 +11,19 @@
  */
 import { test, expect, type Download, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { skipWithoutOffscreenCanvas } from './_capability';
 
 const ROUTE = '/pdf/from-images';
 
 async function ready(page: Page): Promise<void> {
   await page.goto(ROUTE);
-  // The re-encode path needs OffscreenCanvas; the passthrough path does not,
-  // but the shell is the same island either way (docs/12 D-55).
-  await skipWithoutOffscreenCanvas(page);
+  // DELIBERATELY NOT skipped without OffscreenCanvas.
+  //
+  // Every other tool route needs it to encode, so its suite skips on WebKit
+  // (docs/12 D-55). This one does not: a baseline JPEG is embedded verbatim,
+  // which is a header parse and a byte copy — no canvas, no codec, nothing that
+  // Safari lacks. So images-to-pdf works on engines where the image converter
+  // cannot, and skipping here would hide that rather than prove it. D-74 is
+  // what a reflexive WebKit skip costs.
   await page.locator('#tool').scrollIntoViewIfNeeded();
   await page.waitForSelector('astro-island:not([ssr])', { timeout: 30_000 });
   await page.waitForFunction(

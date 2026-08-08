@@ -51,9 +51,41 @@ function builtRoutes(): string[] {
 const ROUTES = builtRoutes();
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
-async function scan(page: Page, route: string): Promise<void> {
+/**
+ * `color-contrast` cannot be measured under Playwright's WebKit `isMobile`
+ * emulation, and this is the narrowest possible way to say so (docs/12 D-77).
+ *
+ * With `isMobile: true`, WebKit stops resolving author CSS for some elements on
+ * a page entirely: `body`, `main` and `<select>` report no background, no
+ * colour, and not even the inherited custom properties, while their own
+ * children report correctly. axe then walks up looking for a background, finds
+ * none, assumes white, and reports every text node on the page as a serious
+ * contrast failure. It reported 31 on a page that is visually correct — checked
+ * by screenshot, and by the same CSS passing on every other engine.
+ *
+ * Isolated to `isMobile` alone: the same page at the same 390px viewport in the
+ * same WebKit build is fine without that one flag, as is Chromium's Pixel 7,
+ * which also sets it. It is an emulation artifact, and no CSS change can fix it
+ * because no author CSS applies at all.
+ *
+ * WHAT STILL COVERS CONTRAST, so this is a narrowing and not a hole:
+ *   - every other project, including `mobile-chromium` — a mobile-emulated
+ *     engine at a mobile width, which is the risk this was guarding
+ *   - `webkit` desktop, which exercises the identical stylesheet
+ *   - every OTHER axe rule still runs here; only this one is dropped
+ *
+ * Two real fixes came out of the investigation and are staying regardless: the
+ * background is now declared on `html` as well as `body`, and `Select` owns its
+ * colours via `appearance: none` instead of inheriting the native control's.
+ */
+const CONTRAST_UNMEASURABLE = 'mobile-safari';
+
+async function scan(page: Page, route: string, project: string): Promise<void> {
   await page.goto(route);
-  const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  let builder = new AxeBuilder({ page }).withTags(WCAG);
+  if (project === CONTRAST_UNMEASURABLE) builder = builder.disableRules(['color-contrast']);
+
+  const results = await builder.analyze();
   const summary = results.violations.map(
     (v) => v.id + ' (' + v.impact + ') x' + v.nodes.length + ' — ' + v.nodes[0]?.target.join(' '),
   );
@@ -68,14 +100,14 @@ test.describe('accessibility — every route, both themes', () => {
   });
 
   for (const route of ROUTES) {
-    test('light: ' + route, async ({ page }) => {
+    test('light: ' + route, async ({ page }, testInfo) => {
       await page.emulateMedia({ colorScheme: 'light' });
-      await scan(page, route);
+      await scan(page, route, testInfo.project.name);
     });
 
-    test('dark: ' + route, async ({ page }) => {
+    test('dark: ' + route, async ({ page }, testInfo) => {
       await page.emulateMedia({ colorScheme: 'dark' });
-      await scan(page, route);
+      await scan(page, route, testInfo.project.name);
     });
   }
 });
