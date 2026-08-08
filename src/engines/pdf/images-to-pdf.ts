@@ -41,6 +41,17 @@ export type { PdfSourceImage, PreparedPdfImage };
 const REENCODE_QUALITY = 0.92;
 
 /**
+ * What transparency is flattened onto.
+ *
+ * White, and not configurable, because the output is a page. A document is
+ * white; a transparent logo dropped into one should sit on the page, not on a
+ * coloured tile the user has to think about. The image pipeline exposes
+ * `backgroundColor` because there the output is an image and the choice is
+ * genuinely the user's — here it would be a control with one sensible value.
+ */
+const PDF_PAGE_BACKGROUND = '#ffffff';
+
+/**
  * Prepares one image. Runs inside the worker — one call per file, so the pool
  * parallelises them and one failure cannot take down a batch.
  */
@@ -85,9 +96,18 @@ export async function prepareImageForPdf(
       throw createJobError('E_ENCODE_FAILED', { params: { format: 'PDF' } });
     }
     const canvas = new OffscreenCanvas(decoded.width, decoded.height);
-    const ctx = canvas.getContext('2d');
+    // `alpha: false` and the fill below are BOTH required, and neither is
+    // cosmetic. JPEG has no alpha channel, so transparency has to be flattened
+    // onto something; drawn onto a default canvas, transparent pixels come out
+    // BLACK. A screenshot or logo with a transparent background becomes a black
+    // rectangle with unreadable text, and it looks deliberate enough that
+    // nobody suspects a bug. `canvasEncoder` has always done this — this tool
+    // re-encodes on its own canvas, so it has to do it too.
+    const ctx = canvas.getContext('2d', { alpha: false });
     if (ctx === null) throw createJobError('E_ENCODE_FAILED', { params: { format: 'PDF' } });
 
+    ctx.fillStyle = PDF_PAGE_BACKGROUND;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(decoded.bitmap, 0, 0);
     const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: REENCODE_QUALITY });
     jpegBytes = await blob.arrayBuffer();

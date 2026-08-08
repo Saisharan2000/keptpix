@@ -14,6 +14,7 @@
  * reached through.
  */
 import { detectFormat, MIN_DETECT_BYTES } from '../core/detect';
+import { assessPdfBudget, formatBytes } from '../core/pdf/budget';
 import { extractMetadata } from '../core/metadata';
 import type { PdfLayoutOptions, PdfPageOrientation, PdfPageSize } from '../core/pdf/layout';
 import type { PreparedPdfImage } from '../core/pdf/types';
@@ -126,6 +127,38 @@ const imagesToPdf: ToolRunner = async ({ files, config, pool, onProgress, signal
     orientation: orientationFrom(config.orientation),
     marginMm: marginFrom(config.marginMm),
   };
+
+  /**
+   * Refuse before doing any work, rather than crashing the tab after minutes.
+   *
+   * One document means every page's bytes live at once plus the finished file —
+   * peak is roughly double the input and arrives all together. Converting the
+   * same forty photos one at a time is fine; assembling them into one file is
+   * not, and the difference is invisible to the person doing it.
+   *
+   * The message names how many WOULD fit, because "no" is not actionable and
+   * "the first 23 of these 40 fit" is.
+   */
+  const budget = assessPdfBudget(
+    files.map((file) => file.size),
+    pool.device,
+  );
+  if (!budget.withinBudget) {
+    throw new Error(
+      'That is ' +
+        formatBytes(budget.totalBytes) +
+        ' of images, and this device can safely build about ' +
+        formatBytes(budget.budgetBytes) +
+        ' into one PDF. ' +
+        (budget.fittingCount > 0
+          ? 'The first ' +
+            budget.fittingCount +
+            ' of these ' +
+            files.length +
+            ' would fit — remove the rest, or make two PDFs.'
+          : 'Try a smaller image, or fewer at a time.'),
+    );
+  }
 
   const prepared: PreparedPdfImage[] = [];
   const failures: ToolRunFailure[] = [];

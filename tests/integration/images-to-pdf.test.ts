@@ -182,6 +182,57 @@ describe('images-to-pdf — against real photos in a real browser', () => {
     }
   });
 
+  /**
+   * A transparent PNG must land on WHITE, not black.
+   *
+   * JPEG has no alpha channel, so transparency has to be flattened onto some
+   * colour on the way in. Draw onto a default canvas and the transparent
+   * pixels come out BLACK — a screenshot with a transparent background becomes
+   * a black rectangle with text you cannot read, and it looks deliberate
+   * enough that nobody suspects a bug.
+   *
+   * `canvasEncoder` already gets this right (`{ alpha: false }` plus a white
+   * fill). This tool re-encodes on its own canvas, so it has to get it right
+   * on its own too — which it did not, until this test said so.
+   */
+  it('flattens PNG transparency onto white, not black', async () => {
+    // Half opaque red, half fully transparent.
+    const png = await (async () => {
+      const canvas = new OffscreenCanvas(80, 40);
+      const ctx = canvas.getContext('2d');
+      if (ctx === null) return null;
+      ctx.clearRect(0, 0, 80, 40);
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(0, 0, 40, 40);
+      const blob = await canvas.convertToBlob({ type: 'image/png' });
+      return new Uint8Array(await blob.arrayBuffer());
+    })();
+    if (png === null) return;
+
+    const prepared = await prepareImageForPdf(
+      { bytes: png.buffer.slice(0) as ArrayBuffer, format: 'png', orientation: 1 },
+      support,
+    );
+    expect(prepared.reencoded).toBe(true);
+
+    // Sample the middle of the half that was transparent.
+    const bitmap = await createImageBitmap(asBlob(new Uint8Array(prepared.bytes), 'image/jpeg'));
+    try {
+      const probe = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const ctx = probe.getContext('2d');
+      expect(ctx).not.toBeNull();
+      ctx!.drawImage(bitmap, 0, 0);
+      const [r, g, b] = ctx!.getImageData(Math.floor(bitmap.width * 0.75), 20, 1, 1).data;
+
+      // Near-white, allowing for JPEG's own noise around a hard edge.
+      expect(r, 'red channel of the transparent region').toBeGreaterThan(230);
+      expect(g, 'green channel of the transparent region').toBeGreaterThan(230);
+      expect(b, 'blue channel of the transparent region').toBeGreaterThan(230);
+    } finally {
+      bitmap.close();
+    }
+  });
+
   it('goes by bytes, not by extension', async () => {
     // IMG_4474.png is a JPEG. Trusting the name would re-encode it for nothing.
     const source = await sourceFrom('IMG_4474.png', 'png');
