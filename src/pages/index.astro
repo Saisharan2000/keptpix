@@ -11,8 +11,10 @@
  */
 import ContentLayout from '../layouts/ContentLayout.astro';
 import PrivacyBanner from '../components/astro/PrivacyBanner.astro';
+import { QueryMatcher } from '../components/react/QueryMatcher';
 import { publishedFormatPairRoutes } from '../content/formats';
 import { publishedSizePresetRoutes, formatTarget } from '../content/presets';
+import { publishedTools } from '../core/tools';
 
 const stars = publishedFormatPairRoutes.filter((r) => r.tier === 'star');
 const sizes = publishedSizePresetRoutes;
@@ -25,6 +27,31 @@ const sizes = publishedSizePresetRoutes;
   h1="Image tools that never upload your files"
   lede="Every conversion runs on your own device, inside this tab. Nothing is sent anywhere — and you can verify that yourself in about a minute."
 >
+  {/*
+    The matcher goes FIRST, above the tool lists (docs/kepttools/04 §1 layer 2).
+
+    Someone arriving here has a task in their own words, not a format pair in
+    mind — "convert my iphone photos to jpg" rather than "HEIC to JPG". Making
+    them translate that into our taxonomy by scanning a grid is the friction
+    this removes. The grids stay below, because they are also the internal
+    linking that makes those routes crawlable (docs/12 D-79) and they work with
+    JavaScript switched off, which the matcher cannot.
+
+    `client:load`, not `client:visible`: it is the first thing on the page, so
+    deferring hydration until it scrolls into view would mean deferring until
+    after the user has already tried to type in it.
+  */}
+  <section aria-labelledby="search-heading">
+    <h2 id="search-heading" class="sr-only">Find a tool</h2>
+    <QueryMatcher client:load label="What do you want to do?" />
+    <noscript>
+      <p class="mt-3 mb-0 text-sm text-text-muted">
+        Search needs JavaScript. Every tool below is a normal link and works
+        without it.
+      </p>
+    </noscript>
+  </section>
+
   <section aria-labelledby="convert-heading">
     <h2 id="convert-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
       Convert between formats
@@ -68,6 +95,41 @@ const sizes = publishedSizePresetRoutes;
       }
     </ul>
   </section>
+
+  {/*
+    Derived from `publishedTools`, and rendered only when there are any.
+
+    Both halves matter. Derived, so a tool that passes its gate appears here
+    without anyone remembering — the omission that made /pdf/from-images an
+    orphan (docs/12 D-79). Conditional, so this section does not sit empty on a
+    build where nothing is published yet.
+  */}
+  {
+    publishedTools.length > 0 && (
+      <section aria-labelledby="documents-heading">
+        <h2 id="documents-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+          Build a document
+        </h2>
+        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+          Photos of a form, a stack of receipts, a set of screenshots — one PDF,
+          assembled on your device. JPEGs go in exactly as they are, so nothing
+          is re-compressed and nothing loses quality.
+        </p>
+        <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+          {publishedTools.map((tool) => (
+            <li>
+              <a
+                href={tool.slug}
+                class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
+              >
+                <span class="block text-sm font-medium text-text">{tool.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 
   <section aria-labelledby="why-heading">
     <h2 id="why-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
