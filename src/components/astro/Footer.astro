@@ -6,14 +6,19 @@
  * ZERO JavaScript.
  */
 
+import { publishedTools } from '../../core/tools';
+
 const groups = [
   {
     title: 'Tools',
+    // Manifest tools derived, for the reason in Header.astro (docs/12 D-79):
+    // a published tool must be reachable by construction, not by remembering.
     links: [
       { href: '/convert', label: 'Convert' },
       { href: '/compress', label: 'Compress' },
       { href: '/resize', label: 'Resize' },
       { href: '/metadata', label: 'Metadata' },
+      ...publishedTools.map((tool) => ({ href: tool.slug, label: tool.name })),
     ],
   },
   {

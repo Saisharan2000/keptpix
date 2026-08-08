@@ -9,11 +9,27 @@
  * glyph is painted on the first frame with no script involvement.
  */
 
+import { publishedTools } from '../../core/tools';
+
+/**
+ * The image hubs are listed by hand because they are hand-built pages.
+ *
+ * Manifest tools are DERIVED, and that is the point (docs/12 D-79). Shipping
+ * `/pdf/from-images` left it an orphan — in the sitemap, linked from nothing,
+ * absent from the nav. Google treats orphan pages as low priority and internal
+ * links are a ranking signal, so a page nothing links to is close to invisible,
+ * and no human browsing the site could reach it either.
+ *
+ * Hardcoding one more entry would have fixed today and re-broken on the next
+ * tool. Deriving from `publishedTools` means a tool that passes its gate is
+ * reachable by construction, and one that has not cannot appear.
+ */
 const links = [
   { href: '/convert', label: 'Convert' },
   { href: '/compress', label: 'Compress' },
   { href: '/resize', label: 'Resize' },
   { href: '/metadata', label: 'Metadata' },
+  ...publishedTools.map((tool) => ({ href: tool.slug, label: tool.name })),
 ];
 
 const current = Astro.url.pathname.replace(/\/$/, '');

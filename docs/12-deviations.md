@@ -2607,6 +2607,64 @@ Settings *hides* the files panel, so a test that opens Settings and then looks
 for the convert button will not find it. The two panels are alternatives below
 `lg`, not siblings.
 
+## 🔴 D-79 — the tool shipped, deployed, returned 200, and nothing linked to it
+
+**Docs affected:** `09 §3` (internal linking, amended), `08 §4.1`
+**Milestone:** KeptTools M1
+
+`/pdf/from-images` went live and the only page linking to it was itself. In the
+sitemap, absent from the header, absent from the footer, reachable only by
+typing the URL.
+
+Google treats orphan pages as low priority, and internal links are a ranking
+signal — so the page built, tested and deployed that day was close to
+invisible. No visitor browsing the site could reach it at all.
+
+**Nothing caught it, and everything ran.** The build passed. The route test
+passed. a11y passed on the page in both themes across five engines. The sitemap
+contained it. The deploy was verified against the live origin. Every one of
+those asks "does this page exist"; not one asks "can anyone get to it".
+
+It surfaced only because a deployment check happened to diff the homepage, and
+the *reason* it surfaced was an unrelated mistake of mine — see below.
+
+**Fixed by deriving, not by adding.** `Header.astro` and `Footer.astro` now
+append `publishedTools`, so a tool that passes its `supported` gate is linked
+site-wide by construction and one that has not cannot appear. Hardcoding a
+fifth nav entry would have fixed today and re-broken on the next tool — which
+is exactly how a hardcoded list of four produced this.
+
+`tests/e2e/no-orphans.spec.ts` asserts it two ways: no sitemap route is
+unlinked, and every published manifest tool is linked from the homepage
+specifically. Verified by removing the derived links and confirming both fail
+with the route named.
+
+### The mistake that found it, which is worth more than the bug
+
+I told the founder to verify the deploy by checking the homepage HTML contained
+`"Add to Home Screen"`. That string lives inside a runtime-conditional branch of
+`InstallPrompt.tsx` that renders **only on iOS Safari**. It is in no build's
+static HTML, including the correct one.
+
+So the check could never pass. The founder's browser agent dutifully found it
+missing, correctly established it was not a caching artifact — it checked the
+deployment's own preview URL and a cache-busted request — and concluded from
+sound reasoning on a false premise that the uploaded build was a mix of new
+routes and an old homepage. It then recommended rebuilding, which would have
+changed nothing.
+
+Two lessons, and the second is the general one:
+
+1. **An acceptance criterion has to be verified against a known-good artifact
+   before it is handed to anyone.** One `grep` of my own `dist/` would have
+   caught this. I checked the live site and not the local one, which tests the
+   claim in exactly the wrong direction.
+2. **A confident agent reasoning carefully from a bad premise produces a
+   confident wrong answer**, and the care is what makes it persuasive. The
+   preview-URL and cache-status checks were genuinely good work; they just
+   cannot detect that the question is wrong. Whoever writes the criterion owns
+   its validity — the executor cannot recover it.
+
 ---
 ## Outstanding work, most consequential first
 
