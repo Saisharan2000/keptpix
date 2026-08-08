@@ -46,9 +46,28 @@ function builtRoutes(): string[] {
   } catch {
     return [];
   }
-  return files
-    .map((f) => '/' + relative(DIST, f).split(sep).join('/'))
-    .map((r) => (r === '/404.html' ? r : r.replace(/\.html$/, '').replace(/^\/index$/, '/')));
+  return (
+    files
+      .map((f) => '/' + relative(DIST, f).split(sep).join('/'))
+      .map((r) => r.replace(/\.html$/, '').replace(/^\/index$/, '/'))
+      /**
+       * `/404` is excluded, and the reason is worth stating because it looks
+       * like an omission.
+       *
+       * Locally the static server hands back `404.html` at that path with a
+       * 200. On Cloudflare Pages a request for `/404.html` is 308-redirected to
+       * `/404`, and `/404` itself is served for unknown URLs with a genuine 404
+       * status — which is correct, and is exactly what this guard is built to
+       * reject. So including it would fail every run against production, i.e.
+       * against the one origin the privacy suite is required to be run on
+       * (docs/13 launch gate).
+       *
+       * Nothing is lost: no page links to it, it is absent from the sitemap,
+       * and the behaviour that matters — an unknown path returning 404 and our
+       * own page — is not a route check.
+       */
+      .filter((r) => r !== '/404')
+  );
 }
 
 /** Routes whose absence is most diagnostic, checked first for a fast failure. */
