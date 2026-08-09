@@ -58,6 +58,69 @@ const nextId = (): string => {
  * A tool with no runner is not broken, it is unbuilt: its manifest entry stays
  * `supported: false`, so no route is generated and there is nothing to reach.
  */
+/**
+ * Settings, collapsed.
+ *
+ * Present in the EMPTY state as well as the working one, which is what the
+ * design specifies and what the manifest-completeness test relies on: the
+ * controls must exist in the DOM for every declared field, whether or not a
+ * file has been added. Collapsed is the point — one line, so the dropzone is
+ * still the only plausible first move — not absent.
+ *
+ * Rendered only when the tool HAS fields. `pdf-merge` declares none, and a
+ * disclosure opening onto nothing is the control-that-does-nothing that
+ * smoke.spec's WO-4 check exists to prevent.
+ *
+ * `<details>` is native: opens with no JavaScript, keyboard operable for free,
+ * nothing added to the bundle. The `<aside>` carries the complementary role and
+ * the "Settings" accessible name.
+ */
+function SettingsDisclosure({
+  tool,
+  config,
+  onChange,
+  bordered = true,
+}: {
+  tool: ToolManifestEntry;
+  config: ToolConfig;
+  onChange: (patch: Record<string, ConfigValue>) => void;
+  bordered?: boolean;
+}) {
+  if (tool.configFields.length === 0) return null;
+  return (
+    <aside
+      aria-label="Settings"
+      class={
+        'bg-bg-subtle ' + (bordered ? 'border-t border-border' : 'rounded-lg border border-border')
+      }
+    >
+      <details class="group">
+        <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-text">
+          <span>
+            Settings
+            <span class="ml-2 font-normal text-text-muted">the defaults are fine</span>
+          </span>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            class="shrink-0 text-text-muted transition-transform duration-[var(--duration-fast)] group-open:rotate-180"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </summary>
+        <ToolConfigPanel fields={tool.configFields} config={config} onChange={onChange} />
+      </details>
+    </aside>
+  );
+}
+
 export function ManifestToolShell({ tool }: Props) {
   const [queued, setQueued] = useState<Queued[]>([]);
   const [config, setConfig] = useState<ToolConfig>(() => defaultsFromFields(tool));
@@ -202,16 +265,40 @@ export function ManifestToolShell({ tool }: Props) {
 
   const running = run.status === 'running';
   const hasWork = inputless || queued.length > 0;
+
+  /* ── idle ─────────────────────────────────────────────────────────── */
+  /**
+   * Nothing added yet, so nothing but the target (D-86).
+   *
+   * `ToolShell` has had this shape all along and it is why its empty state
+   * already read well. This shell did not: it showed a 260px settings rail
+   * beside an empty dropzone, asking someone to configure a job that does not
+   * exist. Inputless tools (QR) skip this, because for them there is no file to
+   * wait for and the settings ARE the input.
+   */
+  if (!inputless && queued.length === 0 && run.status === 'idle') {
+    return (
+      <div class="flex flex-col gap-4">
+        <Dropzone
+          fromLabel={tool.name}
+          compact={false}
+          onFiles={addFiles}
+          accept={accept}
+          multiple={tool.multiFile}
+          actionLabel={tool.name.toLowerCase()}
+          zoneLabel={'Choose files for ' + tool.name}
+        />
+        <SettingsDisclosure tool={tool} config={config} onChange={patchConfig} bordered={false} />
+        <PrivacyIndicator processed={0} total={0} />
+      </div>
+    );
+  }
   const total = running ? Math.max(1, run.progress.total) : 1;
   const fraction = running ? Math.min(1, run.progress.done / total) : 0;
 
   return (
-    <div class="overflow-hidden rounded-lg border border-border bg-surface">
-      <div class="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-stretch">
-        <aside class="border-border bg-bg-subtle lg:block lg:border-r" aria-label="Settings">
-          <ToolConfigPanel fields={tool.configFields} config={config} onChange={patchConfig} />
-        </aside>
-
+    <div class="rounded-lg border border-border bg-surface">
+      <div class="flex flex-col">
         <div class="flex min-w-0 flex-col">
           {!inputless && (
             <div class="p-4">
@@ -312,9 +399,11 @@ export function ManifestToolShell({ tool }: Props) {
             </div>
           )}
 
+          <SettingsDisclosure tool={tool} config={config} onChange={patchConfig} />
+
           <div class="mt-auto">
             {hasWork && (
-              <div class="flex gap-2 border-t border-border p-4">
+              <div class="sticky bottom-0 z-20 flex gap-2 border-t border-border bg-bg p-4">
                 {running ? (
                   <Button variant="secondary" onClick={cancel}>
                     Cancel

@@ -154,6 +154,12 @@ test.describe('images to PDF, as a user does it', () => {
     await ready(page);
     await addJpegs(page, 1);
 
+    // Settings live behind a collapsed disclosure now (D-86), because the
+    // defaults are good and the dropzone should be the only first move. Opening
+    // it is part of the real interaction, so the test performs it rather than
+    // reaching into hidden markup.
+    await page.getByText('the defaults are fine').click();
+
     // Fit-to-image would give a 160x120 page; A4 portrait must not.
     await page.locator('#tool-field-pageSize').selectOption('a4');
     await page.locator('#tool-field-orientation').selectOption('portrait');
