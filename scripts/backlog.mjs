@@ -182,11 +182,28 @@ switch (cmd) {
         doneAt: null,
         note: null,
       };
+      /*
+       * `--blocked --reason` exists because `add` then `next` then `block` does
+       * NOT do what it looks like: `next` claims the first PENDING item, which
+       * is rarely the one just added. Doing it that way attached three "needs an
+       * iPhone" reasons to three unrelated items. Queue-and-block has to be one
+       * operation on one known id.
+       */
+      if (flags.blocked === true || flags.reason !== undefined) {
+        if (flags.reason === undefined) die('backlog: --blocked needs --reason');
+        item.status = 'blocked';
+        item.note = String(flags.reason);
+      }
       if (flags.first === true) state.items.unshift(item);
       else state.items.push(item);
       save(site, state);
-      journal(site, `queued #${item.id}: ${title}`);
-      process.stdout.write(`#${item.id} queued\n`);
+      journal(
+        site,
+        item.status === 'blocked'
+          ? `queued BLOCKED #${item.id}: ${title} — ${item.note}`
+          : `queued #${item.id}: ${title}`,
+      );
+      process.stdout.write(`#${item.id} ${item.status === 'blocked' ? 'queued blocked' : 'queued'}\n`);
     });
     break;
   }
@@ -245,14 +262,38 @@ switch (cmd) {
     break;
   }
 
+  case 'unblock': {
+    const site = positional[0];
+    if (!site || flags.id === undefined) die('usage: backlog unblock <site> --id <n>');
+    withLock(site, () => {
+      const state = load(site);
+      const item = state.items.find((i) => i.id === String(flags.id));
+      if (item === undefined) die(`backlog: no item #${flags.id}`);
+      item.status = 'pending';
+      item.note = null;
+      item.startedAt = null;
+      save(site, state);
+      journal(site, `unblocked #${item.id}: ${item.title}`);
+      process.stdout.write(`#${item.id} back to pending\n`);
+    });
+    break;
+  }
+
   case 'block': {
     const site = positional[0];
-    if (!site) die('usage: backlog block <site> --reason "..."');
+    if (!site) die('usage: backlog block <site> --reason "..." [--id <n>]');
     if (flags.reason === undefined) die('backlog: --reason is required, a human has to read it');
     withLock(site, () => {
       const state = load(site);
-      const item = state.items.find((i) => i.status === 'in_progress');
-      if (item === undefined) die('backlog: nothing in progress');
+      // `--id` targets an exact item. Without it, the in-progress one — which is
+      // the right default mid-cycle and the wrong one straight after `add`.
+      const item =
+        flags.id === undefined
+          ? state.items.find((i) => i.status === 'in_progress')
+          : state.items.find((i) => i.id === String(flags.id));
+      if (item === undefined) {
+        die(flags.id === undefined ? 'backlog: nothing in progress' : `backlog: no item #${flags.id}`);
+      }
       item.status = 'blocked';
       item.note = String(flags.reason);
       save(site, state);
