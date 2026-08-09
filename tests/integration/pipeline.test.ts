@@ -404,7 +404,20 @@ describe('the main thread stays responsive', () => {
     expect(gaps.length).toBeGreaterThan(3);
     expect(baseline.length).toBeGreaterThan(3);
 
-    const worstBaseline = Math.max(...baseline);
+    /**
+     * A SECOND control, after the conversion.
+     *
+     * One baseline taken before is not enough: machine load drifts over a run,
+     * so a quiet baseline followed by a busy conversion still produced an
+     * intermittent failure under `verify`. Taking the control on both sides and
+     * using the worse of the two makes the comparison robust to drift in either
+     * direction, at the cost of 600 ms.
+     */
+    const baselineAfter = await sampleGaps(
+      () => new Promise((resolve) => setTimeout(resolve, 600)),
+    );
+
+    const worstBaseline = Math.max(Math.max(...baseline), Math.max(...baselineAfter));
     const worstDuring = Math.max(...gaps);
 
     /**

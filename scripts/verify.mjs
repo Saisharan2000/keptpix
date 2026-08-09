@@ -82,8 +82,20 @@ function digest(name, out) {
   };
   switch (name) {
     case 'unit':
-    case 'integration':
-      return pick(/Tests\s+\d+ passed[^\n]*/) ?? pick(/Tests\s+[^\n]*/);
+    case 'integration': {
+      /*
+       * Name the failing test, not just the count. An intermittent integration
+       * failure once slipped past because the summary line said
+       * "Tests 1 ⎯⎯⎯" — a regex that had matched a separator — and the real
+       * name was only in the captured tail, which nobody read.
+       */
+      const failing = [...out.matchAll(/^\s*(?:FAIL|×)\s+(.+)$/gm)]
+        .map((m) => m[1].trim().replace(/\s+\d+ms$/, ''))
+        .filter((l) => l.length > 0)
+        .slice(0, 3);
+      const counts = pick(/Tests\s+\d+ (?:failed|passed)[^\n]*/) ?? pick(/Tests\s+\d+[^\n]*/);
+      return failing.length > 0 ? `${counts ?? ''} — ${failing.join(' | ')}` : counts;
+    }
     case 'budgets':
       return pick(/Baseline JS[^\n]*/);
     case 'seo':
