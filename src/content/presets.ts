@@ -206,12 +206,112 @@ const jpg1mb: SizePresetRoute = {
       a: 'For most photographs, effectively yes. A 12 MP image usually reaches 1 MB at a quality level where the difference from the original is not visible at normal viewing sizes. Very detailed scenes — dense foliage, textured fabric, fine architectural detail — give up the most.',
     },
     {
-      q: 'My file is already under 1MB. Will this make it smaller?',
-      a: 'No, and deliberately so. A file that already meets the target is returned essentially untouched rather than re-compressed for no reason — re-encoding an already-compliant file would only degrade it.',
+      /*
+       * This answer used to say an already-compliant file came back "essentially
+       * untouched". It did not: the file was re-encoded at high quality and
+       * could come back LARGER — 57% larger in the reported case (docs/12 D-91).
+       * The copy described an intention, not the behaviour. It now describes
+       * what the code does, which is re-encode but never inflate.
+       */
+      q: 'My file is already under 1MB. What happens then?',
+      a: 'It is still processed, but it will never come back larger than it went in — if your file already fits, the target tightens to your file’s own size. The reason it is not simply handed back untouched is that re-encoding is what removes the EXIF data, including GPS coordinates, and keeping that would be the worse trade.',
     },
     ...SHARED_FAQ_TAIL,
   ],
   relatedSlugs: ['jpg-to-500kb', 'jpg-to-200kb', 'jpg-to-100kb'],
+};
+
+/* ── Use-case routes (docs/12 D-92) ───────────────────────────────────────
+ *
+ * Named for the JOB rather than the number. The six routes above answer
+ * "compress jpg to 20kb"; nobody with a rejected form types that. They type
+ * "compress signature to 20kb" or "passport photo compressor", and the SERP for
+ * those queries is owned by competitors with a URL that matches the phrase —
+ * some with a whole domain for it (photosignatureresize.com).
+ *
+ * THE BAR THESE HAVE TO CLEAR is set by docs/05 §5 itself: Google treats pages
+ * built to rank that are "less useful than the destination" as doorway abuse. A
+ * route that only re-words `jpg-to-20kb` would be exactly that, and would
+ * cannibalise it. So each one below has to give advice the generic page cannot.
+ *
+ * They genuinely do, and in one case the advice is close to opposite:
+ * `jpg-to-20kb` explains that a photo physically cannot hold 20 KB at full
+ * resolution. A signature is line art — 20 KB is roomy, and the real problem is
+ * never the compression, it is the photograph of the paper.
+ */
+
+const signature20kb: SizePresetRoute = {
+  slug: 'signature-to-20kb',
+  format: 'jpeg',
+  targetBytes: 20_000,
+  supported: true,
+  cardName: 'Compress a signature to 20 KB',
+  title: 'Compress a signature to 20KB — exact size, nothing uploaded',
+  h1: 'Compress a signature to 20KB',
+  metaDescription:
+    'Compress a scanned or photographed signature to under 20KB in your browser. Exact target size, no upload, no sign-up.',
+  intro:
+    'Signature fields carry the tightest limit on almost every form, and 20 KB is the usual figure. The good news is that a signature is line art, not a photograph: black strokes on white paper compress extremely well, so 20 KB is roomy rather than punishing, and you should not have to sacrifice legibility to reach it. If your signature will not fit, the compression is rarely the problem — the photograph is. A phone picture of a signature captures the paper as much as the ink: shadows, page texture, the faint grey of a room lit from one side. All of that is detail the encoder has to spend bytes on, and none of it is your signature.',
+  useCases: [
+    'Bank account opening and KYC forms, which commonly cap signatures at 20 KB',
+    'Competitive exam and recruitment portals, where photo and signature have separate limits',
+    'University and scholarship admission forms',
+    'Government e-service applications built against older upload limits',
+  ],
+  faq: [
+    {
+      q: 'Why does my signature look dirty or grey after compressing?',
+      a: 'That is almost always in the original rather than the compression. Photograph the page in even, indirect light — near a window, not under a single ceiling bulb — and crop tightly to the strokes before you compress. A signature on plain white paper compresses to a few kilobytes while staying crisp; the same signature on a shadowed, lined page spends most of its budget on the paper.',
+    },
+    {
+      q: 'Should I scan it or photograph it?',
+      a: 'Scan it if you can, because a scanner gives you flat lighting and a genuinely white background, which is the single biggest factor here. A phone photograph is perfectly workable — just get the light even and fill the frame with the signature rather than the page.',
+    },
+    {
+      q: 'My form wants a specific size in pixels as well. Does this do that?',
+      a: 'Not by itself, and it is worth being straight about that. This page hits an exact file size in kilobytes. If your portal also demands specific pixel dimensions — 600×200 is a common one — crop to that shape first, then compress, because cropping afterwards changes the file size again and you would be back where you started.',
+    },
+    ...SHARED_FAQ_TAIL,
+  ],
+  relatedSlugs: ['jpg-to-20kb', 'passport-photo-to-50kb', 'jpg-to-50kb'],
+};
+
+const passportPhoto50kb: SizePresetRoute = {
+  slug: 'passport-photo-to-50kb',
+  format: 'jpeg',
+  targetBytes: 50_000,
+  supported: true,
+  cardName: 'Compress a passport photo to 50 KB',
+  // 52 chars. The longer "— exact size, nothing uploaded" tail every other route
+  // carries pushed this to 64 and `npm run check:seo` flagged it as truncating.
+  title: 'Compress a passport photo to 50KB — no uploads',
+  h1: 'Compress a passport photo to 50KB',
+  metaDescription:
+    'Compress a passport or visa photo to under 50KB in your browser. Exact target size, no upload, no sign-up.',
+  intro:
+    'Fifty kilobytes is the most common ceiling for passport, visa and identity photo uploads, and a properly prepared headshot clears it without looking soft. The order of operations is what decides the outcome: crop to the shape your application requires first, then compress. Do it the other way round and every byte you saved gets spent again the moment you trim the frame. A passport photo is also unusually kind to a compressor — one face, even lighting, a plain background — so if yours will not fit at a reasonable quality, the usual reason is that it is still a full phone photo with a room behind it.',
+  useCases: [
+    'Passport applications and renewals with a 50 KB photo cap',
+    'Visa portals, which frequently specify both a pixel size and a file size',
+    'National identity and enrolment systems',
+    'Bank, KYC and employment onboarding document uploads',
+  ],
+  faq: [
+    {
+      q: 'Does this crop my photo to passport dimensions?',
+      a: 'No, and that is worth knowing before you start. This page controls file size, not framing. Most countries want 35×45 mm and the United States wants a 2×2 inch square, so crop to your requirement first and compress second — a crop after compression changes the file size and undoes the work.',
+    },
+    {
+      q: 'My photo is 4 MB. Can it really reach 50 KB and still be accepted?',
+      a: 'Usually yes, because most of those 4 MB are resolution you do not need. Passport portals display the photo small, and a correctly cropped headshot at around 600×750 pixels looks sharp well under 50 KB. What does not survive is submitting a full-resolution phone photo untouched and hoping quality alone can carry it down.',
+    },
+    {
+      q: 'The photo still looks blurry at 50KB. What now?',
+      a: 'Check the background first. A plain, evenly lit wall costs almost nothing to encode, while a room full of furniture and shadow competes with your face for the same 50 KB. Re-shooting against a blank wall in soft daylight will usually do more for sharpness than any setting on this page.',
+    },
+    ...SHARED_FAQ_TAIL,
+  ],
+  relatedSlugs: ['jpg-to-50kb', 'signature-to-20kb', 'jpg-to-100kb'],
 };
 
 /**
@@ -225,6 +325,8 @@ export const sizePresetRoutes: SizePresetRoute[] = [
   jpg200kb,
   jpg500kb,
   jpg1mb,
+  signature20kb,
+  passportPhoto50kb,
 ];
 
 /** Same hard gate as the format pairs: never prerender what we cannot perform. */

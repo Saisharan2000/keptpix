@@ -79,7 +79,13 @@ export const convertCards: readonly ToolCardData[] = publishedFormatPairRoutes.m
 
 export const compressCards: readonly ToolCardData[] = publishedSizePresetRoutes.map((route) => ({
   href: '/compress/' + route.slug,
-  name: 'Compress to ' + formatTarget(route.targetBytes),
+  /*
+   * Derived from the target size UNLESS the route names itself. Two routes can
+   * share a target — signature-to-20kb and jpg-to-20kb both aim at 20 KB — and
+   * deriving from bytes alone rendered them as two identical cards pointing at
+   * different pages (docs/12 D-92).
+   */
+  name: route.cardName ?? 'Compress to ' + formatTarget(route.targetBytes),
   description: 'Fits an exact ' + formatTarget(route.targetBytes) + ' limit',
   icon: 'compress' as const,
 }));

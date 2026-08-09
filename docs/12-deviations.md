@@ -3329,6 +3329,65 @@ Verified: 414 unit, **164 integration** (real browser, none skipped), 12 e2e
 across convert/batch/smoke, all three budgets pass.
 
 ---
+## D-92 — routes named for the job, not the number
+
+The six size routes answer `compress jpg to 20kb`. **Nobody with a rejected form
+types that.** They type "compress signature to 20kb" or "passport photo
+compressor", and the SERPs for those phrases belong to competitors whose URL
+matches the phrase — one of them owns an entire domain for it
+(`photosignatureresize.com`). Evidence in docs/14; this is the build.
+
+Two routes, both `supported: true`, both pure data in `presets.ts`:
+`signature-to-20kb` and `passport-photo-to-50kb`.
+
+### The bar, set by docs/05 §5 itself
+
+That section warns that Google treats pages built to rank which are "less useful
+than the destination" as doorway abuse. A route that merely re-words
+`jpg-to-20kb` would be exactly that, and would cannibalise it. So each new route
+had to carry advice the generic page cannot give — and they genuinely do. In one
+case it is close to **opposite**: `jpg-to-20kb` explains that a photo physically
+cannot hold 20 KB at full resolution, whereas a signature is line art, 20 KB is
+roomy, and the real problem is never the compression but the photograph of the
+paper — shadow, page texture, the grey of a one-bulb room, all of it bytes spent
+on something that is not the signature.
+
+Both pages also say plainly what they do **not** do: neither crops to 35×45 mm
+or 600×200, and both tell you to crop first, because cropping after compressing
+changes the file size and undoes the work. Naming the limit is what keeps these
+from being the doorway pages the spec warns about.
+
+### Two bugs caught on the way in
+
+- **Card names collided.** `compressCards` derived its label purely from
+  `formatTarget(targetBytes)`, which was fine while every route *was* a size:
+  `signature-to-20kb` and `jpg-to-20kb` would both have rendered "Compress to
+  20 KB" — identical text, different destinations. Added an optional
+  `cardName` to `SizePresetRoute`, with docs/05 §5 updated in the same commit
+  per CLAUDE.md rule 5. Omitted, the derived name is unchanged, so the six
+  existing routes are byte-identical.
+- **A FAQ answer described an intention, not the code.** `jpg-to-1mb` claimed a
+  file already under target came back "essentially untouched". It did not — it
+  was re-encoded at high quality and could come back 57% **larger** (D-91). The
+  copy has been rewritten to say what actually happens: still re-encoded,
+  because that is what strips EXIF and GPS, but never inflated.
+
+Verified: 8 compress routes built and in the sitemap, unique card names,
+`check:seo` clean after shortening a 64-char title it flagged as truncating,
+FAQ rich-results schema with 5 questions on each, 414 unit green, **98 e2e**
+covering orphan-linking and the a11y/structure sweep of every route, budgets
+pass. Functionally smoke-tested through a real browser rather than inferred from
+shared machinery: **594 KB → 16 KB** on the signature route and **584 KB → 47 KB**
+on the passport route, each under its own ceiling.
+
+**Deliberately not built: a visa route.** The obvious third candidate, and the
+evidence for the query is there, but the advice is regionally contradictory — US
+DS-160 wants 600×600 px under 240 KB, while Indian portals want 20–50 KB. One
+page cannot answer both without being wrong for somebody, and a confidently wrong
+number on an identity document is worse than no page. It needs per-region routes
+or none.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

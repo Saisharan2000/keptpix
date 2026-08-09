@@ -387,6 +387,15 @@ export interface SizePresetRoute {
   faq: Array<{ q: string; a: string }>;
   relatedSlugs: string[];
   supported: boolean;            // same hard gate as FormatPairRoute
+  /**
+   * Card label, when the target size alone does not identify the route.
+   *
+   * Added for the use-case routes (docs/12 D-92). Card names were derived
+   * purely from `targetBytes`, so `signature-to-20kb` and `jpg-to-20kb` both
+   * rendered as "Compress to 20 KB" — two cards, identical text, different
+   * destinations. Omit it and the derived name is used, unchanged.
+   */
+  cardName?: string;
 }
 ```
 
