@@ -262,6 +262,163 @@ switch (cmd) {
     break;
   }
 
+  /**
+   * Seed a backlog from a file another agent produced.
+   *
+   *   backlog import <site> --from plan.md [--root .] [--hours 10]
+   *
+   * This is the handoff. A doc-writing agent (Cowork) finishes a spec set for a
+   * new app and drops a plan next to it; the workspace agent imports it and
+   * starts working. Without this the handoff is a human reading a document and
+   * retyping it as queue items, which is exactly the mediation being removed.
+   *
+   * Accepts either shape, because a doc agent naturally writes markdown and a
+   * code agent naturally writes JSON:
+   *
+   *   MARKDOWN   - [ ] Title — why it matters
+   *                - [!] Title — reason it needs a human
+   *   JSON       { "items": [ { "title": "...", "why": "...", "blocked": "..." } ] }
+   *
+   * Duplicate titles are skipped, so re-importing an updated plan adds only what
+   * is new instead of doubling the queue.
+   */
+  case 'import': {
+    const site = positional[0];
+    const from = flags.from;
+    if (!site || from === undefined) die('usage: backlog import <site> --from <file.md|file.json>');
+    const file = path.resolve(String(from));
+    if (!existsSync(file)) die(`backlog: no such file ${file}`);
+
+    /** @type {{title:string, why:string|null, blocked:string|null}[]} */
+    let incoming = [];
+    const raw = readFileSync(file, 'utf8');
+
+    if (file.toLowerCase().endsWith('.json')) {
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : (parsed.items ?? []);
+      incoming = list
+        .filter((i) => typeof i?.title === 'string' && i.title.trim() !== '')
+        .map((i) => ({
+          title: String(i.title).trim(),
+          why: i.why === undefined || i.why === null ? null : String(i.why).trim(),
+          blocked: i.blocked === undefined || i.blocked === null ? null : String(i.blocked).trim(),
+        }));
+    } else {
+      for (const line of raw.split(/\r?\n/)) {
+        // `- [ ]` pending, `- [!]` needs a human. Anything else is prose.
+        const m = /^\s*[-*]\s*\[( |!|x|X)\]\s*(.+)$/.exec(line);
+        if (m === null) continue;
+        if (m[1].toLowerCase() === 'x') continue; // already done in the plan
+        // Split the title from the rationale on an em dash, or ' -- ', or ' - '.
+        const body = m[2].trim();
+        const split = /\s+(?:—|--|-)\s+/.exec(body);
+        const title = split === null ? body : body.slice(0, split.index).trim();
+        const why = split === null ? null : body.slice(split.index + split[0].length).trim();
+        incoming.push({
+          title,
+          why,
+          blocked: m[1] === '!' ? (why ?? 'needs a human, reason not given in the plan') : null,
+        });
+      }
+    }
+
+    if (incoming.length === 0) die(`backlog: found no items in ${file}`);
+
+    if (!existsSync(statePath(site))) {
+      mkdirSync(siteDir(site), { recursive: true });
+      save(site, {
+        site,
+        root: path.resolve(String(flags.root ?? path.dirname(file))),
+        verifyCommand: String(flags.verify ?? 'npm run verify'),
+        items: [],
+        session: { startedAt: null, budgetHours: Number(flags.hours ?? 10), runs: 0 },
+      });
+      writeFileSync(journalPath(site), `# ${site} — agent journal\n\n`);
+      process.stdout.write(`created site ${site}\n`);
+    }
+
+    withLock(site, () => {
+      const state = load(site);
+      const have = new Set(state.items.map((i) => i.title.toLowerCase()));
+      let added = 0;
+      let skipped = 0;
+      for (const inc of incoming) {
+        if (have.has(inc.title.toLowerCase())) {
+          skipped += 1;
+          continue;
+        }
+        state.items.push({
+          id: nextId(state),
+          title: inc.title,
+          why: inc.why,
+          status: inc.blocked === null ? 'pending' : 'blocked',
+          addedAt: new Date().toISOString(),
+          startedAt: null,
+          doneAt: null,
+          note: inc.blocked,
+        });
+        have.add(inc.title.toLowerCase());
+        added += 1;
+      }
+      save(site, state);
+      journal(site, `imported ${added} item(s) from ${path.basename(file)} (${skipped} already queued)`);
+      process.stdout.write(`imported ${added}, skipped ${skipped} already present\n`);
+    });
+    break;
+  }
+
+  /**
+   * Is this workspace actually wired up? Run it first in a new one.
+   * Exit 0 only if everything an unattended run depends on is present.
+   */
+  case 'doctor': {
+    const site = positional[0];
+    const checks = [];
+    const add = (ok, label, detail) => checks.push({ ok, label, detail });
+
+    const installed = path.join(ROOT, 'backlog.mjs');
+    add(existsSync(installed), 'backlog tool installed', installed);
+    add(Number(process.versions.node.split('.')[0]) >= 20, 'node >= 20', 'v' + process.versions.node);
+
+    if (site !== undefined) {
+      const hasState = existsSync(statePath(site));
+      add(hasState, `site "${site}" exists`, hasState ? siteDir(site) : 'run: backlog init');
+      if (hasState) {
+        const state = load(site);
+        add(existsSync(state.root), 'project root exists', state.root);
+        const hook = path.join(state.root, 'scripts', 'hooks', 'stop-autopilot.mjs');
+        add(existsSync(hook), 'stop hook present', hook);
+        const settings = path.join(state.root, '.claude', 'settings.json');
+        let wired = false;
+        if (existsSync(settings)) {
+          try {
+            wired = JSON.stringify(JSON.parse(readFileSync(settings, 'utf8'))).includes(
+              'stop-autopilot',
+            );
+          } catch {
+            wired = false;
+          }
+        }
+        add(wired, 'stop hook wired in settings', settings);
+        const skill = path.join(state.root, '.claude', 'skills', 'autopilot', 'SKILL.md');
+        add(existsSync(skill), 'autopilot skill installed', skill);
+        add(
+          process.env.CLAUDE_BACKLOG_SITE === site,
+          'CLAUDE_BACKLOG_SITE set to this site',
+          process.env.CLAUDE_BACKLOG_SITE ?? '(unset — the loop will be inert)',
+        );
+      }
+    }
+
+    for (const c of checks) {
+      process.stdout.write(`  ${c.ok ? 'ok  ' : 'MISS'} ${c.label.padEnd(34)} ${c.detail}\n`);
+    }
+    const bad = checks.filter((c) => !c.ok).length;
+    process.stdout.write(bad === 0 ? '\nready\n' : `\n${bad} thing(s) missing\n`);
+    process.exit(bad === 0 ? 0 : 1);
+    break;
+  }
+
   case 'unblock': {
     const site = positional[0];
     if (!site || flags.id === undefined) die('usage: backlog unblock <site> --id <n>');
