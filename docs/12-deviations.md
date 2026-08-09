@@ -3437,6 +3437,64 @@ Verified: **all 8 gates pass** — 414 unit, 164 integration, 140 e2e, 31 routes
 built, budgets and SEO clean.
 
 ---
+## D-94 — every PDF page thumbnail was a grey box on Safari
+
+Sai reported that images-to-PDF on his iPhone "is just opening the selected
+screenshot, nothing feels downloaded". I could not see his screenshots, so I ran
+the existing `images-to-pdf.spec.ts` against the WebKit and mobile-safari
+projects instead of guessing. Both: **6 passed, 2 failed**, and both failures
+were `locator('ol li img')` resolving to **0 elements**. No thumbnails at all.
+
+`FileThumbnail` catches everything and renders a placeholder, so the failure was
+invisible from outside — a grey box with the file extension in it, on a list
+whose whole purpose its own docstring states: "Reordering pages you cannot see
+is the core interaction of the tool."
+
+### The measurement corrected my guess
+
+I assumed Safari was rejecting `createImageBitmap`'s resize options. Probing all
+three requirements separately in the real engine:
+
+| | WebKit | Chromium |
+|---|---|---|
+| `createImageBitmap` with `resizeWidth` | **ok 56x42** | ok 56x42 |
+| `OffscreenCanvas` | **absent** | present |
+
+The resize options were fine. The guard on line 43 required `OffscreenCanvas`,
+found none, and returned before attempting anything.
+
+### The requirement was pointless
+
+`FileThumbnail` is a component on the MAIN THREAD. There is no worker here, so an
+offscreen surface buys nothing a detached `<canvas>` does not — and a detached
+`<canvas>` with `toBlob` works everywhere. Removed the requirement, swapped in a
+regular canvas. `createImageBitmap` stays, because it is the part that keeps a
+12 MP photo from ever existing at full size.
+
+`images-to-pdf.spec.ts`: **8/8 on webkit, 8/8 on mobile-safari, 8/8 on chromium**,
+up from 6/8 on the first two. Swept the rest of the codebase for the same mistake
+— no other main-thread `OffscreenCanvas` use. The remaining references are
+correct: `SelfTest` reports the capability and `ToolShell` gates the converter on
+it, which is right because the real conversion genuinely needs it in the worker.
+
+Full verify green: 8 gates, 414 unit, 164 integration, 140 e2e.
+
+### What this does NOT explain
+
+Downloads **passed** on both Safari projects, so the "nothing feels downloaded"
+half is unproven. Playwright's mobile-safari is WebKit with an iPhone viewport,
+**not iOS Safari** — real iOS handles `<a download>` on a `blob:` URL differently
+and may navigate to it rather than save it. A one-page PDF built from a
+screenshot renders identically to that screenshot, so "it just opened my
+screenshot" is equally consistent with the PDF being produced correctly and then
+displayed instead of saved.
+
+Also unresolved: real Safari 16.4 shipped `OffscreenCanvas`, so a current iPhone
+probably HAS it and would have shown thumbnails. This fix is right regardless,
+but it may not be what he saw. **Both need his screenshots or a real device**;
+queued rather than assumed.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

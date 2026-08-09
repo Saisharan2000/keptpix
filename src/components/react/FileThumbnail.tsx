@@ -40,7 +40,18 @@ export function FileThumbnail({ file, size = 56 }: Props) {
     let created: string | null = null;
 
     const build = async (): Promise<void> => {
-      if (typeof createImageBitmap === 'undefined' || typeof OffscreenCanvas === 'undefined') {
+      /*
+       * NO OffscreenCanvas. This used to require it and bail to the placeholder
+       * without it — which meant WebKit showed a grey box labelled "JPG" for
+       * every page, on the exact interaction this component exists to provide
+       * (docs/12 D-94). Measured: WebKit has `createImageBitmap` WITH the resize
+       * options and does NOT have `OffscreenCanvas` at all.
+       *
+       * The requirement was pointless anyway. This is a component on the main
+       * thread — there is no worker here, so an offscreen surface buys nothing a
+       * detached <canvas> does not, and a detached <canvas> works everywhere.
+       */
+      if (typeof createImageBitmap === 'undefined') {
         setFailed(true);
         return;
       }
@@ -54,11 +65,16 @@ export function FileThumbnail({ file, size = 56 }: Props) {
           resizeQuality: 'low',
         });
 
-        const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
         const ctx = canvas.getContext('2d');
         if (ctx === null) throw new Error('no 2d context');
         ctx.drawImage(bitmap, 0, 0);
-        const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
+        const blob = await new Promise<Blob | null>((resolve) => {
+          canvas.toBlob(resolve, 'image/jpeg', 0.7);
+        });
+        if (blob === null) throw new Error('toBlob produced nothing');
 
         if (cancelled) return;
         created = URL.createObjectURL(blob);
