@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "Hooks for unattended runs. See scripts/hooks/stop-autopilot.mjs.",
+    "The Stop hook is INERT unless CLAUDE_BACKLOG_SITE is set, so interactive",
+    "sessions behave exactly as before. It also fails open on any error, because",
+    "a hook that can wedge an agent would do it while nobody is watching."
+  ],
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/stop-autopilot.mjs",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
