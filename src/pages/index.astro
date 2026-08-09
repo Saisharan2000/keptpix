@@ -11,125 +11,120 @@
  */
 import ContentLayout from '../layouts/ContentLayout.astro';
 import PrivacyBanner from '../components/astro/PrivacyBanner.astro';
+import ToolCard from '../components/astro/ToolCard.astro';
 import { QueryMatcher } from '../components/react/QueryMatcher';
-import { publishedFormatPairRoutes } from '../content/formats';
-import { publishedSizePresetRoutes, formatTarget } from '../content/presets';
-import { publishedTools } from '../core/tools';
-
-const stars = publishedFormatPairRoutes.filter((r) => r.tier === 'star');
-const sizes = publishedSizePresetRoutes;
+import { categories, commonFixes, documentCards } from '../content/tool-cards';
 ---
 
 <ContentLayout
-  title="KeptPix — convert and compress images without uploading them"
-  description="Convert and compress images entirely in your browser. No upload, no sign-up, no quotas. Your files never leave your device."
+  title="KeptPix — image and PDF tools that never upload your files"
+  description="Convert images, compress to an exact size, and build or split PDFs — entirely in your browser. No upload, no sign-up, no quotas."
   path="/"
-  h1="Image tools that never upload your files"
+  h1="Image and PDF tools that never upload your files"
   lede="Every conversion runs on your own device, inside this tab. Nothing is sent anywhere — and you can verify that yourself in about a minute."
 >
   {/*
-    The matcher goes FIRST, above the tool lists (docs/kepttools/04 §1 layer 2).
+    Search first, cards second, and both above the fold on a phone.
 
-    Someone arriving here has a task in their own words, not a format pair in
-    mind — "convert my iphone photos to jpg" rather than "HEIC to JPG". Making
-    them translate that into our taxonomy by scanning a grid is the friction
-    this removes. The grids stay below, because they are also the internal
-    linking that makes those routes crawlable (docs/12 D-79) and they work with
-    JavaScript switched off, which the matcher cannot.
+    Someone arriving with a task in their own words ("convert my iphone photos")
+    should not have to translate it into our taxonomy. But someone who does not
+    know what to type needs something to SCAN — which is the whole diagnosis
+    behind the redesign: the page used to be text lists under headings, so
+    finding anything required reading.
+
+    The cards also stay as plain links, so they are the internal linking that
+    makes these routes crawlable (docs/12 D-79) and they work with JavaScript
+    off, which the matcher cannot.
 
     `client:load`, not `client:visible`: it is the first thing on the page, so
-    deferring hydration until it scrolls into view would mean deferring until
-    after the user has already tried to type in it.
+    deferring hydration until it scrolls into view means deferring until after
+    someone has already tried to type in it.
   */}
   <section aria-labelledby="search-heading">
     <h2 id="search-heading" class="sr-only">Find a tool</h2>
-    <QueryMatcher client:load label="What do you want to do?" />
+    <QueryMatcher client:load label="What do you need to do?" />
     <noscript>
       <p class="mt-3 mb-0 text-sm text-text-muted">
-        Search needs JavaScript. Every tool below is a normal link and works
+        Search needs JavaScript. Every tool below is an ordinary link and works
         without it.
       </p>
     </noscript>
   </section>
 
-  <section aria-labelledby="convert-heading">
-    <h2 id="convert-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
-      Convert between formats
+  <section aria-labelledby="common-heading">
+    <h2
+      id="common-heading"
+      class="m-0 text-sm font-semibold tracking-wider text-text-muted uppercase"
+    >
+      Common fixes
     </h2>
-    <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+    <ul class="mt-4 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
       {
-        stars.map((route) => (
+        commonFixes.map((card) => (
           <li>
-            <a
-              href={'/convert/' + route.slug}
-              class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
-            >
-              <span class="block text-sm font-medium text-text">{route.h1}</span>
-            </a>
+            <ToolCard
+              href={card.href}
+              name={card.name}
+              description={card.description}
+              icon={card.icon}
+            />
           </li>
         ))
       }
     </ul>
   </section>
 
-  <section aria-labelledby="compress-heading">
-    <h2 id="compress-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
-      Compress to an exact size
-    </h2>
-    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
-      When a form demands "under 100 KB" and rejects everything else without explaining how, this
-      is the tool. It searches quality and dimensions together until the file genuinely fits.
-    </p>
-    <ul class="mt-5 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-3">
-      {
-        sizes.map((route) => (
-          <li>
-            <a
-              href={'/compress/' + route.slug}
-              class="num block rounded-md border border-border px-4 py-3 text-center text-sm font-medium text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
-            >
-              {formatTarget(route.targetBytes)}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-
-  {/*
-    Derived from `publishedTools`, and rendered only when there are any.
-
-    Both halves matter. Derived, so a tool that passes its gate appears here
-    without anyone remembering — the omission that made /pdf/from-images an
-    orphan (docs/12 D-79). Conditional, so this section does not sit empty on a
-    build where nothing is published yet.
-  */}
   {
-    publishedTools.length > 0 && (
+    documentCards.length > 0 && (
       <section aria-labelledby="documents-heading">
-        <h2 id="documents-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
-          Build a document
+        <h2
+          id="documents-heading"
+          class="m-0 text-sm font-semibold tracking-wider text-text-muted uppercase"
+        >
+          PDF and documents
         </h2>
-        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
-          Photos of a form, a stack of receipts, a set of screenshots — one PDF,
-          assembled on your device. JPEGs go in exactly as they are, so nothing
-          is re-compressed and nothing loses quality.
-        </p>
-        <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
-          {publishedTools.map((tool) => (
+        <ul class="mt-4 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
+          {documentCards.map((card) => (
             <li>
-              <a
-                href={tool.slug}
-                class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
-              >
-                <span class="block text-sm font-medium text-text">{tool.name}</span>
-              </a>
+              <ToolCard
+                href={card.href}
+                name={card.name}
+                description={card.description}
+                icon={card.icon}
+              />
             </li>
           ))}
         </ul>
       </section>
     )
   }
+
+  <section aria-labelledby="browse-heading">
+    <h2
+      id="browse-heading"
+      class="m-0 text-sm font-semibold tracking-wider text-text-muted uppercase"
+    >
+      Browse by category
+    </h2>
+    <ul class="mt-4 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-3">
+      {
+        categories.map((category) => (
+          <li>
+            <a
+              href={category.href}
+              class="block rounded-lg border border-border bg-surface p-4 no-underline hover:border-border-strong hover:bg-bg-subtle"
+            >
+              <span class="flex items-baseline justify-between gap-2">
+                <span class="font-semibold text-text">{category.name}</span>
+                <span class="num text-sm tabular-nums text-text-muted">{category.count}</span>
+              </span>
+              <span class="mt-1 block text-sm text-text-muted">{category.description}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
 
   <section aria-labelledby="why-heading">
     <h2 id="why-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">

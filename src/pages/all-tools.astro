@@ -20,24 +20,14 @@
  * route that does not build, and cannot omit one that does.
  */
 import ContentLayout from '../layouts/ContentLayout.astro';
-import { publishedFormatPairRoutes, FORMAT_LABEL } from '../content/formats';
-import { publishedSizePresetRoutes, formatTarget } from '../content/presets';
-import { toolManifest, publishedTools } from '../core/tools';
-
-const pairs = publishedFormatPairRoutes.map((route) => ({
-  href: '/convert/' + route.slug,
-  label: route.h1,
-}));
-
-const sizes = publishedSizePresetRoutes.map((route) => ({
-  href: '/compress/' + route.slug,
-  label: 'Compress ' + (FORMAT_LABEL[route.format] ?? route.format) + ' to ' + formatTarget(route.targetBytes),
-}));
-
-const documents = publishedTools.map((tool) => ({ href: tool.slug, label: tool.name }));
-
-/** Declared in the manifest, engine not built. Named rather than hidden. */
-const notYet = toolManifest.filter((tool) => !tool.supported).map((tool) => tool.name);
+import ToolCard from '../components/astro/ToolCard.astro';
+import {
+  compressCards,
+  convertCards,
+  documentCards,
+  otherCards,
+  unbuiltCards,
+} from '../content/tool-cards';
 
 const groups = [
   {
@@ -45,43 +35,41 @@ const groups = [
     title: 'Convert between formats',
     blurb:
       'Pick the pair you need. Each page explains what the conversion actually costs you — alpha channels, colour depth, and where the quality goes.',
-    links: [...pairs, { href: '/convert', label: 'All converters' }],
+    cards: convertCards,
   },
   {
     id: 'compress',
     title: 'Compress to an exact size',
     blurb:
       'For the forms that demand "under 100 KB" and reject everything else without saying how. These search quality and dimensions together until the file genuinely fits.',
-    links: [...sizes, { href: '/compress', label: 'Any target size' }],
+    cards: compressCards,
   },
   {
     id: 'documents',
     title: 'Build a document',
     blurb:
       'Photos and screenshots into one PDF, assembled on your device. JPEGs go in exactly as they are, so nothing is re-compressed.',
-    links: documents,
+    cards: documentCards,
   },
   {
     id: 'other',
     title: 'Resize and inspect',
     blurb:
       'Change dimensions, or look at what a photo is carrying before you send it anywhere — EXIF, GPS coordinates, camera serial numbers.',
-    links: [
-      { href: '/resize', label: 'Resize an image' },
-      { href: '/metadata', label: 'View and strip metadata' },
-    ],
+    cards: otherCards,
   },
   {
     id: 'about',
     title: 'How and why',
     blurb: 'The parts that are not a tool.',
-    links: [
+    cards: [],
+    plainLinks: [
       { href: '/how-it-works', label: 'How this works without uploading' },
       { href: '/privacy', label: 'Privacy' },
       { href: '/about', label: 'About' },
     ],
   },
-].filter((group) => group.links.length > 0);
+].filter((group) => group.cards.length > 0 || (group.plainLinks?.length ?? 0) > 0);
 ---
 
 <ContentLayout
@@ -101,38 +89,62 @@ const groups = [
           {group.title}
         </h2>
         <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">{group.blurb}</p>
-        <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
-          {group.links.map((link) => (
-            <li>
-              <a
-                href={link.href}
-                class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {group.cards.length > 0 && (
+          <ul class="mt-5 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
+            {group.cards.map((card) => (
+              <li>
+                <ToolCard
+                  href={card.href}
+                  name={card.name}
+                  description={card.description}
+                  icon={card.icon}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        {group.plainLinks && (
+          <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+            {group.plainLinks.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  class="block rounded-md border border-border px-4 py-3 text-sm text-text no-underline hover:border-border-strong hover:bg-bg-subtle"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     ))
   }
 
   {
-    notYet.length > 0 && (
+    unbuiltCards.length > 0 && (
       <section aria-labelledby="not-yet-heading">
         <h2 id="not-yet-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
           Not built yet
         </h2>
         <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
-          These are planned and deliberately absent rather than half-finished.
-          There is no page for any of them, because a page for a tool that
-          cannot run is worse than no page: {notYet.join(', ')}.
+          Planned and deliberately absent rather than half-finished. None of
+          these has a page, because a page for a tool that cannot run is worse
+          than no page. They appear in the lists above on their own once they
+          ship — the site is built from a manifest of what genuinely works.
         </p>
-        <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
-          When one ships it appears in the list above on its own — the site is
-          built from a manifest of what genuinely works, so nothing can be
-          advertised ahead of its engine.
-        </p>
+        <ul class="mt-5 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
+          {unbuiltCards.map((card) => (
+            <li>
+              <ToolCard
+                name={card.name}
+                description={card.description}
+                icon={card.icon}
+                unbuilt
+              />
+            </li>
+          ))}
+        </ul>
       </section>
     )
   }

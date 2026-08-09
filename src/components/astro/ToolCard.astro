@@ -1,0 +1,89 @@
+---
+/**
+ * src/components/astro/ToolCard.astro
+ *
+ * The scannable unit: icon, name, one line of description.
+ *
+ * This is the fix for the diagnosis behind the redesign — the site listed tools
+ * as text links under headings, so finding one meant READING. An icon tile plus
+ * a name is scanned in a glance, which is how people actually pick a tool.
+ *
+ * The WHOLE CARD is the link, not the title inside it. A 44px title inside a
+ * 72px card leaves most of the card dead to the touch, and on a phone that is
+ * the difference between one tap and three.
+ *
+ * ZERO JavaScript.
+ */
+import ToolIcon from './ToolIcon.astro';
+import type { ToolIconName } from '../../content/tool-cards';
+
+interface Props {
+  href?: string;
+  name: string;
+  description: string;
+  icon: ToolIconName;
+  /**
+   * A declared tool whose engine is not built.
+   *
+   * Rendered as a non-interactive `<div>` with a text badge, never a link. A
+   * disabled-looking link that navigates nowhere is worse than an honest label,
+   * and the badge is TEXT rather than colour alone so it survives both a
+   * colour-blind reader and the axe gate.
+   */
+  unbuilt?: boolean;
+}
+
+const { href, name, description, icon, unbuilt = false } = Astro.props;
+
+const shell =
+  'flex items-center gap-3 rounded-lg border p-4 no-underline ' +
+  (unbuilt
+    ? 'border-dashed border-border bg-bg-subtle'
+    : 'border-border bg-surface hover:border-border-strong hover:bg-bg-subtle');
+
+const tile =
+  'grid h-10 w-10 shrink-0 place-items-center rounded-md ' +
+  (unbuilt ? 'bg-bg-muted text-text-subtle' : 'bg-accent-subtle text-accent');
+---
+
+{
+  unbuilt ? (
+    <div class={shell}>
+      <span class={tile}>
+        <ToolIcon name={icon} />
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block truncate font-semibold text-text-muted">{name}</span>
+        <span class="block truncate text-sm text-text-muted">{description}</span>
+      </span>
+      <span class="shrink-0 rounded-full bg-bg-muted px-2 py-1 text-xs font-medium text-text-muted">
+        Not built yet
+      </span>
+    </div>
+  ) : (
+    <a href={href} class={shell}>
+      <span class={tile}>
+        <ToolIcon name={icon} />
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block truncate font-semibold text-text">{name}</span>
+        <span class="block truncate text-sm text-text-muted">{description}</span>
+      </span>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+        focusable="false"
+        class="shrink-0 text-text-subtle"
+      >
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </a>
+  )
+}

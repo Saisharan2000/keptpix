@@ -1,0 +1,132 @@
+---
+/**
+ * src/components/astro/ToolIcon.astro
+ *
+ * The nine tool icons, inline. ZERO JavaScript, zero requests, zero dependencies.
+ *
+ * Inline rather than an icon library or sprite sheet for three reasons that all
+ * point the same way: no library fits in the 15 KB of JS headroom left against
+ * the docs/04 §7 budget; an external sprite would be a network request the CSP
+ * forbids; and `currentColor` means one definition works in both themes and
+ * inside a coloured tile without a second copy.
+ *
+ * `aria-hidden` always. Every icon here sits next to its own label — a card
+ * name, a heading — so announcing it would make a screen reader say everything
+ * twice. If an icon ever appears WITHOUT visible text, that call site needs a
+ * label on the interactive element, not an accessible name here.
+ *
+ * Stroke 1.75 across the set, round caps and joins. They are distinguishable at
+ * 24px, which is the size they are actually used at.
+ */
+import type { ToolIconName } from '../../content/tool-cards';
+
+interface Props {
+  name: ToolIconName;
+  size?: number;
+  class?: string;
+}
+
+const { name, size = 24, class: className = '' } = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.75"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+  class={className}
+>
+  {
+    name === 'convert' && (
+      <>
+        <path d="M7 4 4 7l3 3" />
+        <path d="M4 7h11a5 5 0 0 1 5 5" />
+        <path d="m17 20 3-3-3-3" />
+        <path d="M20 17H9a5 5 0 0 1-5-5" />
+      </>
+    )
+  }
+  {
+    name === 'compress' && (
+      <>
+        <path d="m4 4 6 6" />
+        <path d="M10 5v5H5" />
+        <path d="m20 20-6-6" />
+        <path d="M14 19v-5h5" />
+      </>
+    )
+  }
+  {
+    name === 'resize' && (
+      <>
+        <path d="M15 4h5v5" />
+        <path d="M9 20H4v-5" />
+        <path d="M20 4 4 20" />
+      </>
+    )
+  }
+  {
+    name === 'metadata' && (
+      <>
+        <path d="M12 3h7v7l-9 9-7-7Z" />
+        <circle cx="15.5" cy="7.5" r="1.25" />
+      </>
+    )
+  }
+  {
+    name === 'merge-pdf' && (
+      <>
+        <path d="M4 5h4l6 7h5" />
+        <path d="M4 19h4l2.5-3" />
+        <path d="m16 9 3 3-3 3" />
+      </>
+    )
+  }
+  {
+    name === 'split-pdf' && (
+      <>
+        <path d="M4 12h6" />
+        <path d="m10 12 6-6h3" />
+        <path d="m10 12 6 6h3" />
+        <path d="m16 3 3 3-3 3" />
+        <path d="m16 21 3-3-3-3" />
+      </>
+    )
+  }
+  {
+    name === 'rotate-pdf' && (
+      <>
+        <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+        <path d="M20 3v4h-4" />
+      </>
+    )
+  }
+  {
+    name === 'images-to-pdf' && (
+      <>
+        <path d="M6 3h9l4 4v14H6Z" />
+        <path d="M15 3v4h4" />
+        <circle cx="10" cy="11" r="1.25" />
+        <path d="m8 17 2.5-3 2 2 1.5-1.8 2 2.8" />
+      </>
+    )
+  }
+  {
+    name === 'pdf-to-images' && (
+      <>
+        <path d="M5 3h8l4 4v3" />
+        <path d="M13 3v4h4" />
+        <path d="M5 3v14" />
+        <rect x="9" y="13" width="11" height="8" rx="1.5" />
+        <circle cx="12" cy="16" r="1" />
+        <path d="m9 20 2.5-2.5 2 2L16 17l4 4" />
+      </>
+    )
+  }
+</svg>

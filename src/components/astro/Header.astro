@@ -9,27 +9,27 @@
  * glyph is painted on the first frame with no script involvement.
  */
 
-import { publishedTools } from '../../core/tools';
-
 /**
- * The image hubs are listed by hand because they are hand-built pages.
+ * CURATED, not derived — and that is a correction to D-79 (see D-86).
  *
- * Manifest tools are DERIVED, and that is the point (docs/12 D-79). Shipping
- * `/pdf/from-images` left it an orphan — in the sitemap, linked from nothing,
- * absent from the nav. Google treats orphan pages as low priority and internal
- * links are a ranking signal, so a page nothing links to is close to invisible,
- * and no human browsing the site could reach it either.
+ * D-79 made this derive from `publishedTools`, because shipping
+ * `/pdf/from-images` had left it orphaned. That was the right fix for the wrong
+ * component: five PDF tools later the header carried NINE items and had become
+ * a wall of text, which is precisely the "readable, not scannable" problem the
+ * redesign exists to solve.
  *
- * Hardcoding one more entry would have fixed today and re-broken on the next
- * tool. Deriving from `publishedTools` means a tool that passes its gate is
- * reachable by construction, and one that has not cannot appear.
+ * The orphan guarantee is unchanged, because it never belonged here. Every
+ * published tool is linked from the FOOTER (derived) and from the homepage's
+ * card sections (derived), and `tests/e2e/no-orphans.spec.ts` asserts both. A
+ * header is for the handful of places most people want; a site map is for
+ * completeness.
  */
 const links = [
   { href: '/convert', label: 'Convert' },
   { href: '/compress', label: 'Compress' },
   { href: '/resize', label: 'Resize' },
   { href: '/metadata', label: 'Metadata' },
-  ...publishedTools.map((tool) => ({ href: tool.slug, label: tool.name })),
+  { href: '/all-tools', label: 'All tools' },
 ];
 
 const current = Astro.url.pathname.replace(/\/$/, '');
