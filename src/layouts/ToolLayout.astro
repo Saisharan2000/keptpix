@@ -40,6 +40,49 @@ const { title, description, path, h1, lede, faq, breadcrumbs, webApp } = Astro.p
       <div>
         <h1 class="m-0 text-4xl font-bold tracking-tight text-text">{h1}</h1>
         <p class="mt-4 mb-0 max-w-[62ch] text-lg text-text-muted">{lede}</p>
+
+        {/*
+          The trust chip, on every tool route.
+
+          Static markup in the LAYOUT rather than inside either island, which
+          means all 20 tool routes get it for zero JavaScript and it is present
+          in the HTML a crawler sees. It is the one fact that distinguishes this
+          from every competitor, and it belongs above the fold next to the
+          action, not in a paragraph further down that nobody reads.
+
+          Success colours rather than accent: this is a reassurance, not a
+          control, and it must not compete with the primary button for
+          attention. The lock is decorative — the sentence carries the meaning,
+          so a screen reader gets it from the text.
+
+          The TEXT is `text-text`, not `text-success`. Measured: success on
+          success-subtle is 3.90:1 in the light theme, under the 4.5:1 floor for
+          normal text, and axe failed all 20 tool routes on it. `text-text` is
+          16.24:1 there and 13.55:1 in dark. The ICON keeps the green, because
+          WCAG asks only 3:1 of a non-text element and 3.90 clears that — so the
+          chip still reads as green without the sentence being unreadable.
+        */}
+        <p
+          class="mt-5 mb-0 inline-flex items-center gap-2 rounded-full bg-success-subtle px-3 py-1.5 text-sm font-medium text-text"
+        >
+          <svg
+            class="shrink-0 text-success"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.25"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+          Files never leave this device &middot; works offline
+        </p>
       </div>
 
       <slot name="tool" />

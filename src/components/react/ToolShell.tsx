@@ -411,11 +411,31 @@ function ImageToolShell({
           />
 
           <div class="mt-auto">
+            {/*
+              STICKY once there are files to act on.
+              
+              It used to sit in normal flow after the settings rail and the file
+              grid, which on a 1280px desktop put it BELOW THE FOLD — the one
+              action the page exists for was something you had to scroll to
+              find. Sticking it to the bottom means the next step is always
+              visible, whatever the file count or how far down the settings the
+              user has wandered.
+
+              `bottom-0` with a top border and a solid background, so it reads
+              as a bar rather than floating over the content it covers. It is
+              inside the normal flow when there is nothing to do, because a
+              permanently visible empty bar is just chrome.
+            */}
             {pendingCount > 0 && (
-              <div class="border-t border-border p-4">
+              <div class="sticky bottom-0 z-20 border-t border-border bg-bg p-4">
                 <Button variant="primary" onClick={() => void convert()} disabled={busy}>
-                  {busy ? 'Converting…' : 'Convert ' + pendingCount + ' files'}
+                  {busy
+                    ? 'Converting…'
+                    : 'Convert ' + pendingCount + (pendingCount === 1 ? ' file' : ' files')}
                 </Button>
+                <p class="mt-2 mb-0 text-xs text-text-muted">
+                  {pendingCount === 1 ? '1 file' : pendingCount + ' files'} · nothing is uploaded
+                </p>
               </div>
             )}
 

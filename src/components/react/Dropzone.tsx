@@ -150,9 +150,17 @@ export function Dropzone({
           'flex min-h-[280px] cursor-pointer flex-col items-center justify-center gap-2 ' +
           'rounded-lg border-2 border-dashed px-6 py-12 text-center ' +
           'transition-[background-color,border-color,transform] duration-[var(--duration-fast)] ' +
+          /*
+           * Accent-tinted AT REST, not only while dragging.
+           *
+           * It used to sit in neutral grey until a drag started, which made the
+           * one thing you are meant to do look like a disabled panel. On a tool
+           * page this is the target; it should read as the target before you
+           * touch anything.
+           */
           (dragover
             ? 'scale-[1.005] border-accent bg-accent-subtle'
-            : 'border-border-strong bg-bg-subtle')
+            : 'border-accent bg-accent-subtle hover:bg-accent-subtle')
         }
       >
         <svg
@@ -164,7 +172,7 @@ export function Dropzone({
           stroke-width="1.5"
           stroke-linecap="round"
           stroke-linejoin="round"
-          class="text-text-subtle"
+          class="text-accent"
           aria-hidden="true"
         >
           <path d="M12 16V4m0 0L7 9m5-5l5 5" />
@@ -173,8 +181,24 @@ export function Dropzone({
         <p class="m-0 text-xl font-semibold text-text">
           {dragover ? 'Release to add files' : 'Drop ' + fromLabel + ' files here'}
         </p>
+        {/*
+          A SPAN styled as a button, deliberately not a <button>.
+          
+          The affordance matters — people look for something to press, and
+          "or click to browse" in muted grey is not it. But this whole zone is
+          already `role="button"` with its own accessible name, and nesting a
+          real control inside would give one action two tab stops and two names.
+          A span inherits the parent's click and keyboard handling and adds
+          nothing to the accessibility tree.
+        */}
+        <span
+          aria-hidden="true"
+          class="mt-1 inline-flex min-h-11 items-center rounded-md bg-accent px-5 text-sm font-semibold text-accent-text"
+        >
+          Choose {fromLabel} files
+        </span>
         <p class="m-0 text-sm text-text-muted">
-          or click to browse · or paste from clipboard
+          or drop them anywhere here · or paste from clipboard
         </p>
         <p id="dropzone-constraints" class="mt-3 mb-0 text-sm text-text-muted">
           No upload caps · No sign-up · No watermarks
