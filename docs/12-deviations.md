@@ -3265,6 +3265,70 @@ real iPhone — one more entry for the manual device pass, alongside the deferre
 dark-mode check.
 
 ---
+## D-91 — the compressor inflated files it should have left alone
+
+Reported from outside, by an agent filling in a directory listing: a **57 KB JPG
+with a 100 KB target came back at 89 KB**, and the UI said "56.9% larger" — which
+was at least honest. The flagship feature, making a file bigger.
+
+Nothing was broken, which is why no test caught it. Step 0 of
+`searchForTargetSize` probes `maxQuality` (95); 89 KB is genuinely under 100 KB,
+so it settled in one pass and reported `targetMet: true`. Correct against its own
+contract. **The gap was that nobody in the chain ever asked whether re-encoding
+was worth doing at all.** A source already squeezed harder than q95 costs *more*
+bytes when re-encoded at q95, and a generous ceiling hides it completely.
+
+### Why not just pass the original bytes through
+
+That is the obvious fix and it is wrong for this product. Emitting the source
+untouched would be smaller *and* would carry the **EXIF and GPS** straight to the
+output, because re-encoding through a canvas is what strips them. A file 30 KB
+larger is a much better failure than a file that quietly still knows where the
+photo was taken.
+
+### The fix
+
+Tighten the target to the source size and let the existing search do its job:
+
+```ts
+const effectiveTarget = Math.min(userTarget, sourceBytes);
+```
+
+No new code path, no new option, no contract change — the search now simply has
+to beat the file it was handed. `tolerance` is a fraction *of* the target, so it
+scales with it. `sourceBytes` is read at function entry, before the decoder can
+detach the transferred buffer.
+
+`targetMet` is now judged against the **user's** figure rather than the tightened
+one. If a 5 KB source cannot be re-encoded below 5 KB, the search reports failure
+against its own stricter goal — but the user asked for "under 100 KB" and has it,
+and surfacing `E_TARGET_UNREACHABLE` there would be a lie about a job that
+succeeded.
+
+### My first regression test was green about the wrong thing
+
+Worth recording, because it is the exact failure this log keeps returning to and
+I walked into it while fixing an instance of it.
+
+The test I wrote passed **with the bug deliberately restored**. Cause: it built
+its source with `makeJpegBytes`, which encodes at q95 — and a q95 source
+re-encoded at q95 comes out roughly the same size, so inflation was impossible by
+construction. The test exercised the code path and asserted the right thing about
+an input that could never fail.
+
+Fixed by making source quality a parameter and encoding at **q35**, harder than
+the search's ceiling. Now:
+
+- with the fix: **passes**
+- with the fix reverted: **fails**, `source 91727 B, target 366908 B, got 180400 B`
+  — 97% inflation, caught
+
+A regression test that has not been observed to fail is a comment.
+
+Verified: 414 unit, **164 integration** (real browser, none skipped), 12 e2e
+across convert/batch/smoke, all three budgets pass.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

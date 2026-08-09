@@ -32,7 +32,18 @@ function mulberry32(seed: number): () => number {
  * A real JPEG with real photographic-ish detail. A flat colour would compress
  * to a few hundred bytes and make every size assertion meaningless.
  */
-async function makeJpegBytes(width: number, height: number, seed = 42): Promise<ArrayBuffer> {
+async function makeJpegBytes(
+  width: number,
+  height: number,
+  seed = 42,
+  /**
+   * Encode quality of the SOURCE. Defaults to 0.95 to match every existing
+   * caller. It is a parameter because the D-91 case needs a source compressed
+   * HARDER than the search's maxQuality — a q95 source re-encodes at q95 to
+   * roughly the same size, so it cannot demonstrate inflation at all.
+   */
+  quality = 0.95,
+): Promise<ArrayBuffer> {
   const canvas = new OffscreenCanvas(width, height);
   const ctx = canvas.getContext('2d');
   if (ctx === null) throw new Error('no 2d context');
@@ -53,7 +64,7 @@ async function makeJpegBytes(width: number, height: number, seed = 42): Promise<
     ctx.fillRect(rand() * width, rand() * height, rand() * 90 + 4, rand() * 90 + 4);
   }
 
-  const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
+  const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality });
   return blob.arrayBuffer();
 }
 
@@ -439,5 +450,80 @@ describe('E_TOO_LARGE — the memory guard, actually wired in (docs/12 D-43)', (
     const pool = newPool();
     const response = await pool.process(makeRequest('normal-1', bytes, makeConfig()));
     expect(response.ok).toBe(true);
+  }, 30_000);
+});
+
+describe('a source already under target is never inflated (D-91)', () => {
+  /**
+   * Reported from outside: a 57 KB JPG with a 100 KB target came back at 89 KB,
+   * labelled "56.9% larger". Step 0 of the search probes maxQuality, 89 KB is
+   * genuinely under 100 KB, so it settled in one pass and called it a win.
+   * Nobody asked whether re-encoding was worth doing.
+   *
+   * The output must still be a RE-ENCODE, not the original bytes passed through
+   * — that is what strips EXIF and GPS, and quietly forwarding a smaller file
+   * with the location intact would be the wrong trade for this product.
+   */
+  it('does not return a file larger than the source', async () => {
+    /**
+     * The source is encoded at q35 — deliberately HARDER than the search's
+     * maxQuality of 95. That is what makes this reproduce: re-encoding an
+     * already-squeezed JPEG at q95 costs MORE bytes than the original. My first
+     * attempt at this test used the default q95 source and passed with the bug
+     * still in place, which is worth more as a warning than the test is.
+     */
+    const bytes = await makeJpegBytes(1600, 1200, 42, 0.35);
+    const sourceSize = bytes.byteLength;
+    // A target the source ALREADY satisfies, by a wide margin.
+    const targetBytes = sourceSize * 4;
+
+    const pool = newPool();
+    const response = await pool.process(
+      makeRequest('under-target', bytes, makeConfig({ sizeMode: { kind: 'target', targetBytes } })),
+    );
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) return;
+    const { result } = response;
+
+    expect(result.sizeBytes).toBeLessThanOrEqual(targetBytes);
+    // The actual regression: the output must not be bigger than what came in.
+    expect(
+      result.sizeBytes,
+      `source ${sourceSize} B, target ${targetBytes} B, got ${result.sizeBytes} B`,
+    ).toBeLessThanOrEqual(sourceSize);
+    // The user's ceiling was met, so nothing may claim otherwise.
+    expect(result.targetMet).toBe(true);
+
+    // Still a real, decodable image rather than a copied buffer.
+    const bitmap = await createImageBitmap(result.blob);
+    try {
+      expect(bitmap.width).toBe(1600);
+      expect(bitmap.height).toBe(1200);
+    } finally {
+      bitmap.close();
+    }
+  }, 30_000);
+
+  it('still reports success when the source cannot be beaten', async () => {
+    /**
+     * A tiny source is close to the floor of what JPEG can represent, so the
+     * tightened target may be genuinely unreachable. The user asked for "under
+     * N bytes" and has it either way — surfacing E_TARGET_UNREACHABLE here
+     * would be a lie about a job that succeeded, which is why targetMet is
+     * judged against the user's figure and not the tightened one.
+     */
+    const bytes = await makeJpegBytes(64, 64);
+    const targetBytes = 500_000;
+
+    const pool = newPool();
+    const response = await pool.process(
+      makeRequest('tiny-source', bytes, makeConfig({ sizeMode: { kind: 'target', targetBytes } })),
+    );
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) return;
+    expect(response.result.sizeBytes).toBeLessThanOrEqual(targetBytes);
+    expect(response.result.targetMet).toBe(true);
   }, 30_000);
 });

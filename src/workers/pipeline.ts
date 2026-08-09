@@ -111,6 +111,13 @@ export async function runPipeline(
   const format: OutputFormat = config.outputFormat;
 
   /**
+   * Read NOW, before the decoder touches it. `bytes` arrives transferred, and a
+   * decoder is entitled to detach the buffer — reading `byteLength` afterwards
+   * can legitimately return 0.
+   */
+  const sourceBytes = req.bytes.byteLength;
+
+  /**
    * Everything the encode closure mutates lives here rather than in `let`
    * bindings: TypeScript cannot narrow a closure-assigned local, and a stale
    * narrowing on a bitmap handle is exactly how a leak gets shipped.
@@ -274,8 +281,28 @@ export async function runPipeline(
     let searchPasses: number | null = null;
 
     if (config.sizeMode.kind === 'target') {
+      const userTarget = config.sizeMode.targetBytes;
+
+      /**
+       * NEVER return a file bigger than the one we were handed (docs/12 D-91).
+       *
+       * A 57 KB JPG with a 100 KB target used to come back at 89 KB, reported
+       * honestly as "56.9% larger". The search was not wrong — step 0 probes
+       * maxQuality, 89 KB is under 100 KB, so it settled in one pass and
+       * declared success. Nothing in the chain ever asked whether re-encoding
+       * was worth doing at all.
+       *
+       * Tightening the target to the source size fixes it without a new code
+       * path: the existing search now has to beat the file it was given. It
+       * also keeps the re-encode, which matters — passing the original bytes
+       * through would be smaller AND would carry the EXIF and GPS straight to
+       * the output, and for this product a slightly larger file is the better
+       * failure. Tolerance is a fraction OF the target, so it scales with it.
+       */
+      const effectiveTarget = Math.min(userTarget, sourceBytes);
+
       const search = await searchForTargetSize(encodeAt, {
-        targetBytes: config.sizeMode.targetBytes,
+        targetBytes: effectiveTarget,
         ...(config.sizeMode.tolerance !== undefined
           ? { tolerance: config.sizeMode.tolerance }
           : {}),
@@ -283,7 +310,14 @@ export async function runPipeline(
       });
       qualityUsed = search.quality;
       scaleApplied = search.scale;
-      targetMet = search.targetMet;
+      /**
+       * Judged against what the USER asked for, not the tightened figure. If a
+       * 5 KB source cannot be re-encoded below 5 KB, the search reports
+       * targetMet: false against its own stricter goal — but the user asked for
+       * "under 100 KB" and got it, so surfacing E_TARGET_UNREACHABLE would be a
+       * lie about a job that succeeded.
+       */
+      targetMet = search.achievedBytes <= userTarget;
 
       // I-8 guarantees the returned pair produced achievedBytes, so its blob was
       // already made during the search. Re-encoding it would spend a NINTH pass
