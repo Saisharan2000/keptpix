@@ -76,7 +76,7 @@ async function waitForPrecached(page: Page, pathname: string): Promise<void> {
     .toBe(true);
 }
 
-const convertButton = (page: Page) => page.getByRole('button', { name: /^Convert \d+ files$/ });
+const convertButton = (page: Page) => page.getByRole('button', { name: /^Convert \d+ files?$/ });
 
 async function runConversion(page: Page): Promise<void> {
   await convertButton(page).click();

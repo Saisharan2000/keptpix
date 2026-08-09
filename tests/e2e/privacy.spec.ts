@@ -136,7 +136,7 @@ async function addImages(page: Page, count: number): Promise<void> {
   }, count);
 }
 
-const convertButton = (page: Page) => page.getByRole('button', { name: /^Convert \d+ files$/ });
+const convertButton = (page: Page) => page.getByRole('button', { name: /^Convert \d+ files?$/ });
 
 async function runConversion(page: Page): Promise<void> {
   await convertButton(page).click();

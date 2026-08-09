@@ -292,8 +292,14 @@ function ImageToolShell({
     [store],
   );
 
-  const step = ui.mobileStep;
-  const setStep = store.getState().setMobileStep;
+  /*
+   * `ui.mobileStep` is no longer read here.
+   *
+   * It drove the Files / Settings tab pair that the single-column layout
+   * replaced. The store field and its action stay — persistence and the store
+   * tests reference them, and removing a slice field is a wider change than
+   * this one — but nothing in the shell branches on it any more.
+   */
 
   /* ── unsupported engine ───────────────────────────────────────────── */
   /**
@@ -343,57 +349,40 @@ function ImageToolShell({
   }
 
   /* ── working ──────────────────────────────────────────────────────── */
-  // Below lg this is a step flow, never the desktop layout squeezed down
-  // (docs/08 §4.3). At lg and up every pane is visible at once.
-  const showConfig = step === 'configure';
   const pendingCount = views.filter(
     (v) => v.job.status === 'queued' || v.job.status === 'running',
   ).length;
 
   return (
     <div class="overflow-hidden rounded-lg border border-border bg-surface">
-      <div class="flex gap-1 border-b border-border p-2 lg:hidden">
-        <Button
-          size="sm"
-          variant={showConfig ? 'ghost' : 'primary'}
-          onClick={() => setStep('results')}
-        >
-          Files ({views.length})
-        </Button>
-        <Button
-          size="sm"
-          variant={showConfig ? 'primary' : 'ghost'}
-          onClick={() => setStep('configure')}
-        >
-          Settings
-        </Button>
-      </div>
+      {/*
+        SINGLE COLUMN, and the settings are folded away.
 
-      <div class="lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-stretch">
-        <aside
-          class={
-            'border-border bg-bg-subtle lg:block lg:border-r ' + (showConfig ? 'block' : 'hidden')
-          }
-          aria-label="Settings"
-        >
-          <ConfigPanel
-            config={config}
-            codecs={codecs}
-            achievedBytes={lastAchieved}
-            onChange={(patch) => store.getState().setConfig(patch)}
-            presets={presets}
-            onApplyPreset={applyPreset}
-            onSavePreset={saveCurrentAsPreset}
-            onDeletePreset={deletePresetById}
-            onExportPresets={exportPresets}
-            onImportPresets={importPresets}
+        This was a 260px settings rail beside the work area, plus a Files /
+        Settings tab pair below `lg`. Two problems, one cause. On desktop the
+        rail put Output, Mode, Quality, Resize, Metadata and Presets in front of
+        someone who had not yet chosen a file — a wall of controls competing
+        with the only thing they needed to do. On mobile the tabs meant settings
+        and files could never be seen together.
+
+        Now: dropzone, then files, then a COLLAPSED disclosure, then the sticky
+        action. The defaults are genuinely good, so the summary says so and most
+        people never open it. Anyone who wants quality 82 and no EXIF stripping
+        is one click away, and their choice persists in the store as before.
+
+        `<details>` is native — it opens with no JavaScript, is keyboard
+        operable for free, and adds nothing to the island bundle. The `<aside>`
+        wrapper keeps the `complementary` role and the "Settings" accessible
+        name that smoke.spec's WO-4 check looks for.
+      */}
+      <div class="flex flex-col">
+        <div class="border-b border-border p-4">
+          <Dropzone
+            fromLabel={fromLabel}
+            compact={views.length > 0}
+            onFiles={(files) => void addFiles(files)}
           />
-        </aside>
-
-        <div class={'min-w-0 flex-col ' + (showConfig ? 'hidden lg:flex' : 'flex')}>
-          <div class="border-b border-border p-4">
-            <Dropzone fromLabel={fromLabel} compact onFiles={(files) => void addFiles(files)} />
-          </div>
+        </div>
 
           <RejectedList rejected={rejected} onDismiss={() => setRejected([])} />
 
@@ -407,8 +396,44 @@ function ImageToolShell({
             onAllowResize={allowResize}
             onSelect={(id) => store.getState().selectSource(id)}
             onInspect={inspectMetadata}
-            onAddMore={() => setStep('results')}
           />
+
+        <aside aria-label="Settings" class="border-t border-border bg-bg-subtle">
+          <details class="group">
+            <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-text">
+              <span>
+                Settings
+                <span class="ml-2 font-normal text-text-muted">the defaults are fine</span>
+              </span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                class="shrink-0 text-text-muted transition-transform duration-[var(--duration-fast)] group-open:rotate-180"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </summary>
+            <ConfigPanel
+              config={config}
+              codecs={codecs}
+              achievedBytes={lastAchieved}
+              onChange={(patch) => store.getState().setConfig(patch)}
+              presets={presets}
+              onApplyPreset={applyPreset}
+              onSavePreset={saveCurrentAsPreset}
+              onDeletePreset={deletePresetById}
+              onExportPresets={exportPresets}
+              onImportPresets={importPresets}
+            />
+          </details>
+        </aside>
 
           <div class="mt-auto">
             {/*
@@ -451,7 +476,6 @@ function ImageToolShell({
             <PrivacyIndicator processed={summary.done} total={views.length} />
             {import.meta.env.DEV && <DiagnosticsPanel device={device} views={views} />}
           </div>
-        </div>
       </div>
 
       {metadataTarget !== null && (

@@ -2960,6 +2960,79 @@ Tests round-trip through our own writer: an image becomes a PDF via
 browser, including the nested-worker path, DPI scaling, the clamp, and a pixel
 sample proving pages land on white rather than black.
 
+## 🟠 D-86 — the UX pass, and the two contrast bugs a design review cannot catch
+
+**Docs affected:** `08 §4.3` (tool page layout, amended)
+**Milestone:** continuous UX
+
+The founder's read was that the site was not intuitive. Diagnosed before acting,
+because that is not actionable: it was **readable rather than scannable**. Tools
+were text links under headings, so finding one meant reading; tool pages showed
+a 260px settings rail before any file existed; and the primary action sat below
+the fold.
+
+An external design pass produced a handoff that reached the same conclusion
+independently, which was worth more than the markup: **fold the settings so the
+dropzone is the only possible first move.**
+
+### What shipped
+
+| | |
+|---|---|
+| `ToolIcon` / `ToolCard` | Nine inline SVG icons, `currentColor`, zero dependencies. Whole card is the link. |
+| Homepage | Search, Common fixes, PDF and documents, categories with derived counts |
+| Trust chip | In `ToolLayout`, so all 20 tool routes get it for zero JS and it is in the crawled HTML |
+| Dropzone | Accent-tinted **at rest**, with a solid button |
+| Tool page | Single column: dropzone → files → collapsed settings → sticky action |
+
+### Four things only rendering the page could find
+
+Screenshots at every step. Every one of these passed type-check, lint and unit
+tests.
+
+**Two contrast failures, both light-theme only.** The handoff used
+`text-text-subtle` for small labels (3.1:1 on white) and `text-success` on
+`success-subtle` for the trust chip (**3.90:1**, and it broke all 20 tool
+routes). Both under the 4.5:1 floor. Fixed by computing the ratios from the
+tokens rather than judging by eye: the chip's text is `text-text` at 16.24:1,
+and the lock keeps its green because WCAG asks only 3:1 of a non-text element.
+`--color-text-subtle` is effectively a **large-text-only token** in the light
+theme, which is worth knowing before reaching for it again.
+
+**Descriptions truncated at three columns while fitting on a phone**, because a
+3-col desktop card is NARROWER than a 1-col mobile card — the opposite of the
+intuition, and invisible without looking at both.
+
+**The action was below the fold** in the state that matters. Empty state looked
+fine; add files and the settings rail plus the file grid pushed Convert off
+screen. Now sticky.
+
+### A regression of my own, and the lesson in it
+
+D-79 made the header derive from `publishedTools` so `/pdf/from-images` could
+not be orphaned. Five PDF tools later that header carried **nine items** — a wall
+of text, which is exactly the problem this pass exists to fix. Right fix, wrong
+component: a header is for the handful of destinations most people want, not for
+completeness. Curated again, with the orphan guarantee moved to the footer and
+the homepage card sections, both derived and both still asserted by
+`no-orphans.spec.ts`.
+
+**An automatic guarantee still has to be attached to the right thing.** Deriving
+the nav was correct in principle and wrong in placement, and nothing failed — it
+just quietly got worse with every tool.
+
+### Tests that legitimately changed
+
+`privacy.spec` and `pwa.spec` matched `/^Convert \d+ files$/`, with a mandatory
+plural. Part two made the label singular for one file, which is correct English
+and broke five tests; `convert.spec` already used `files?` and passed
+throughout. Regexes relaxed rather than the copy reverted.
+
+Two visual baselines were re-generated **deliberately**, after reading the diff
+as that spec's own comment demands: 4% of pixels, 16px taller, from the button
+the design added. The text-integrity half of that suite — the part that actually
+catches D-27 escape garbage — passed unchanged.
+
 ---
 ## Outstanding work, most consequential first
 
