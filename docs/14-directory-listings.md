@@ -190,6 +190,77 @@ distribution once you know a channel converts, not before.
 
 ---
 
+---
+
+## What the SERPs actually say — and why the plan changed
+
+Measured 9 Aug 2026, by searching the money queries and reading what ranks.
+Three findings, in increasing order of how much they change the plan.
+
+### 1. There are no threads to answer. Growth #2 has almost no targets.
+
+The plan was "answer on existing threads that already rank." For
+`compress jpg to 100kb`, the entire first page is **competitor tool pages** —
+imageonline, cloudinary, smalljpg, zamzar, 11zon, pi7, hicompress. Not one
+forum, Reddit, Quora or Stack Exchange thread. Same for
+`is it safe to upload passport photo to online compressor`: tool pages and SEO
+blog posts, no discussions.
+
+Compounding it: **Reddit blocks our crawler outright**, so those threads cannot
+even be found from here, let alone assessed. Growth #2 is not impossible, but it
+is founder-only manual work with no evidence yet that the threads exist.
+
+### 2. "Nothing is uploaded" is a crowded position, not a wedge.
+
+This is the uncomfortable one, and it contradicts what the drafts above lean on.
+Competitors already make the same claim, in the same words:
+
+- `hicompress.com` — "100% private; all the compression happens in the browser"
+- `imageonline.co` — "does not upload any JPEG images to a server"
+- `pixelbatch.io/compress-image-for-visa` — literally titled "(No Uploads)"
+- `epassport-photo.com/compress-image` — "Free, No Upload"
+
+So the sentence does not distinguish us. What might: **whether it can be
+checked**. Ours is CSP-enforced, asserted by a release-blocking test, and about
+to be open source. Theirs is a sentence on a page.
+
+### 3. The measurable difference is adtech, not uploads.
+
+I put one synthetic 60 KB JPEG through `hicompress` and `imageonline` with a
+request listener attached — the same technique as `privacy.spec.ts`, pointed
+outward. Findings, stated at the strength they deserve:
+
+- **No image-sized upload was observed.** Every bodied request went to
+  `pagead2.googlesyndication.com/pagead/ping` at 4–12 KB, far too small to be
+  the file and addressed to an ad network, not their API. **Not conclusive**: I
+  added the file but did not confirm their conversion ran, so if their flow
+  needs a button press, no upload would have fired either way.
+- **What IS conclusive: both pages POST repeatedly to Google's ad network.**
+  hicompress fired five, imageonline one, within seconds of a file being added.
+
+That is the honest differentiator, and it is stronger than the upload claim:
+*they process locally and still let an ad network watch you do it.* We cannot
+serve an ad or a tracker at all — `connect-src 'self'` forbids the request and
+the release gate fails if one appears.
+
+### The revised order, and why
+
+Evidence points at **growth #4, not #2**. The competitors winning these queries
+are doing it with **use-case-named routes**, not size-named ones:
+`/compress-image-for-visa`, `/passport-photo-compressor`,
+`/passport-photo-size-reducer`. We have the *content* — `jpg-to-50kb`'s intro is
+already about passport and visa limits — but no URL or H1 that matches how people
+actually search. `src/content/presets.ts` makes a new route pure content, no
+engine work.
+
+This does not need the 12 Aug Search Console data. That data would tell us what
+*we* already rank for; the SERP tells us what the market rewards, and it is
+unambiguous. Waiting three days for weaker evidence would be the wrong call.
+
+**Revised: 1 → 4 → 3 → 2.** Directories first (unchanged, in flight), then
+use-case routes, then communities, and threads last since we have no proof the
+threads exist.
+
 ## Order of operations
 
 1. **AlternativeTo** — today, no dependency on anything.
