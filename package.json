@@ -2,6 +2,7 @@
   "name": "noupload",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-only",
   "type": "module",
   "description": "Batch image conversion and exact-target-size compression that runs 100% in your browser. Nothing is ever uploaded.",
   "engines": {

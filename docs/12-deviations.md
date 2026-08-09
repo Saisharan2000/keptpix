@@ -3034,6 +3034,117 @@ the design added. The text-integrity half of that suite — the part that actual
 catches D-27 escape garbage — passed unchanged.
 
 ---
+## D-87 — AGPL-3.0, because "verifiable" was doing no work
+
+The pitch is that your files never leave your device. Until now the only evidence
+offered was the sentence itself. The repo was private, so *verifiable* meant
+"take our word for it" — which is exactly what every competitor also says.
+
+Open-sourcing costs us almost nothing that was not already given away: the entire
+program is shipped to every visitor's browser on every page load. Minified, but
+present. The privacy claim is checkable by anyone willing to open devtools; a
+public repo just removes the tedium.
+
+**AGPL-3.0, not MIT.** MIT permits a competitor to take the whole thing, rebrand,
+and run a paid clone with no obligation. AGPL §13 says a modified version run as
+a network service must publish its source — the one clause that matters for a web
+app. Every dependency allows it: MIT and Apache-2.0 are one-way compatible into
+the GPLv3 family, and `libheif-js` is LGPL-3.0, which is *more* comfortable under
+AGPL than under a permissive licence. Verified by reading each `package.json`.
+
+The name is deliberately **not** licensed. AGPL grants no trademark rights, so a
+fork may use the code but must not call itself KeptPix or use `keptpix.com`.
+
+`docs/12` becomes public with everything else — 87 candid entries, most of them
+my own bugs. Keeping it is the point: a spec set with an honest defect log is
+stronger evidence of care than a clean one, and the alternative is pretending.
+
+### Pre-publication audit, since a public repo is not reversible
+
+Two real risks, both checked rather than assumed:
+
+- **Personal photos.** `tests/fixtures/images/` is git-ignored precisely because
+  camera files carry GPS — the thing this product strips. One file *is* tracked:
+  `portrait-scrubbed.HEIC`. Its EXIF still holds GPS and a timestamp, which
+  looked alarming until the values were read: `51.4778, -0.0015` is Greenwich
+  Observatory and the date is `2020-01-01T08:00:00Z`. Both are injected by
+  `scripts/scrub-fixture.mjs --with-synthetic-metadata`, and the script asserts
+  afterwards that the coordinate present is the synthetic one. Clean. Make/Model
+  (`Apple / iPhone 13`) is retained on purpose — the metadata suites need tags to
+  find, and a device model shared with millions identifies nobody.
+- **Secrets.** No `.env` tracked, no secret-shaped strings outside the lockfile,
+  and `wrangler.toml` is commented out end to end with no account ID.
+
+### Two things the founder should decide before flipping the switch
+
+Neither is mine to decide, and neither blocks the licence:
+
+1. `docs/01-market-scan.md` and `docs/09-seo-content-plan.md` contain the
+   commercial playbook — competitor analysis, pricing, and the exact keyword
+   targets. They add nothing to verifiability, which is the whole reason for
+   going public. Realistic downside is low (iLovePDF is not reading this repo)
+   but so is the upside.
+2. `NoUploadblueprints/` is a **stale duplicate** of `docs/` that has since
+   diverged — `04-architecture.md` differs by 3.1 KB. That is a problem
+   independent of licensing: CLAUDE.md names `docs/` the source of truth, and a
+   contributor or agent reading the older copy would follow contradictory specs.
+   It wants deleting, and git history keeps it.
+
+Also fixed on the way past: the README advertised `keptpix.app`. The site is
+`keptpix.com`, and it has been for as long as it has been deployed.
+
+---
+## D-88 — two headers that were never declared, and a verification that lied twice
+
+Verifying the redesign deploy against production, I read the response headers.
+CSP was intact — `connect-src 'self' blob:`, no external origin, no
+`unsafe-eval`. But `Strict-Transport-Security` and `Permissions-Policy` were
+absent, and `_headers` turned out never to have declared either. Not a broken
+deploy; a gap that had always been there.
+
+**HSTS.** Cloudflare redirects HTTP to HTTPS, but a redirect means the first
+request of a session can still leave the device in cleartext. For a product whose
+whole claim concerns what does not leave the device, that is the wrong default.
+`max-age=31536000; includeSubDomains`, and deliberately **no `preload`** —
+preload requires submission to hstspreload.org and removal takes months, so it is
+a one-way door that should not be acquired as a side effect of a header edit.
+
+**Permissions-Policy.** `git grep` for `getUserMedia`, `navigator.geolocation`
+and every sensor API returns nothing across `src/` — checked, not assumed. So
+denying them costs nothing and buys a real guarantee: even with a script injected
+past the CSP, the page cannot reach the camera or microphone. `payment` is
+deliberately left unrestricted, because ADR-003 gave up cross-origin isolation
+specifically to keep the Phase 4 payment and OAuth popups working, and closing it
+here would quietly undo that trade.
+
+### The verification was green about the wrong thing — twice
+
+Worth recording, because it is the same failure this log keeps returning to
+(D-63, D-65, D-66, D-76) and it took two forms in five minutes:
+
+1. **A stale server answered instead of mine.** `serve-with-headers.mjs` died on
+   `EADDRINUSE` while an old Astro dev server held 4321. My readiness probe
+   succeeded on the *first* try — which should have been the tell, since Node
+   cannot boot that fast — and I read a response with none of our headers on it.
+   The success line I trusted was from a previous run's log.
+2. **A live server served pre-edit headers.** `const RULES = parseHeaderRules()`
+   runs at **module load**, so a process started before the edit serves the old
+   `_headers` for its entire life. This is the more dangerous of the two: the
+   response looked *plausible* — our real CSP, our real X-Frame-Options, just
+   missing the two lines I had added — which reads as "my edit is wrong" rather
+   than "this server is old."
+
+Both were only caught by dumping the **full** header set instead of grepping for
+the two I expected. A grep for what you hope to find cannot distinguish "absent"
+from "you are talking to the wrong process." Fixed by killing the orphan and
+binding a port checked free first; both headers then served, all four original
+headers unchanged, 414 unit tests green, all three budgets passing (baseline JS
+44.9 KB against the 60 KB ceiling).
+
+Requires a rebuild and re-upload to take effect — `dist/_headers` is a build
+artefact, so the copy now live on production predates this change.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

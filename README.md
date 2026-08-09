@@ -3,7 +3,7 @@
 Batch image conversion and exact-target-size compression that runs **100% in your
 browser**. Nothing is ever uploaded.
 
-- **Canonical domain:** `keptpix.app`
+- **Canonical domain:** [keptpix.com](https://keptpix.com)
 - **Architecture:** static-first, layered client monolith with a worker-offloaded
   compute tier. No backend in v1.
 - **Marginal cost per user:** exactly zero — every conversion runs on the user's
@@ -59,3 +59,20 @@ human or agent — are in [CLAUDE.md](CLAUDE.md).
 Nothing is ever uploaded. No fetch, XHR, WebSocket, or beacon may carry user file
 data. `tests/e2e/privacy.spec.ts` asserts this against the real build, and it is
 a release blocker whenever it fails.
+
+## Licence
+
+Copyright © 2026 Sai Sharan Bhonagiri. Licensed under the
+[GNU AGPL v3.0](LICENSE).
+
+The source is public for a specific reason: the product's only real claim is that
+your files never leave your device, and "trust us" is not evidence. You can read
+the code, check the CSP, and run the privacy suite yourself.
+
+AGPL rather than MIT for an equally specific reason. Anyone may use, modify, and
+self-host this — but if you run a modified version as a public service, §13
+requires you to publish your changes. Every dependency permits it: MIT and
+Apache-2.0 are compatible, and `libheif-js` is LGPL-3.0.
+
+**The licence covers the code, not the name.** *KeptPix*, the logo, and
+`keptpix.com` are not licensed for reuse. A fork must carry its own name.
