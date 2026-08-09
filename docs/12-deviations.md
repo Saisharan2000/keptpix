@@ -3209,6 +3209,62 @@ Both now use inputs that make the claim visible — the real `portrait-scrubbed`
 HEIC, and 12 MP sources that genuinely need compressing.
 
 ---
+## D-90 — D-67 gave iOS an install path, and the icon at the end of it was a screenshot
+
+Found while confirming which icon AlternativeTo had auto-fetched for the
+listing. The site advertised exactly one: `<link rel="icon" href="/favicon.svg">`,
+and the manifest listed the same SVG as its only entry. Two things follow, and
+neither is cosmetic:
+
+- **iOS Safari does not read `rel="icon"` for the home screen and does not accept
+  SVG there at all.** With no `apple-touch-icon`, "Add to Home Screen" saves a
+  cropped screenshot of the page as the icon. D-67 built an install path for iOS
+  and it terminated in a blurry thumbnail — the install worked and looked broken,
+  which is arguably worse than not offering it.
+- **Chrome's installability criteria want a raster icon of at least 192px**, and
+  Android's adaptive launcher needs a `maskable` entry or it centre-crops
+  whatever it is handed.
+
+### Three variants, because the platforms genuinely differ
+
+`scripts/make-icons.mjs` rasterises `public/favicon.svg` with Playwright — the
+same argument make-og-image.mjs already settled: already a devDependency, `sharp`
+is banned by docs/07 §3, `canvas` needs native bindings, nothing ships.
+
+- `apple-touch-icon.png` 180x180, **square and fully opaque**. iOS applies its
+  own corner mask and renders transparency as **BLACK**, so rasterising the
+  rounded-rect favicon directly would put four black corners under Apple's
+  rounding. Glyph at 82% so it does not touch the edge Apple rounds off.
+- `icon-192.png` / `icon-512.png`, `purpose: any`, rounded rect matching the
+  favicon, displayed as-is.
+- `icon-maskable-512.png`, `purpose: maskable`, full bleed with the glyph at
+  60%. The spec guarantees only a circle of 80% diameter survives cropping, so a
+  glyph sized for a square loses its extremities on a round launcher.
+
+The script verifies its own output rather than trusting the screenshot call: it
+reads each PNG back through a canvas and asserts real pixel dimensions and a
+**fully opaque corner**, since a transparent apple-touch-icon is the precise bug
+it exists to prevent. All four report `corner alpha 255`.
+
+### Deliberately NOT precached
+
+The service worker's seed set stays `['/', '/favicon.svg', '/manifest.webmanifest']`.
+The favicon earns its place by being fetched on every page load; the touch icon
+is fetched once, at install, when the device is necessarily online. Against that,
+D-52 recorded precache truncation on HTTP/2 that does not reproduce on HTTP/1.1
+and is therefore untested rather than cleared — adding bytes to that path for no
+offline benefit is the wrong trade.
+
+Verified: manifest parses with 4 icons, PNG ≥192 present, maskable present;
+`apple-touch-icon` in **29/29** built HTML files; all three served as `image/png`;
+414 unit tests and 8 e2e green including D-67's own iOS install-hint test and the
+network-cut service-worker test; all three budgets pass.
+
+**Still unverifiable from here:** whether iOS actually picks it up. That needs a
+real iPhone — one more entry for the manual device pass, alongside the deferred
+dark-mode check.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
