@@ -3388,6 +3388,55 @@ number on an identity document is worse than no page. It needs per-region routes
 or none.
 
 ---
+## D-93 — one command that decides whether the work is shippable
+
+Built to remove the founder from the loop, which is the actual bottleneck on this
+project: not the code, the fact that a human had to assemble "is this good?" out
+of seven separate npm scripts. An agent that cannot answer that itself has to
+stop and ask, and every stop costs a person their afternoon.
+
+`node scripts/verify.mjs` runs eslint → typescript → unit → build → budgets → seo
+→ integration → e2e, cheapest and most-likely-to-fail first so a broken build is
+not discovered after three minutes of browser tests. One exit code. `--fast`
+drops e2e (63s vs 3.7min); `--json` emits a machine-readable result for hooks and
+CI.
+
+**It owns the server lifecycle**, because that is the part that kept going wrong
+by hand. It asks the OS for a free port (`listen(0)`), starts a fresh
+`serve-with-headers`, and always kills it. Never a hardcoded port, never a reused
+server. Both failure modes are already in this log: Playwright's
+`reuseExistingServer` attached to a stale Astro dev server and 404'd every route
+(D-88), and the same class of mistake ran an entire suite against a different
+product (D-76). `serve-with-headers.mjs` also parses `_headers` once at module
+load, so a long-lived server serves stale headers for its whole life.
+
+### It found a flake within a minute of existing
+
+Run alone, the integration suite is 164/164. Run immediately after the other
+gates, `never blocks for more than 50 ms during a 4 MP conversion` failed at
+**114 ms**.
+
+Not a regression — the assertion was absolute, so it conflated two different
+things: whether *our* work blocks the main thread, and whether the machine is
+busy. A 5 ms interval timer gets starved by a build finishing thirty seconds
+earlier regardless of what the worker is doing.
+
+**A gate that fails for ambient reasons is worse than no gate**, because an agent
+cannot act on its verdict — which would have defeated the whole point of the
+tool on its first run.
+
+Fixed by measuring a **control baseline**: the same timer, same duration, with no
+conversion running, then asserting the conversion adds no more than 40 ms over
+whatever this machine was already doing. Starvation hits the control exactly as
+hard as the real run, so the delta isolates the claim. It still catches the
+regression that matters — moving encode to the main thread would add hundreds of
+milliseconds, not tens — and now it holds under load, which is also the condition
+CI runs in.
+
+Verified: **all 8 gates pass** — 414 unit, 164 integration, 140 e2e, 31 routes
+built, budgets and SEO clean.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

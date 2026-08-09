@@ -356,30 +356,69 @@ describe('the main thread stays responsive', () => {
     // Let the worker spin up so startup is not counted either.
     await pool.process(makeRequest('warmup', await makeJpegBytes(200, 200)));
 
-    const gaps: number[] = [];
-    let previous = performance.now();
-    const timer = setInterval(() => {
-      const now = performance.now();
-      gaps.push(now - previous);
-      previous = now;
-    }, 5);
+    /** Samples how late a 5 ms interval actually fires while `work` runs. */
+    const sampleGaps = async (work: () => Promise<unknown>): Promise<number[]> => {
+      const gaps: number[] = [];
+      let previous = performance.now();
+      const timer = setInterval(() => {
+        const now = performance.now();
+        gaps.push(now - previous);
+        previous = now;
+      }, 5);
+      try {
+        await work();
+      } finally {
+        clearInterval(timer);
+      }
+      return gaps;
+    };
 
-    try {
-      await pool.process(
+    /**
+     * A CONTROL RUN, measuring the same timer with no conversion happening.
+     *
+     * This test used to assert an absolute `max(gap) < 50ms`, which conflated
+     * two different things: whether OUR work blocks the main thread, and whether
+     * the machine is busy. It passed alone and failed at 114 ms when run right
+     * after the other gates — a flake that arrived the moment
+     * `scripts/verify.mjs` started running everything back to back (docs/12
+     * D-93). A gate that reports failure because a build finished thirty seconds
+     * earlier is worse than no gate: an agent cannot act on its verdict.
+     *
+     * Timer starvation under load hits the control exactly as hard as the real
+     * run, so the DELTA isolates the claim this test actually makes.
+     */
+    const baseline = await sampleGaps(
+      () => new Promise((resolve) => setTimeout(resolve, 600)),
+    );
+
+    const gaps = await sampleGaps(() =>
+      pool.process(
         makeRequest(
           'responsive-1',
           bytes,
           makeConfig({ sizeMode: { kind: 'target', targetBytes: 90_000 } }),
         ),
-      );
-    } finally {
-      clearInterval(timer);
-    }
+      ),
+    );
 
     expect(gaps.length).toBeGreaterThan(3);
-    // All compute is in the worker by construction, so the main thread should
-    // only ever be servicing postMessage.
-    expect(Math.max(...gaps)).toBeLessThan(50);
+    expect(baseline.length).toBeGreaterThan(3);
+
+    const worstBaseline = Math.max(...baseline);
+    const worstDuring = Math.max(...gaps);
+
+    /**
+     * All compute is in the worker by construction, so a 4 MP conversion should
+     * cost the main thread nothing beyond servicing postMessage. 40 ms of
+     * headroom over whatever this machine was already doing is generous for
+     * that, and still catches the regression that matters — moving encode onto
+     * the main thread would add hundreds of milliseconds, not tens.
+     */
+    expect(
+      worstDuring,
+      `worst gap during conversion ${worstDuring.toFixed(1)}ms vs idle baseline ` +
+        `${worstBaseline.toFixed(1)}ms on this machine`,
+    ).toBeLessThan(worstBaseline + 40);
   });
 });
 

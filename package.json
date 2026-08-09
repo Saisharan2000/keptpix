@@ -21,7 +21,9 @@
     "test:smoke": "playwright test --grep @smoke",
     "serve:headers": "node scripts/serve-with-headers.mjs",
     "check:seo": "node scripts/check-seo.mjs",
-    "og:image": "node scripts/make-og-image.mjs"
+    "og:image": "node scripts/make-og-image.mjs",
+    "verify": "node scripts/verify.mjs",
+    "verify:fast": "node scripts/verify.mjs --fast"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",
