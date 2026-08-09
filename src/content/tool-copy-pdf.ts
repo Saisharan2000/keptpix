@@ -173,6 +173,89 @@ export const splitPdfCopy: ToolCopy = {
   ],
 };
 
+export const pdfToImagesCopy: ToolCopy = {
+  title: 'PDF to JPG or PNG, nothing uploaded | KeptPix',
+  metaDescription:
+    'Turn PDF pages into JPG or PNG images in your browser, at the resolution you choose. Nothing is uploaded. Each page comes back as its own file.',
+  lede:
+    'Every page, or just the ones you name, rendered as images at the resolution you pick. It runs on your device, so the document never leaves it.',
+
+  table: {
+    caption: 'Choosing a resolution',
+    headers: ['DPI', 'An A4 page becomes', 'Good for'],
+    rows: [
+      ['72', 'about 595 x 842 pixels', 'A quick look, or a web thumbnail'],
+      ['150', 'about 1240 x 1754 pixels', 'The default. Reading on screen, sharing, most uses'],
+      ['300', 'about 2480 x 3508 pixels', 'Printing, or reading small print'],
+      ['600', 'about 4960 x 7016 pixels', 'Archival scans. Large files, and slow'],
+    ],
+  },
+
+  sections: [
+    {
+      heading: 'What the resolution actually costs',
+      paragraphs: [
+        'DPI decides how many pixels each page becomes, and the cost grows with the square. Going from 150 to 300 does not double the work, it quadruples it: four times the pixels, four times the memory, roughly four times the wait. At 600 DPI a single A3 page is around 70 megapixels, which is more than most phones can hold at once.',
+        'So there is a ceiling. If the resolution you asked for would produce a page too large for the device you are on, it is rendered as close as it safely can be and you are told the figure it actually used. That seemed better than either refusing outright or letting the tab die several minutes in.',
+        'For almost everything, 150 is the right answer. Choose 300 if the result is going to be printed or if there is small print to read.',
+      ],
+    },
+    {
+      heading: 'Fonts, and the one case that renders imperfectly',
+      paragraphs: [
+        'Most PDFs carry their fonts inside them, and those render exactly as the author intended. A minority reference fonts without embedding them, expecting whatever opens the file to supply them. That is most common in older documents in Chinese, Japanese and Korean.',
+        'Covering that case means shipping over a megabyte of font and character-map data to every visitor, whether they need it or not. We have chosen not to, which means a document of that kind may render with substituted glyphs. It is a real limitation, and it seemed better stated plainly here than discovered after the conversion.',
+      ],
+    },
+    {
+      heading: 'One image per page, named so they sort correctly',
+      paragraphs: [
+        'Each page becomes its own file, numbered and zero-padded, so a twelve-page document sorts 01 through 12 rather than 1, 10, 11, 2. It is a small thing that saves reordering everything by hand afterwards.',
+        'JPG is the default and is right for scans and photographs. Choose PNG if the pages are diagrams, screenshots or line art, where the sharp edges matter more than the file size.',
+      ],
+    },
+  ],
+
+  useCases: [
+    'Getting an image of one page to drop into a slide or a document',
+    'Turning a scanned form into images a website will accept when it refuses PDFs',
+    'Extracting a diagram or a chart from a report',
+    'Making a thumbnail of a cover page',
+    'Reading a PDF on something that handles images better than documents',
+  ],
+
+  faq: [
+    {
+      q: 'Are my PDFs uploaded anywhere?',
+      a: 'No. The rendering happens in your browser on your own device, and nothing is sent over the network. Open the Network tab in developer tools and convert something — nothing carrying your document appears, because there is no request to make. Disconnecting from the internet and converting anyway is the faster proof.',
+    },
+    {
+      q: 'Which resolution should I choose?',
+      a: '150 DPI for almost everything: readable on screen, sensible file sizes. Choose 300 if you are going to print the result or need to read small print, and 72 if you only want a quick look. 600 is for archival work and produces very large files slowly.',
+    },
+    {
+      q: 'Why did I get a lower resolution than I asked for?',
+      a: 'Because the page was large enough that your chosen DPI would have exhausted the device. Pixel count grows with the square of DPI, so a big page at 600 DPI can be seventy megapixels. Rather than crashing partway through, it renders as close as it safely can and tells you the figure it used.',
+    },
+    {
+      q: 'JPG or PNG?',
+      a: 'JPG for scans, photographs and anything with gradients — much smaller for the same visual result. PNG for diagrams, screenshots, line art and text-heavy pages, where JPG compression softens hard edges. PNG files are considerably larger.',
+    },
+    {
+      q: 'Will the text be selectable in the images?',
+      a: 'No, and it cannot be. An image is pixels; the text in a PDF is instructions for drawing letters. Converting to images necessarily discards that. If you need the text, keep the PDF, or use split to extract the pages you want while they are still a document.',
+    },
+    {
+      q: 'Does every PDF render perfectly?',
+      a: 'Almost all do. The exception is a document that references fonts without embedding them, most often older Chinese, Japanese or Korean files, which may render with substituted glyphs. Supporting those would mean sending over a megabyte of font data to everyone, and we would rather say so than charge every visitor for a rare case.',
+    },
+    {
+      q: 'Can I convert a password-protected PDF?',
+      a: 'Not while it is protected. Remove the password in whatever you open it with first. The file is reported as protected rather than being rendered into blank or garbled pages.',
+    },
+  ],
+};
+
 export const rotatePdfCopy: ToolCopy = {
   title: 'Rotate PDF pages, nothing uploaded | KeptPix',
   metaDescription:

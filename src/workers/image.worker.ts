@@ -19,6 +19,7 @@ import { canvasDecoder, probeNativeDecodeFormats } from '../engines/canvas/decod
 import { canvasEncoder, probeNativeEncodeFormats } from '../engines/canvas/encoder';
 import { assemblePdf, prepareImageForPdf } from '../engines/pdf/images-to-pdf';
 import { mergePdfs, probePdf, rotatePdf, splitPdf, type PdfProbe } from '../engines/pdf/document';
+import { countPdfPages, rasterisePdf, type RasterOptions, type RasterPage } from '../engines/pdf/raster';
 import { resolveDecoder } from '../engines/registry';
 import { runPipeline } from './pipeline';
 import {
@@ -152,6 +153,24 @@ const api: WorkerApi = {
     const rotated = await rotatePdf(bytes, indices, angle);
     const buffer = rotated.buffer as ArrayBuffer;
     return Comlink.transfer(buffer, [buffer]);
+  },
+
+  async countPdfPages(bytes: ArrayBuffer): Promise<number> {
+    return countPdfPages(bytes);
+  },
+
+  async rasterisePdf(
+    bytes: ArrayBuffer,
+    options: RasterOptions,
+    onPage: (done: number, total: number) => void,
+  ): Promise<RasterPage[]> {
+    const pages = await rasterisePdf(bytes, options, onPage);
+    // Every rendered page is transferred rather than cloned; at 150 DPI a
+    // 40-page document is tens of megabytes.
+    return Comlink.transfer(
+      pages,
+      pages.map((page) => page.bytes),
+    );
   },
 
   async cancel(jobId: string): Promise<void> {

@@ -328,7 +328,7 @@ export const toolManifest: readonly ToolManifestEntry[] = [
     defaultConfig: { format: 'jpeg', dpi: 150, pages: '' },
     targetSizeCapable: false,
     licenseTier: 'free',
-    supported: false,
+    supported: true,
   },
   {
     id: 'pdf-split',

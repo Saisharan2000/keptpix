@@ -21,6 +21,7 @@ import {
 import { probeNativeEncodeFormats } from '../engines/canvas/encoder';
 import { probeNativeDecodeFormats } from '../engines/canvas/decoder';
 import type { PdfProbe } from '../engines/pdf/document';
+import type { RasterOptions, RasterPage } from '../engines/pdf/raster';
 import type {
   JobProgressEvent,
   ProcessRequest,
@@ -269,6 +270,35 @@ export class WorkerPool {
     const slot = await this.#acquire();
     try {
       return await slot.api.rotatePdf(Comlink.transfer(bytes, [bytes]), indices, angle);
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  /** Page count via the renderer (docs/06 §2.2). */
+  async countPdfPages(bytes: ArrayBuffer): Promise<number> {
+    const slot = await this.#acquire();
+    try {
+      return await slot.api.countPdfPages(Comlink.transfer(bytes, [bytes]));
+    } finally {
+      this.#release(slot);
+    }
+  }
+
+  async rasterisePdf(
+    bytes: ArrayBuffer,
+    options: RasterOptions,
+    onPage?: (done: number, total: number) => void,
+  ): Promise<RasterPage[]> {
+    const slot = await this.#acquire();
+    try {
+      // Comlink.proxy, or the callback does not survive the boundary
+      // (docs/06 §2 rule 3).
+      return await slot.api.rasterisePdf(
+        Comlink.transfer(bytes, [bytes]),
+        options,
+        Comlink.proxy(onPage ?? (() => {})),
+      );
     } finally {
       this.#release(slot);
     }

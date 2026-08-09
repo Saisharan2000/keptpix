@@ -2899,6 +2899,67 @@ rather than working around it.
 **Recorded as a white entry, not a coloured one:** nothing was deviated from and
 nothing was built. This is a decision not to act, with the evidence for it.
 
+## 🟠 D-85 — pdf.js, and the three things that would have broken it silently
+
+**Docs affected:** `07 §3` (dependency table), `kepttools/03 §2`, `06 §2.2`
+**Milestone:** KeptTools M2
+
+`pdfjs-dist` (Apache-2.0) added for `/pdf/to-images`. The only credible option:
+`mupdf` is AGPL and forbidden by docs/07 §3, and a PDF rasteriser is not
+something to hand-write — unlike `core/pdf/writer.ts`, which is 300 lines
+because writing one image per page is genuinely simple (D-75).
+
+**Measured before building, because D-83's estimate was 2x wrong.** 171 KB gz for
+the API plus 464 KB for the renderer as published; **125 KB + 368 KB = 493 KB gz
+after bundling**. Largest dependency in the project, smaller than the 1.12 MB
+AVIF decoder already shipped. Verified lazy the same way as D-83: the built
+worker has **zero** `class PDFDocumentProxy`, and the only grep hit was this
+module's own `'PasswordException'` string literal. Baseline held at 44.5 KB of 60.
+
+**Three things that would have failed in production, handled up front:**
+
+**`isEvalSupported: false` is mandatory here, not hardening.** pdf.js compiles
+some font programs with `eval` when it is available. Our CSP is
+`script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'` — no `unsafe-eval` — so
+those calls would be blocked at runtime and *some* documents would render with
+missing glyphs while most looked fine. A failure that only shows on a subset is
+the worst kind to ship.
+
+**A per-page pixel ceiling.** The manifest offers 600 DPI, and pixel count grows
+with the *square* of DPI: an A3 page at 600 DPI is ~70 megapixels, 280 MB of
+canvas before the encoder copies it. The requested DPI is honoured up to 30 MP,
+then the scale is reduced and **the figure actually used is reported back** — the
+same bargain the image pipeline strikes in D-43, and the runner surfaces it as a
+warning rather than letting someone wonder why 600 produced less.
+
+**White fill plus `alpha: false`.** A PDF page is paper. Rendered onto a default
+canvas and encoded as JPEG, transparent regions come out BLACK — exactly D-83,
+in the opposite direction. Encoding also goes through the shared `canvasEncoder`
+rather than a local `convertToBlob`, so alpha flattening and quality handling
+stay in one place instead of being reimplemented per engine.
+
+**A nested worker, deliberately.** pdf.js requires a `Worker` and v6 has no
+in-thread mode, and this engine already runs inside `image.worker.ts`. Workers
+spawning workers is supported across the whole target range (Safari 16.4+ is
+already the floor via the OffscreenCanvas gate, D-55) and the CSP permits it:
+`worker-src 'self' blob:`. The alternative — rendering on the main thread —
+breaks CLAUDE.md non-negotiable 3 and would freeze the tab.
+
+**A stated limitation rather than a hidden one.** No cMap or standard-font data
+is shipped, which would be over a megabyte for every visitor to cover PDFs that
+reference fonts without embedding them, mostly older CJK documents. Those may
+render with substituted glyphs. The page says so.
+
+**API detail worth recording:** `destroy` is on `PDFDocumentLoadingTask`, not on
+`PDFDocumentProxy` — the proxy exposes only `numPages` and getters. Holding the
+task is the only way to release the worker's copy of the document, so failing to
+would leak the whole parsed PDF per conversion.
+
+Tests round-trip through our own writer: an image becomes a PDF via
+`core/pdf/writer.ts`, and pdf.js renders it back. 10 integration tests in a real
+browser, including the nested-worker path, DPI scaling, the clamp, and a pixel
+sample proving pages land on white rather than black.
+
 ---
 ## Outstanding work, most consequential first
 

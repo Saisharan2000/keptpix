@@ -12,6 +12,7 @@
 import type { PdfLayoutOptions } from '../core/pdf/layout';
 import type { PdfSourceImage, PreparedPdfImage } from '../core/pdf/types';
 import type { PdfProbe } from '../engines/pdf/document';
+import type { RasterOptions, RasterPage } from '../engines/pdf/raster';
 import type {
   DeviceProfile,
   EncoderId,
@@ -86,6 +87,22 @@ export interface WorkerApi {
     indices: readonly number[],
     angle: number,
   ): Promise<ArrayBuffer>;
+
+  /**
+   * Page count from the RENDERER rather than the parser (docs/06 §2.2).
+   *
+   * Separate from `probePdf` because they load different libraries: this one
+   * pulls pdf.js, so asking it for a page count on a route that only needs
+   * merging would download 635 KB for nothing.
+   */
+  countPdfPages(bytes: ArrayBuffer): Promise<number>;
+
+  /** Render pages to images. Progress is reported per page. */
+  rasterisePdf(
+    bytes: ArrayBuffer,
+    options: RasterOptions,
+    onPage: (done: number, total: number) => void,
+  ): Promise<RasterPage[]>;
 
   /** Cooperative cancellation — the pipeline checks between passes. */
   cancel(jobId: string): Promise<void>;

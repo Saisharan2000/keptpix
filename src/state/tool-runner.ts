@@ -363,11 +363,77 @@ const rotatePdfRunner: ToolRunner = async ({ files, config, pool, onProgress, si
   };
 };
 
+
+const pdfToImages: ToolRunner = async ({ files, config, pool, onProgress, signal }) => {
+  const failures: ToolRunFailure[] = [];
+  const file = files[0];
+  if (file === undefined) throw new Error('Add a PDF first.');
+
+  onProgress({ done: 0, total: 1, phase: 'reading' });
+  const bytes = await readPdf(file, failures);
+  if (bytes === null) throw new Error('That file could not be read as a PDF.');
+  if (signal.aborted) throw new ToolRunAborted();
+
+  // countPdfPages, not probePdf: this route needs pdf.js anyway, and probePdf
+  // would pull @cantoo/pdf-lib as well for a number we can already get.
+  const pageCount = await pool.countPdfPages(bytes.slice(0));
+  const raw = typeof config.pages === 'string' ? config.pages : '';
+  const { indices, invalid } = selectedIndicesOrAll(raw, pageCount);
+  for (const fragment of invalid) {
+    failures.push({ name: fragment, reason: 'Not a page range we could read.' });
+  }
+  if (indices.length === 0) {
+    throw new Error('No pages matched. This PDF has ' + pageCount + ' pages.');
+  }
+
+  const format = config.format === 'png' ? 'png' : 'jpeg';
+  const dpi = typeof config.dpi === 'number' && Number.isFinite(config.dpi) ? config.dpi : 150;
+
+  const pages = await pool.rasterisePdf(
+    bytes,
+    { format, dpi, indices },
+    // Rendering is the slow part and it is per page, so progress here is real
+    // rather than a spinner: a 40-page scan at 150 DPI takes visible seconds.
+    (done, total) => onProgress({ done, total, phase: 'assembling' }),
+  );
+
+  const base = sanitiseBaseName(file.name);
+  const ext = format === 'png' ? 'png' : 'jpg';
+  const width = String(pageCount).length;
+  const entries = pages.map((page) => ({
+    // Zero-padded so a 12-page document sorts 01..12 rather than 1, 10, 11, 2.
+    name: base + '-page-' + String(page.index + 1).padStart(width, '0') + '.' + ext,
+    blob: new Blob([page.bytes], { type: format === 'png' ? 'image/png' : 'image/jpeg' }),
+  }));
+
+  // If any page was clamped below the requested DPI, say so rather than letting
+  // the user wonder why 600 DPI produced something smaller.
+  const clamped = pages.filter((page) => page.dpi < dpi);
+  if (clamped.length > 0) {
+    const lowest = Math.min(...clamped.map((page) => page.dpi));
+    failures.push({
+      name: clamped.length + (clamped.length === 1 ? ' page' : ' pages'),
+      reason:
+        'Rendered at ' + lowest + ' DPI instead of ' + dpi +
+        ' — any higher would have exhausted this device on a page that size.',
+    });
+  }
+
+  await downloadAllAsZip(entries, base + '-pages.zip');
+
+  return {
+    blob: new Blob([], { type: 'application/zip' }),
+    filename: base + '-pages.zip',
+    failures,
+  };
+};
+
 const RUNNERS: Partial<Record<ToolId, ToolRunner>> = {
   'images-to-pdf': imagesToPdf,
   'pdf-merge': mergePdf,
   'pdf-split': splitPdfRunner,
   'pdf-rotate': rotatePdfRunner,
+  'pdf-to-images': pdfToImages,
 };
 
 /** Whether a tool has an implementation behind it, for the shell's gate. */

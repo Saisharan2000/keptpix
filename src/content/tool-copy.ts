@@ -18,7 +18,7 @@
 import type { ToolId } from '../core/tools';
 // The document tools' copy lives in its own module: three tools' worth of prose
 // on one subject, kept out of this file so it stays readable.
-import { mergePdfCopy, rotatePdfCopy, splitPdfCopy } from './tool-copy-pdf';
+import { mergePdfCopy, pdfToImagesCopy, rotatePdfCopy, splitPdfCopy } from './tool-copy-pdf';
 
 export interface ToolCopySection {
   readonly heading: string;
@@ -150,6 +150,7 @@ export const TOOL_COPY: Partial<Record<ToolId, ToolCopy>> = {
   'pdf-merge': mergePdfCopy,
   'pdf-split': splitPdfCopy,
   'pdf-rotate': rotatePdfCopy,
+  'pdf-to-images': pdfToImagesCopy,
 };
 
 export function copyForTool(id: ToolId): ToolCopy | undefined {

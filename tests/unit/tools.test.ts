@@ -146,6 +146,7 @@ describe('the supported gate', () => {
   const PUBLISHED: readonly ToolId[] = [
     'pdf-merge',
     'images-to-pdf',
+    'pdf-to-images',
     'pdf-split',
     'pdf-rotate',
   ];
