@@ -57,7 +57,24 @@ export function FileCard({
 
   return (
     <article
-      class={'flex h-[212px] flex-col overflow-hidden rounded-lg border bg-surface ' + border}
+      /*
+       * FIXED at 236px (h-59), up from 212px.
+       *
+       * 212px was too short for the finished state, and the overflow did not
+       * announce itself — it sheared the Save button off, then, once the action
+       * row wrapped, flexbox squeezed the truncated text rows to zero height and
+       * deleted the filename and compression stats from view (docs/12 D-89).
+       *
+       * 236px is measured, not chosen: with the action row pinned to one line
+       * the content is 18 + 21 + 18 + 36 px of rows, 12px of gaps and 24px of
+       * padding = 129px, over a 104px thumbnail. Anything less eats the bottom
+       * padding first and then the content.
+       *
+       * Raising the constant keeps the docs/08 §5 invariant intact: that rule
+       * requires the height to be FIXED, so the grid cannot reflow as jobs
+       * finish, and says nothing about which number it has to be.
+       */
+      class={'flex h-59 flex-col overflow-hidden rounded-lg border bg-surface ' + border}
       aria-label={source.name + ' — ' + (STATUS_LABEL[job.status] ?? job.status)}
     >
       <button
@@ -90,7 +107,17 @@ export function FileCard({
       </button>
 
       <div class="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden p-3">
-        <p class="m-0 truncate text-xs text-text" title={source.name}>
+        {/*
+          `shrink-0` is not decoration. These rows are flex children with
+          `overflow: hidden` (from `truncate`), and a flex child that can shrink
+          AND clips its own overflow will be squeezed to HEIGHT ZERO when the
+          column is overconstrained — the text stays in the DOM, correct and
+          invisible. That is exactly how the filename and the compression stats
+          silently vanished from the finished state (docs/12 D-89). Failing
+          loudly by overflowing is recoverable; failing by deleting content that
+          a screen reader still reads out is not.
+        */}
+        <p class="m-0 shrink-0 truncate text-xs text-text" title={source.name}>
           {source.name}
         </p>
 
@@ -132,10 +159,28 @@ export function FileCard({
 
         {job.result !== null && (
           <>
-            <p class="num m-0 text-sm text-text">
+            <p class="num m-0 shrink-0 text-sm text-text">
               {formatBytes(source.sizeBytes)} → {formatBytes(job.result.sizeBytes)}
             </p>
-            <p class="num m-0 text-xs text-text-muted">
+            {/*
+              `truncate` is load-bearing, not cosmetic. This line is
+              percentage + quality + dimensions, and at a narrow grid column it
+              WRAPPED to two lines — which in a fixed-height card pushed the
+              Save button 11px past its `overflow-hidden` parent and sheared it
+              off. Measured, not guessed: docs/12 D-89. Wrapping made the
+              content height depend on column width, so the card could not have
+              one correct height. Truncating makes it deterministic; the full
+              text stays reachable on hover.
+            */}
+            <p
+              class="num m-0 shrink-0 truncate text-xs text-text-muted"
+              title={
+                job.result.dimensions.width +
+                '×' +
+                job.result.dimensions.height +
+                (job.result.qualityUsed !== null ? ' at quality ' + job.result.qualityUsed : '')
+              }
+            >
               {/*
                 Report growth honestly. This used to be
                 `Math.max(0, ...)` rendered in success green with a ↓ — so a

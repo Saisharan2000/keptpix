@@ -3145,6 +3145,70 @@ Requires a rebuild and re-upload to take effect — `dist/_headers` is a build
 artefact, so the copy now live on production predates this change.
 
 ---
+## D-89 — the finished state was deleting its own text, and no test could see it
+
+Found while screenshotting the results view for a directory listing, which is a
+humbling place to find it: the state a user reaches after every successful
+conversion, on the flagship route, wrong in three ways at once.
+
+`FileCard` is `h-[212px]` and `overflow-hidden`. docs/08 §5 requires the height
+to be FIXED so the grid does not reflow as jobs finish — that rule is right and
+stays. The done state simply did not fit inside it:
+
+1. **The Save button was sheared off.** Measured 11px past its clipping parent.
+   Its centre was still clickable, so it worked; it just looked broken.
+2. **Then, worse.** Raising the height to 228px moved the failure instead of
+   fixing it. The two text rows carry `truncate`, which sets `overflow: hidden`,
+   and a flex child that both shrinks and clips gets squeezed to **height zero**
+   when the column is overconstrained. The filename and the compression stats
+   were still in the DOM — correct, announced to screen readers, invisible on
+   screen. A screenshot is what caught it; `getByText` would have passed.
+3. **The root cause was neither.** `ResultActions` used `flex-wrap`, so three
+   text buttons occupied 76px in a 171px column and 36px in a wider one. A
+   fixed-height card cannot accommodate a height that depends on column width.
+   No single number is correct, which is why 212 and 228 were both wrong.
+
+### The fix, in the order the reasoning ran
+
+- **`flex-nowrap` on the actions, Remove reduced to a bare ✕** with a per-file
+  `aria-label` (`Remove IMG_4610.jpg`, better than the old generic "Remove
+  file"). Not a new pattern — `ManifestToolShell`'s page list already does
+  exactly this. The row is now 36px at every width.
+- **`shrink-0` on all three text rows.** Overflowing is recoverable; silently
+  deleting content is not.
+- **`truncate` on the metrics line**, so percentage/quality/dimensions cannot
+  wrap. At a 168px column it elides to `200×1…` with the full value in `title`.
+  A deterministic height is what docs/08 §5 actually wants, and a wrapping line
+  inside a fixed box cannot give one.
+- **Height 236px (`h-59`), measured not chosen:** rows 18 + 21 + 18 + 36, gaps
+  12, padding 24 = 129px of body over a 104px thumbnail.
+
+Verified at 900/1280/1600px viewports: **0px overflow, 12px clearance under
+Save, zero collapsed rows, 6/6 filenames and 6/6 stat lines visible.** 414 unit
+tests green; 92 e2e passed including the full axe sweep, which is what confirms
+the icon-only button kept an accessible name. `tool-results.png` regenerated
+deliberately after reading the diff; `tool-idle.png` unchanged, as predicted,
+because the idle state has no cards.
+
+### Two process notes, both recurrences
+
+**The origin guard earned its keep.** Running the visual spec, Playwright reused
+a stale Astro dev server on 4321 that serves a different project, and
+`_origin-guard.ts` refused to let the suite run — 404s on every route instead of
+a green run against the wrong product. That guard exists because of D-76, and it
+just prevented D-76 from happening again unnoticed.
+
+**Screenshots are a test class this repo lacked.** Three defects here were
+invisible to every existing assertion because assertions ask "is the text
+present?" and the answer was yes. `scripts/make-screenshots.mjs` was written for
+marketing and immediately paid for itself as a UI audit. Its first two outputs
+were also wrong in instructive ways: canvas-generated JPEGs carry no EXIF, so the
+metadata tool photographed as an empty result, and 1400x1000 sources came out at
+45–60 KB, which on a page titled "Compress JPG to 100KB" demonstrates nothing.
+Both now use inputs that make the claim visible — the real `portrait-scrubbed`
+HEIC, and 12 MP sources that genuinely need compressing.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

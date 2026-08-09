@@ -52,3 +52,8 @@ tests/fixtures/images/*.png
 # does not show a face or an identifiable place — the scrub removes metadata,
 # never image content.
 !tests/fixtures/images/*-scrubbed.HEIC
+
+# Marketing screenshots from scripts/make-screenshots.mjs. Regenerable from any
+# build in one command, never served to anyone, and 1 MB of PNG that would churn
+# on every UI change. Unlike public/og/default.png these are not shipped.
+screenshots/
