@@ -52,7 +52,26 @@ const SAVE_PICKER_TIMEOUT_MS = 120_000;
  * (docs/05 §4 invariant 1) — the blob behind a live URL can never be collected.
  */
 export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
+  /*
+   * ON iOS, HAND SAFARI SOMETHING IT CANNOT RENDER.
+   *
+   * Safari displays a PDF inline because it is able to — that is why the finished
+   * document opened in a viewer and saved nothing (docs/12 D-95). Retyping the
+   * same bytes as `application/octet-stream` removes that option, so Safari's
+   * download manager takes it instead, and a download manager writes to
+   * Files → Downloads with NO location picker. Which is what Sai asked for: the
+   * share sheet saves reliably but makes the user choose a folder every time.
+   *
+   * The bytes are untouched; only the Blob's declared type differs, and the
+   * filename still carries the real extension so the file opens correctly.
+   * Everywhere else the original type is kept, because everywhere else the
+   * anchor already worked and a correct MIME type is better.
+   */
+  const deliverable =
+    usesShareSheet() && blob.type !== '' && blob.type !== 'application/octet-stream'
+      ? new Blob([blob], { type: 'application/octet-stream' })
+      : blob;
+  const url = URL.createObjectURL(deliverable);
   try {
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -134,8 +153,16 @@ export function usesShareSheet(): boolean {
   return isIOS && typeof navigator.share === 'function';
 }
 
-/** What actually happened, so the UI can stop asserting a download occurred. */
-export type DeliveryOutcome = 'saved' | 'cancelled' | 'needs-tap';
+/**
+ * What actually happened, so the UI can stop asserting a download occurred.
+ *
+ *   saved      the browser confirmed it, or the user completed a share sheet
+ *   downloads  handed to iOS Safari's download manager — Files → Downloads.
+ *              A page cannot observe whether that succeeded, so the copy says
+ *              where to look rather than claiming success outright
+ *   cancelled  the user dismissed the share sheet, which is a choice
+ */
+export type DeliveryOutcome = 'saved' | 'downloads' | 'cancelled';
 
 /**
  * Put a file where the user can keep it, by whatever route this platform has.
@@ -162,28 +189,45 @@ export async function deliverBlob(
    */
   fromUserGesture = false,
 ): Promise<DeliveryOutcome> {
-  if (usesShareSheet()) {
-    const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
-    if (navigator.canShare?.({ files: [file] }) !== true) {
-      downloadBlob(blob, filename);
-      return 'saved';
-    }
-    try {
-      await navigator.share({ files: [file] });
-      return 'saved';
-    } catch (cause) {
-      // Dismissing the sheet is a choice, not a failure.
-      if (isAbortLike(cause)) return 'cancelled';
-      if (fromUserGesture) {
-        downloadBlob(blob, filename);
-        return 'saved';
-      }
-      // No user activation. Ask for the tap rather than navigating them away.
-      return 'needs-tap';
-    }
+  if (!usesShareSheet()) {
+    downloadBlob(blob, filename);
+    return 'saved';
   }
-  downloadBlob(blob, filename);
-  return 'saved';
+
+  /*
+   * iOS, automatic: the download manager, NOT the share sheet.
+   *
+   * Both save the file. The difference is that the share sheet makes the user
+   * pick a folder every single time, and Sai's note after testing was that the
+   * picker is the confusing part. The download manager needs no user activation
+   * and no picker — it just writes to Files → Downloads — so it is the better
+   * default now that `downloadBlob` retypes the blob so Safari cannot render it
+   * inline instead.
+   */
+  if (!fromUserGesture) {
+    downloadBlob(blob, filename);
+    return 'downloads';
+  }
+
+  /*
+   * iOS, on a tap: the share sheet, offered as the deliberate alternative for
+   * when the download did not appear or belongs somewhere specific — a folder,
+   * Books, another app. Requires the activation a tap provides.
+   */
+  const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+  if (navigator.canShare?.({ files: [file] }) !== true) {
+    downloadBlob(blob, filename);
+    return 'downloads';
+  }
+  try {
+    await navigator.share({ files: [file] });
+    return 'saved';
+  } catch (cause) {
+    if (isAbortLike(cause)) return 'cancelled';
+    // Never leave a tap with nothing to show for it.
+    downloadBlob(blob, filename);
+    return 'downloads';
+  }
 }
 
 /** Save a single result via the picker, falling back to a normal download. */

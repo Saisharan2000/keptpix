@@ -477,31 +477,37 @@ function Outcome({
    * the same defect class as the FAQ in D-91 that described an intention rather
    * than the code. So the copy now follows the outcome.
    */
-  const needsTap = delivery === 'needs-tap' || delivery === 'cancelled';
+  const link =
+    'rounded-sm font-medium text-accent underline underline-offset-2 ' +
+    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 
   return (
     <div class="px-4 pb-3">
       <p role="status" class="m-0 text-sm text-text">
-        {needsTap ? (
+        {delivery === 'downloads' ? (
+          <>
+            Saved <span class="font-medium">{result.filename}</span> to your Downloads.{' '}
+            {/*
+              A page cannot see whether the download manager succeeded, so this
+              names where to look instead of asserting it worked, and offers the
+              share sheet for anyone who needs it elsewhere. The wording is the
+              correction from D-95: never claim an outcome nobody checked.
+            */}
+            <button type="button" onClick={onAgain} class={link}>
+              Save somewhere else
+            </button>
+          </>
+        ) : delivery === 'cancelled' ? (
           <>
             <span class="font-medium">{result.filename}</span> is ready.{' '}
-            <button
-              type="button"
-              onClick={onAgain}
-              class="rounded-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
+            <button type="button" onClick={onAgain} class={link}>
               Save it
             </button>
-            {delivery === 'needs-tap' ? ' — your device needs a tap to choose where.' : ''}
           </>
         ) : (
           <>
             Saved <span class="font-medium">{result.filename}</span>.{' '}
-            <button
-              type="button"
-              onClick={onAgain}
-              class="rounded-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
+            <button type="button" onClick={onAgain} class={link}>
               Download again
             </button>
           </>
