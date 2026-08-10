@@ -40,7 +40,15 @@ import process from 'node:process';
 
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, 'dist');
-const PROJECT = process.env.CF_PAGES_PROJECT ?? 'keptpix';
+/*
+ * "noupload", not "keptpix". The repo, the domain and the product are all
+ * KeptPix; the Pages project kept the original working name. `check:token`
+ * caught the mismatch before a deploy did — with the wrong name, `wrangler pages
+ * deploy` does not fail, it CREATES a new project, publishes to a different
+ * *.pages.dev, and leaves keptpix.com serving the old build. A silent success
+ * pointing at nothing.
+ */
+const PROJECT = process.env.CF_PAGES_PROJECT ?? 'noupload';
 const SKIP_VERIFY = process.argv.includes('--skip-verify');
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -103,6 +111,35 @@ if (DRY_RUN) {
 
 let deployedUrl = null;
 if (!DRY_RUN) {
+  /*
+   * PRE-FLIGHT: the project must already exist.
+   *
+   * `wrangler pages deploy` silently creates a missing project rather than
+   * erroring, so a typo in the name is not a failure — it is a successful deploy
+   * of the right bytes to the wrong place, which is much harder to notice. Ask
+   * the API first and refuse with the real names.
+   */
+  const list = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${account}/pages/projects`,
+    { headers: { Authorization: 'Bearer ' + token } },
+  )
+    .then((r) => r.json())
+    .catch(() => null);
+
+  if (list?.success === true && Array.isArray(list.result)) {
+    const names = list.result.map((p) => p?.name).filter((n) => typeof n === 'string');
+    if (!names.includes(PROJECT)) {
+      die(
+        `no Pages project named "${PROJECT}".\n` +
+          `  This account has: ${names.join(', ') || '(none)'}\n` +
+          '  Set CF_PAGES_PROJECT to one of those. Deploying with a wrong name would\n' +
+          '  CREATE a new project and publish where nobody is looking.',
+      );
+    }
+  } else {
+    say('  (could not list projects to pre-check the name — continuing)');
+  }
+
   say(`deploying dist/ to Pages project "${PROJECT}"...`);
   // npx, NOT a dependency: wrangler is tens of megabytes and docs/07 §3 keeps
   // the toolchain lean. Nothing here reaches the shipped bundle either way.
