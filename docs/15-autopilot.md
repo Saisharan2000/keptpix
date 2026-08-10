@@ -69,6 +69,10 @@ One item at a time. Finish it before claiming the next.
 4. **Verify.** Run the verify command. It must pass. If a gate fails, fix the
    cause. **Never weaken an assertion to make it green** — if an assertion is
    genuinely wrong, say why in the commit and in `docs/12`.
+4b. **Deploy, if the item changed the site.** `npm run deploy` — it re-runs
+   verify, uploads, then proves production matches `dist/` by digest and still
+   serves every header. Needs CLOUDFLARE_API_TOKEN in the environment; if it
+   is absent, say so in the note rather than implying the work is live.
 5. **Close it.** `backlog done <site> --note "<one line>"`, or
    `backlog block <site> --reason "..."` if it truly needs a human.
 6. **Queue what the work revealed.** `backlog add <site> "<title>" --why

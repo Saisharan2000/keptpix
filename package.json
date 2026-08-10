@@ -23,7 +23,9 @@
     "check:seo": "node scripts/check-seo.mjs",
     "og:image": "node scripts/make-og-image.mjs",
     "verify": "node scripts/verify.mjs",
-    "verify:fast": "node scripts/verify.mjs --fast"
+    "verify:fast": "node scripts/verify.mjs --fast",
+    "deploy": "node scripts/deploy.mjs",
+    "deploy:check": "node scripts/deploy.mjs --dry-run --skip-verify"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",
