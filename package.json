@@ -26,7 +26,8 @@
     "verify:fast": "node scripts/verify.mjs --fast",
     "deploy": "node scripts/deploy.mjs",
     "deploy:check": "node scripts/deploy.mjs --dry-run --skip-verify",
-    "check:token": "node scripts/check-token.mjs"
+    "check:token": "node scripts/check-token.mjs",
+    "new-project": "node scripts/new-project.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",
