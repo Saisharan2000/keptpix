@@ -90,6 +90,10 @@ session does not strand an item.
 
 ### The cycle
 
+0. If `plan.md` exists in the project root, re-import it:
+   `backlog import <site> --from plan.md`. Duplicate titles are skipped, so this
+   is safe every cycle. This is how Cowork hands you work mid-session without
+   anybody relaying it — it revises the plan, you pick the additions up next pass.
 1. `backlog next <site>` — claim one item. Finish it before claiming another.
 2. Research **only** as far as needed to act. A search that changes what you
    build is worth it; one that confirms what you already believed is not.
