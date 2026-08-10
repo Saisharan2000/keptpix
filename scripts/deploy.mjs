@@ -37,6 +37,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { env } from './load-env.mjs';
 
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, 'dist');
@@ -48,7 +49,7 @@ const DIST = path.join(ROOT, 'dist');
  * *.pages.dev, and leaves keptpix.com serving the old build. A silent success
  * pointing at nothing.
  */
-const PROJECT = process.env.CF_PAGES_PROJECT ?? 'noupload';
+const PROJECT = env('CF_PAGES_PROJECT') ?? 'noupload';
 const SKIP_VERIFY = process.argv.includes('--skip-verify');
 const DRY_RUN = process.argv.includes('--dry-run');
 
@@ -58,11 +59,11 @@ function die(msg) {
   process.exit(1);
 }
 
-function run(cmd, { env = {}, timeout = 900_000 } = {}) {
+function run(cmd, { extraEnv = {}, timeout = 900_000 } = {}) {
   return new Promise((resolve) => {
     const child = spawn(cmd, {
       shell: true,
-      env: { ...process.env, ...env },
+      env: { ...process.env, ...extraEnv },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let out = '';
@@ -96,8 +97,10 @@ if (!existsSync(DIST)) die('no dist/ — run the build');
 
 /* ── 2. Credentials ────────────────────────────────────────────────────── */
 
-const token = process.env.CLOUDFLARE_API_TOKEN;
-const account = process.env.CLOUDFLARE_ACCOUNT_ID;
+// Via the shared loader, so `.env` works here exactly as it does for
+// check:token. These reading differently is docs/12 D-96.
+const token = env('CLOUDFLARE_API_TOKEN');
+const account = env('CLOUDFLARE_ACCOUNT_ID');
 if (DRY_RUN) {
   say('(--dry-run: skipping the upload)');
 } else if (token === undefined || token === '' || account === undefined || account === '') {
@@ -126,9 +129,11 @@ if (!DRY_RUN) {
     .then((r) => r.json())
     .catch(() => null);
 
+  let productionBranch = null;
   if (list?.success === true && Array.isArray(list.result)) {
-    const names = list.result.map((p) => p?.name).filter((n) => typeof n === 'string');
-    if (!names.includes(PROJECT)) {
+    const project = list.result.find((p) => p?.name === PROJECT);
+    if (project === undefined) {
+      const names = list.result.map((p) => p?.name).filter((n) => typeof n === 'string');
       die(
         `no Pages project named "${PROJECT}".\n` +
           `  This account has: ${names.join(', ') || '(none)'}\n` +
@@ -136,16 +141,36 @@ if (!DRY_RUN) {
           '  CREATE a new project and publish where nobody is looking.',
       );
     }
+    productionBranch = project.production_branch ?? null;
   } else {
     say('  (could not list projects to pre-check the name — continuing)');
   }
+
+  /*
+   * --branch IS NOT OPTIONAL.
+   *
+   * Without it, wrangler uses the current GIT branch. This repo is on `master`;
+   * the Pages project's production branch is `main`. Those not matching does not
+   * fail — it publishes a PREVIEW deployment, returns a *.pages.dev URL, exits 0,
+   * and leaves keptpix.com on the old build. The first real deploy did exactly
+   * that, and only the post-deploy digest check noticed (docs/12 D-97).
+   *
+   * Read from the API rather than hardcoded, so renaming the production branch in
+   * Cloudflare cannot quietly turn every future deploy into a preview.
+   */
+  if (productionBranch === null) {
+    say('  (production branch unknown — deploying WITHOUT --branch, may be a preview)');
+  } else {
+    say(`  production branch: ${productionBranch}`);
+  }
+  const branchFlag = productionBranch === null ? '' : ` --branch=${productionBranch}`;
 
   say(`deploying dist/ to Pages project "${PROJECT}"...`);
   // npx, NOT a dependency: wrangler is tens of megabytes and docs/07 §3 keeps
   // the toolchain lean. Nothing here reaches the shipped bundle either way.
   const d = await run(
-    `npx --yes wrangler@latest pages deploy dist --project-name=${PROJECT} --commit-dirty=true`,
-    { env: { CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: account } },
+    `npx --yes wrangler@latest pages deploy dist --project-name=${PROJECT}${branchFlag} --commit-dirty=true`,
+    { extraEnv: { CLOUDFLARE_API_TOKEN: token, CLOUDFLARE_ACCOUNT_ID: account } },
   );
   // Never print the captured output verbatim — wrangler echoes environment
   // context and this runs unattended into logs.
@@ -160,7 +185,7 @@ if (!DRY_RUN) {
 
 /* ── 4. Prove it ───────────────────────────────────────────────────────── */
 
-const origin = process.env.DEPLOY_VERIFY_ORIGIN ?? 'https://keptpix.com';
+const origin = env('DEPLOY_VERIFY_ORIGIN') ?? 'https://keptpix.com';
 say(`\nchecking ${origin} against the local build...`);
 
 /** `build.format: 'file'` means /a/b lives at dist/a/b.html. */

@@ -28,31 +28,15 @@
  *      Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), src\win\async.c:76
  *    `process.exitCode` lets Node close its handles and leave on its own.
  */
-import { existsSync, readFileSync } from 'node:fs';
 import process from 'node:process';
-
-/** Tolerant: `KEY=v`, `KEY = v`, quoted, trailing spaces. Strictness here is what
- *  made an earlier script silently find nothing and act on it. */
-function loadEnvFile(path) {
-  const out = {};
-  if (!existsSync(path)) return out;
-  for (const raw of readFileSync(path, 'utf8').split(/\r?\n/)) {
-    const line = raw.trim();
-    if (line === '' || line.startsWith('#')) continue;
-    const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
-    if (m === null) continue;
-    out[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
-  }
-  return out;
-}
+import { env } from './load-env.mjs';
 
 const say = (s) => process.stdout.write(s + '\n');
 const API = 'https://api.cloudflare.com/client/v4';
 
 async function main() {
-  const fileEnv = loadEnvFile('.env');
-  const token = process.env.CLOUDFLARE_API_TOKEN ?? fileEnv.CLOUDFLARE_API_TOKEN;
-  const account = process.env.CLOUDFLARE_ACCOUNT_ID ?? fileEnv.CLOUDFLARE_ACCOUNT_ID;
+  const token = env('CLOUDFLARE_API_TOKEN');
+  const account = env('CLOUDFLARE_ACCOUNT_ID');
 
   if (token === undefined || token === '') {
     say('\nCLOUDFLARE_API_TOKEN is not set.');
@@ -162,9 +146,9 @@ async function main() {
     `Pages reachable — ${projectNames.length} project(s)` +
       (projectNames.length > 0 ? ': ' + projectNames.join(', ') : ''),
   );
-  if (projectNames.length > 0 && !projectNames.includes(process.env.CF_PAGES_PROJECT ?? 'noupload')) {
+  if (projectNames.length > 0 && !projectNames.includes(env('CF_PAGES_PROJECT') ?? 'noupload')) {
     say(
-      `NOTE: no project named "${process.env.CF_PAGES_PROJECT ?? 'noupload'}" — set CF_PAGES_PROJECT ` +
+      `NOTE: no project named "${env('CF_PAGES_PROJECT') ?? 'noupload'}" — set CF_PAGES_PROJECT ` +
         'to one of the names above, or deploy will create a new project.',
     );
   }

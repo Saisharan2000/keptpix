@@ -3558,6 +3558,51 @@ Verified: 8/8 on chromium, webkit and mobile-safari; 140 e2e on chromium; 414
 unit, 164 integration; all budgets pass at 45.3 KB baseline JS.
 
 ---
+## D-97 — a deploy that succeeded and changed nothing
+
+First real run of `npm run deploy`. `wrangler` exited 0, printed a `*.pages.dev`
+URL, and keptpix.com carried on serving the old build.
+
+`wrangler pages deploy` takes `--branch`, and without it uses the CURRENT GIT
+BRANCH. This repo is on `master`; the Pages project's production branch is
+`main`. A mismatch is not an error — it publishes a **preview** deployment. The
+API confirmed it: `environment: preview, branch: master`.
+
+So the upload worked, the bytes were right, the exit code was 0, and the site was
+untouched. Nothing in the tooling would have caught it except the post-deploy
+check, which is the entire reason that check exists — it reported 3/6 pages not
+matching `dist/` and named exactly the three whose bundles had changed.
+
+Fixed by reading `production_branch` from the API and passing it, rather than
+hardcoding `main` — so renaming the branch in Cloudflare cannot quietly turn
+every future deploy back into a preview. Second run: `environment: production,
+branch: main`, and **6/6 byte-identical, 29/29 routes 200, 6/6 headers**.
+
+### Two smaller things the same run exposed
+
+**`.env` was read by one script and not the other.** `check-token.mjs` parsed the
+file; `deploy.mjs` read only `process.env`. So `check:token` passed and `deploy`
+then refused for want of the same credentials — after sitting through all eight
+gates first. Node does not load `.env` on its own. Extracted to
+`scripts/load-env.mjs`, one copy, used by both, real environment winning over the
+file so CI can override.
+
+**The project was named `noupload`, not `keptpix`.** `check:token` caught it
+before a deploy did. With a wrong name `wrangler` does not fail either — it
+CREATES the project and publishes to a fresh subdomain. `deploy.mjs` now lists
+projects and refuses with the real names.
+
+### And I scared myself for no reason
+
+After deploying I grepped the served `ManifestToolShell.BSX1pOdI.js` for the new
+strings and found none, and briefly believed the fix had not shipped. That file is
+a **289-byte wrapper**; the component is `ManifestToolShell.B8nJ1_xZ.js` at
+24,987 bytes, which it imports. Following the import on production: `your
+Downloads` ✓, `Save somewhere else` ✓, and `octet-stream` ✓ `canShare` ✓ in the
+delivery chunk. Grepping one file of a code-split graph proves nothing about the
+graph.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
