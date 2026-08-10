@@ -113,8 +113,86 @@ export async function downloadAllAsZip(
   downloadBlob(await response.blob(), zipName);
 }
 
+/**
+ * Is this an iOS device, where `<a download>` does not save?
+ *
+ * PLATFORM DETECTION, DELIBERATELY, and it is the right tool here. iOS Safari
+ * HAS `download` on HTMLAnchorElement and simply ignores it for `blob:` URLs —
+ * it navigates to the blob instead. There is no feature to detect: the property
+ * is present and the behaviour is wrong, so `'download' in a` is true on exactly
+ * the platform where it means nothing.
+ *
+ * Reported from a real iPhone (docs/12 D-95): images-to-PDF opened the finished
+ * PDF in Safari's viewer, saved nothing, and the UI said "Saved images.pdf".
+ * iPadOS 13+ reports itself as Macintosh, so touch points are what separate an
+ * iPad from a Mac.
+ */
+export function usesShareSheet(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  return isIOS && typeof navigator.share === 'function';
+}
+
+/** What actually happened, so the UI can stop asserting a download occurred. */
+export type DeliveryOutcome = 'saved' | 'cancelled' | 'needs-tap';
+
+/**
+ * Put a file where the user can keep it, by whatever route this platform has.
+ *
+ * On iOS that is the share sheet, which is the ONLY way a web page can hand a
+ * file to the Files app. It requires user activation, so an automatic call after
+ * a conversion finishes cannot use it — that returns `needs-tap` and the caller
+ * must render a button rather than pretend something was saved. Falling back to
+ * the anchor there would be worse than doing nothing: it navigates the user away
+ * to a PDF viewer, which is exactly the reported bug.
+ */
+export async function deliverBlob(
+  blob: Blob,
+  filename: string,
+  /**
+   * True when a tap is driving this call.
+   *
+   * It decides what happens if the share sheet refuses. Automatically, after a
+   * conversion, there is no user activation and share MUST fail — falling back
+   * to the anchor there is the reported bug, navigating the user to a PDF viewer
+   * and saving nothing. But on their tap, a share failure would otherwise leave
+   * them with no file at all, which is worse than the viewer. So the fallback is
+   * allowed exactly once the user has asked for it.
+   */
+  fromUserGesture = false,
+): Promise<DeliveryOutcome> {
+  if (usesShareSheet()) {
+    const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+    if (navigator.canShare?.({ files: [file] }) !== true) {
+      downloadBlob(blob, filename);
+      return 'saved';
+    }
+    try {
+      await navigator.share({ files: [file] });
+      return 'saved';
+    } catch (cause) {
+      // Dismissing the sheet is a choice, not a failure.
+      if (isAbortLike(cause)) return 'cancelled';
+      if (fromUserGesture) {
+        downloadBlob(blob, filename);
+        return 'saved';
+      }
+      // No user activation. Ask for the tap rather than navigating them away.
+      return 'needs-tap';
+    }
+  }
+  downloadBlob(blob, filename);
+  return 'saved';
+}
+
 /** Save a single result via the picker, falling back to a normal download. */
 export async function saveBlob(blob: Blob, filename: string): Promise<void> {
+  // The share sheet outranks the picker on iOS, which has no picker at all.
+  if (usesShareSheet()) {
+    await deliverBlob(blob, filename);
+    return;
+  }
   if (!hasFileSystemAccess()) {
     downloadBlob(blob, filename);
     return;

@@ -21,7 +21,15 @@ import type { PdfLayoutOptions, PdfPageOrientation, PdfPageSize } from '../core/
 import type { PreparedPdfImage } from '../core/pdf/types';
 import { sanitiseBaseName } from '../core/naming';
 import type { ToolConfig, ToolId } from '../core/tools';
-import { downloadAllAsZip, downloadBlob } from '../platform/deliver';
+import { deliverBlob, downloadAllAsZip } from '../platform/deliver';
+import type { DeliveryOutcome } from '../platform/deliver';
+
+/**
+ * Re-exported so components can name the outcome. docs/07 §2 does not grant
+ * `components/react/` access to `platform/`, and eslint-plugin-boundaries
+ * enforces it — the view may know WHAT happened, not how to make it happen.
+ */
+export type { DeliveryOutcome };
 import { WorkerPool } from '../workers/pool';
 
 export interface ToolRunProgress {
@@ -463,6 +471,9 @@ export async function runTool(
  * should not be reaching for the filesystem. `downloadBlob` owns the object-URL
  * revoke that docs/05 §4 invariant 1 requires.
  */
-export function deliverToolResult(result: ToolRunResult): void {
-  downloadBlob(result.blob, result.filename);
+export async function deliverToolResult(
+  result: ToolRunResult,
+  fromUserGesture = false,
+): Promise<DeliveryOutcome> {
+  return deliverBlob(result.blob, result.filename, fromUserGesture);
 }

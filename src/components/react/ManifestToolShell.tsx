@@ -1,3 +1,4 @@
+import type { DeliveryOutcome } from '../../state/tool-runner';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   defaultsFromFields,
@@ -124,6 +125,7 @@ function SettingsDisclosure({
 export function ManifestToolShell({ tool }: Props) {
   const [queued, setQueued] = useState<Queued[]>([]);
   const [config, setConfig] = useState<ToolConfig>(() => defaultsFromFields(tool));
+  const [delivery, setDelivery] = useState<DeliveryOutcome | null>(null);
   const [run, setRun] = useState<RunState>({ status: 'idle' });
 
   const abortRef = useRef<AbortController | null>(null);
@@ -198,6 +200,9 @@ export function ManifestToolShell({ tool }: Props) {
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // A new run must not inherit the previous one's outcome, or a second
+    // conversion would show a stale "Saved" from the first.
+    setDelivery(null);
     setRun({
       status: 'running',
       progress: { done: 0, total: queued.length, phase: 'reading' },
@@ -211,8 +216,17 @@ export function ManifestToolShell({ tool }: Props) {
         signal: controller.signal,
       });
       setRun({ status: 'done', result });
-      // Straight to the browser: one action, one file, no extra click to find.
-      deliverToolResult(result);
+      /*
+       * Straight to the browser: one action, one file, no extra click to find.
+       *
+       * On iOS this cannot succeed — the share sheet is the only route to the
+       * Files app and it needs user activation, which a callback after an async
+       * conversion does not have. `deliverBlob` returns 'needs-tap' rather than
+       * falling back to an anchor, because the anchor is what navigated people
+       * to a PDF viewer and saved nothing (docs/12 D-95). The Outcome then asks
+       * for the tap instead of claiming a save.
+       */
+      void deliverToolResult(result).then(setDelivery);
     } catch (cause) {
       if (cause instanceof ToolRunAborted) {
         setRun({ status: 'idle' });
@@ -389,7 +403,13 @@ export function ManifestToolShell({ tool }: Props) {
             </div>
           )}
 
-          {run.status === 'done' && <Outcome result={run.result} onAgain={() => deliverToolResult(run.result)} />}
+          {run.status === 'done' && (
+            <Outcome
+              result={run.result}
+              delivery={delivery}
+              onAgain={() => void deliverToolResult(run.result, true).then(setDelivery)}
+            />
+          )}
 
           {run.status === 'error' && (
             <div class="px-4 pb-3">
@@ -441,18 +461,51 @@ export function ManifestToolShell({ tool }: Props) {
  * because losing the other thirty-seven would be worse. But it must say so:
  * a silently 37-page PDF is the kind of thing someone discovers a week later.
  */
-function Outcome({ result, onAgain }: { result: ToolRunResult; onAgain: () => void }) {
+function Outcome({
+  result,
+  delivery,
+  onAgain,
+}: {
+  result: ToolRunResult;
+  delivery: DeliveryOutcome | null;
+  onAgain: () => void;
+}) {
+  /*
+   * This used to say "Saved <filename>" unconditionally, which on iOS was simply
+   * untrue: the file was never written, Safari had navigated to the blob and
+   * shown the PDF instead (docs/12 D-95). Reporting a save that did not happen is
+   * the same defect class as the FAQ in D-91 that described an intention rather
+   * than the code. So the copy now follows the outcome.
+   */
+  const needsTap = delivery === 'needs-tap' || delivery === 'cancelled';
+
   return (
     <div class="px-4 pb-3">
       <p role="status" class="m-0 text-sm text-text">
-        Saved <span class="font-medium">{result.filename}</span>.{' '}
-        <button
-          type="button"
-          onClick={onAgain}
-          class="rounded-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        >
-          Download again
-        </button>
+        {needsTap ? (
+          <>
+            <span class="font-medium">{result.filename}</span> is ready.{' '}
+            <button
+              type="button"
+              onClick={onAgain}
+              class="rounded-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Save it
+            </button>
+            {delivery === 'needs-tap' ? ' — your device needs a tap to choose where.' : ''}
+          </>
+        ) : (
+          <>
+            Saved <span class="font-medium">{result.filename}</span>.{' '}
+            <button
+              type="button"
+              onClick={onAgain}
+              class="rounded-sm font-medium text-accent underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              Download again
+            </button>
+          </>
+        )}
       </p>
       {result.failures.length > 0 && <Failures failures={result.failures} />}
     </div>

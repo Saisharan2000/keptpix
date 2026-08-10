@@ -3495,6 +3495,69 @@ but it may not be what he saw. **Both need his screenshots or a real device**;
 queued rather than assumed.
 
 ---
+## D-95 — the PDF was never saved, and the UI said it was
+
+Reported from a real iPhone, and the description was precise enough to diagnose:
+adding several screenshots to images-to-PDF "shows scrollable pictures in a new
+screen", nothing lands anywhere, the page says "Saved images.pdf", and
+"Download again" repeats the same nothing.
+
+That scrollable screen **is the PDF**. Multiple screenshots became a multi-page
+document and iOS Safari rendered it in its built-in viewer. The generator was
+never the problem.
+
+The problem is that **iOS Safari ignores the `download` attribute on a `blob:`
+URL and navigates to it instead.** `downloadBlob` creates an anchor, sets
+`download`, and clicks it — which saves a file everywhere except the one platform
+this product is most used on.
+
+And on top of it, `Outcome` said "Saved <filename>" unconditionally. It was
+asserting an outcome it had never checked. Same defect class as the D-91 FAQ that
+described an intention rather than the code, and this one told the user something
+false while they were looking at the evidence.
+
+### Platform detection, on purpose
+
+There is nothing to feature-detect. iOS Safari **has** `download` on
+`HTMLAnchorElement` and ignores it, so `'download' in a` is true on exactly the
+platform where it means nothing. UA detection is the only instrument, with
+`maxTouchPoints` separating an iPad — which reports itself as Macintosh — from a
+Mac.
+
+### The share sheet, and why activation matters
+
+`navigator.share({ files })` is the only route from a web page to the Files app.
+It requires user activation, so the automatic call after a conversion finishes
+cannot use it. That path now returns `needs-tap` and the UI asks for the tap
+instead of claiming a save. Falling back to the anchor there would reproduce the
+bug exactly.
+
+On the user's tap, a share failure DOES fall back to the anchor, because at that
+point the alternative is handing them no file at all — worse than the viewer.
+Gesture state is threaded explicitly rather than guessed.
+
+### Honest limits
+
+**The share path is unverifiable from here.** Playwright's WebKit has neither
+`navigator.share` nor `navigator.canShare` — both `undefined`, measured — so
+`usesShareSheet()` is false in every engine available to me and the new code is a
+no-op in all of them. Every gate passing proves only that nothing regressed. Only
+a real iPhone can confirm the fix, and it is queued as such rather than claimed.
+
+### I nearly reverted it on a flake
+
+Running three browser projects back to back, mobile-safari reported **3 failed**
+where it had just been 8/8, and my first instinct was that the delivery change
+had broken it. Two clean re-runs: **8 passed, 8 passed.** It was load, the same
+class of flake as D-93's timing gate, this time in Playwright's own browser
+startup. Worth recording because the wrong conclusion — revert a correct fix —
+was one step away, and the thing that prevented it was re-running rather than
+reasoning.
+
+Verified: 8/8 on chromium, webkit and mobile-safari; 140 e2e on chromium; 414
+unit, 164 integration; all budgets pass at 45.3 KB baseline JS.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
