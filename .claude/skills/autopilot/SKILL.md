@@ -45,6 +45,12 @@ New site: `backlog init <site> --root . --hours 10`.
 
 One item at a time. Finish it before claiming the next.
 
+0. **Check for new instructions.** If `plan.md` (or `plan.json`) exists in the
+   project root, re-import it:
+   `backlog import <site> --from plan.md`. Duplicate titles are skipped, so this
+   is safe every cycle and costs nothing. This is how Cowork hands you work
+   mid-session without anybody relaying it — it revises the plan, you pick the
+   additions up on your next pass.
 1. **Claim.** `backlog next <site>` prints the item, the repo root, the verify
    command, and how much budget is gone.
 2. **Research only as far as needed to act.** A search that changes what you build
