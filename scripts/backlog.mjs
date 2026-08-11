@@ -172,6 +172,29 @@ switch (cmd) {
     if (!site || !title) die('usage: backlog add <site> "<title>" [--why "..."] [--first]');
     withLock(site, () => {
       const state = load(site);
+
+      /*
+       * `--unique` skips when an OPEN item already carries this title.
+       *
+       * `import` deduplicated by title and `add` did not, and monitor.mjs was
+       * written against a comment claiming it did — so a fault that persisted
+       * across two runs queued itself twice, and would have queued itself every
+       * run thereafter. Compared against open items only, so a recurrence AFTER a
+       * fix is closed is a new fault and gets a new item, which is the behaviour
+       * you want from a monitor.
+       */
+      if (flags.unique === true) {
+        const open = state.items.find(
+          (i) =>
+            i.title.toLowerCase() === title.toLowerCase() &&
+            (i.status === 'pending' || i.status === 'in_progress' || i.status === 'blocked'),
+        );
+        if (open !== undefined) {
+          process.stdout.write(`#${open.id} already open, not duplicated\n`);
+          return;
+        }
+      }
+
       const item = {
         id: nextId(state),
         title,
@@ -378,6 +401,24 @@ switch (cmd) {
 
     const installed = path.join(ROOT, 'backlog.mjs');
     add(existsSync(installed), 'backlog tool installed', installed);
+
+    /*
+     * IS THE INSTALLED COPY CURRENT?
+     *
+     * Hooks and scripts call the INSTALLED path, not this file. Editing the repo
+     * copy and forgetting `install` leaves a stale tool running everything — which
+     * is exactly how `monitor.mjs --queue` filed five duplicate items against a
+     * `--unique` flag that existed here and not there. The bug looked like a
+     * logic error and was a deployment one.
+     */
+    if (existsSync(installed) && installed !== SELF) {
+      const same = readFileSync(installed, 'utf8') === readFileSync(SELF, 'utf8');
+      add(
+        same,
+        'installed copy matches this one',
+        same ? 'in sync' : 'STALE — run: node scripts/backlog.mjs install',
+      );
+    }
     add(Number(process.versions.node.split('.')[0]) >= 20, 'node >= 20', 'v' + process.versions.node);
 
     if (site !== undefined) {

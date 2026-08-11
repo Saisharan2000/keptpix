@@ -1,6 +1,6 @@
 # Status — noupload
 
-Generated 2026-08-11 12:19 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
+Generated 2026-08-11 13:51 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
 figure below is read from git, the deviations log, the backlog, the built
 output or the live origin, and hand edits are overwritten on the next run.
 
@@ -17,7 +17,7 @@ output or the live origin, and hand edits are overwritten on the next run.
 | | |
 |---|---|
 | Routes in sitemap | 29 |
-| Last built | 2026-08-11 12:19 |
+| Last built | 2026-08-11 13:50 |
 | Baseline JS | 45.3 KB gz of 60.0 KB |
 | HTML per route | 10.5 KB gz of 25.0 KB |
 
@@ -27,12 +27,13 @@ output or the live origin, and hand edits are overwritten on the next run.
 |---|---|
 | Remote | https://github.com/Saisharan2000/keptpix.git |
 | Branch | master |
-| HEAD | `49af50a` new-project: an idea to a working workspace in one command (2026-08-10) |
+| HEAD | `3b4ff8c` Generated maintenance docs, and the miscount that proved the point (D-96) (2026-08-11) |
 | Uncommitted files | 4 |
 | Unpushed commits | 0 |
 
 ## Recent changes
 
+- `3b4ff8c` 2026-08-11 — Generated maintenance docs, and the miscount that proved the point (D-96)
 - `49af50a` 2026-08-10 — new-project: an idea to a working workspace in one command
 - `fd1699e` 2026-08-10 — A deploy that succeeded and changed nothing (D-97)
 - `3e51323` 2026-08-10 — check:token found the project name was wrong (D-96 follow-up)
@@ -44,21 +45,20 @@ output or the live origin, and hand edits are overwritten on the next run.
 - `a1a253e` 2026-08-10 — The PDF was never saved, and the UI said it was (D-95)
 - `aefc092` 2026-08-09 — Every PDF page thumbnail was a grey box on Safari (D-94)
 - `90709a9` 2026-08-09 — Portable bootstrap for new workspaces, and the Cowork handoff (docs/16)
-- `c5031b5` 2026-08-09 — backlog: target items by id, and undo a bad block
 
 ## Known issues and deviations
 
-`docs/12-deviations.md` holds **95** entries. Most are defects found
+`docs/12-deviations.md` holds **96** entries. Most are defects found
 here and written down rather than quietly fixed; it is the most useful file in
 the repository for anyone about to repeat one.
 
 Most recent:
 
+- **D-98** — monitoring without telemetry, and two copies that disagreed
 - **D-97** — a deploy that succeeded and changed nothing
 - **D-96** — a valid token reported dead, and secrets in a tracked file
 - **D-95** — the PDF was never saved, and the UI said it was
 - **D-94** — every PDF page thumbnail was a grey box on Safari
-- **D-93** — one command that decides whether the work is shippable
 
 Outstanding, from that log:
 

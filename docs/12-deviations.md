@@ -3648,6 +3648,61 @@ delivery chunk. Grepping one file of a code-split graph proves nothing about the
 graph.
 
 ---
+## 🟠 D-98 — monitoring without telemetry, and two copies that disagreed
+
+Sentry was next on the pipeline plan (docs/17 item D). It cannot be used here, and
+that is a design decision rather than an obstacle: docs/06 §5 asserts **zero
+requests with a non-empty body, ever** and every origin in an allowlist of `self`
+only, both release-blocking. A browser SDK POSTs error payloads to a third party,
+violating both, and CLAUDE.md forbids "any analytics that transmits payloads". An
+error reporter would trade the thing being sold for information about it.
+
+So `scripts/monitor.mjs` watches production **from outside**, like a user would.
+No client code, nothing transmitted. It checks the live sitemap's routes for 200,
+all six security headers, that the CSP still pins `connect-src 'self'` and
+`default-src 'self'`, that no third-party `<script src>` is being served, and that
+the live route set matches this checkout.
+
+It cannot see a JavaScript exception in somebody's browser. That is a real limit,
+and `/selftest` is the answer to it — the user runs the diagnostic on their own
+device and reads the result themselves. But it does catch what has actually gone
+wrong here: **Cloudflare injecting a beacon into every response** with nothing in
+the repo changed (D-66), a deploy that succeeded and changed nothing (D-97), and
+headers production never served (D-88).
+
+Routes come from the LIVE sitemap rather than the local build, deliberately. A
+monitor reading the local one only checks routes this checkout knows about, so a
+page dropped by a bad deploy is absent from both and the absence matches.
+
+### Verified by making it fail
+
+A monitor that only ever reports "fine" is worth nothing, so it was pointed at
+two foreign origins: `example.com` (no sitemap) and `cloudflare.com` (a sitemap,
+none of our headers). Four criticals each, exit 1; exit 0 against real production.
+
+### The bug underneath the bug
+
+`--queue` filed **five duplicates on its second run**. The comment said "`add`
+skips duplicates" — and that was false: `import` deduplicated by title, `add`
+never did. A comment asserting behaviour the code lacks is the D-91 and D-95
+defect again, this time in my own tooling.
+
+Added `add --unique`, which skips when an OPEN item carries the same title —
+open only, so a fault recurring after its fix is closed correctly files a new
+item.
+
+Then it *still* failed, and the second cause was worse: `monitor.mjs` calls the
+**INSTALLED** copy at `~/.claude/backlog/backlog.mjs`, and I had edited the repo
+copy without re-running `install`. The flag existed in one file and not in the one
+actually executing. It looked like a logic error and was a deployment error — the
+same two-copies-that-disagree problem as `load-env.mjs` in D-96, in the tool built
+to prevent that class of thing.
+
+`doctor` now compares the installed copy against the repo copy and reports STALE
+with the command to fix it. Confirmed: it flagged the real staleness, went green
+after `install`, and `--queue` then suppressed all five on the second run.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
