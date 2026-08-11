@@ -1,6 +1,6 @@
 # Status — noupload
 
-Generated 2026-08-11 15:59 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
+Generated 2026-08-11 16:58 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
 figure below is read from git, the deviations log, the backlog, the built
 output or the live origin, and hand edits are overwritten on the next run.
 
@@ -17,7 +17,7 @@ output or the live origin, and hand edits are overwritten on the next run.
 | | |
 |---|---|
 | Routes in sitemap | 29 |
-| Last built | 2026-08-11 15:58 |
+| Last built | 2026-08-11 16:57 |
 | Baseline JS | 45.3 KB gz of 60.0 KB |
 | HTML per route | 10.5 KB gz of 25.0 KB |
 
@@ -27,12 +27,13 @@ output or the live origin, and hand edits are overwritten on the next run.
 |---|---|
 | Remote | https://github.com/Saisharan2000/keptpix.git |
 | Branch | master |
-| HEAD | `dc09a46` Cloudflare is blocking the crawlers ADR-001 exists for (D-99) (2026-08-11) |
-| Uncommitted files | 2 |
+| HEAD | `950f6c2` docs/14 refreshed, and a lock that outlived its process (2026-08-11) |
+| Uncommitted files | 1 |
 | Unpushed commits | 0 |
 
 ## Recent changes
 
+- `950f6c2` 2026-08-11 — docs/14 refreshed, and a lock that outlived its process
 - `dc09a46` 2026-08-11 — Cloudflare is blocking the crawlers ADR-001 exists for (D-99)
 - `e178f78` 2026-08-11 — docs/17: reconcile the prose with its own table
 - `cc91acb` 2026-08-11 — CI runs verify, and a scheduled watch on production
@@ -44,21 +45,20 @@ output or the live origin, and hand edits are overwritten on the next run.
 - `a953e9d` 2026-08-10 — Add check:token, after values landed in a tracked file (D-96)
 - `6fae152` 2026-08-10 — Automated deploy with post-deploy proof, and the pipeline design (docs/17)
 - `63d944f` 2026-08-10 — bootstrap doc: same plan.md re-import step as the skill
-- `b009b49` 2026-08-10 — autopilot: re-import plan.md each cycle, so Cowork can hand over mid-session
 
 ## Known issues and deviations
 
-`docs/12-deviations.md` holds **97** entries. Most are defects found
+`docs/12-deviations.md` holds **98** entries. Most are defects found
 here and written down rather than quietly fixed; it is the most useful file in
 the repository for anyone about to repeat one.
 
 Most recent:
 
+- **D-100** — the robots.txt block is off, and I sent someone after the wrong menu
 - **D-99** — Cloudflare is telling the crawlers ADR-001 exists for to go away
 - **D-98** — monitoring without telemetry, and two copies that disagreed
 - **D-97** — a deploy that succeeded and changed nothing
 - **D-96** — a valid token reported dead, and secrets in a tracked file
-- **D-95** — the PDF was never saved, and the UI said it was
 
 Outstanding, from that log:
 
@@ -72,11 +72,10 @@ Outstanding, from that log:
 
 ## Work queue
 
-Site `keptpix` — 6 done, 3 pending, 2 blocked.
+Site `keptpix` — 7 done, 4 pending, 1 blocked.
 
 **Waiting on a human:**
 
-- #10 Turn off Cloudflare's managed robots.txt so AI crawlers are not blocked — _Cloudflare dashboard only — the API returns Unauthorized for ai_bots_protection even with the current over-scoped token. Security -> Bots (or AI Crawl Control): disable the managed robots.txt / AI bot blocking. It issues Disallow: / for GPTBot, ClaudeBot and Google-Extended, contradicting our own Allow rules and defeating ADR-001_
 - #11 File the awesome-privacy issue — _needs Sai's GitHub account. Paste-ready in docs/14 §1 — title 'Add KeptPix', open an ISSUE not a PR_
 
 Queued:
@@ -84,4 +83,5 @@ Queued:
 - #2 Delete stale NoUploadblueprints/ duplicate of docs/
 - #3 Update docs/14 + listing copy now that Open Source is true
 - #4 Research 2 more use-case routes with demand evidence
+- #12 Re-check whether /pdf/merge and /pdf/from-images got crawled
 

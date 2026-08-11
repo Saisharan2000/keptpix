@@ -3765,6 +3765,92 @@ believing a beacon is running invites worrying about ad-blockers undercounting,
 when the number has nothing to do with them.
 
 ---
+## 🟡 D-100 — the robots.txt block is off, and I sent someone after the wrong menu
+
+**Resolved.** Live `/robots.txt` is now **916 bytes, byte-identical to
+`dist/robots.txt`** — it was 2752. `monitor.mjs` confirms it: *robots.txt welcomes
+all 7 intended crawlers*, exit 0. The check written in D-99 verified its own fix.
+
+### There were TWO blockers, and my instructions found neither
+
+I sent a browser agent to "Security → Bots". **That page does not exist any more** —
+Cloudflare folded Bots into Security → Settings. The real controls, recorded here
+so nobody re-derives them:
+
+1. **AI Crawl Control → Overview → "Managed robots.txt"** (top-right card). This is
+   what prepends the block. Was ON.
+2. **Security → Settings → search "bot" → "Block AI bots [Deprecating 15 Sept]" →
+   Configurations → "Blocks AI Bots scope"**. Was set to *"Block only on pages with
+   ads"*. This is the one that matters: with it on, every per-crawler toggle in AI
+   Crawl Control → Security shows blocked and **clicking them does nothing**, with a
+   tooltip saying the security setting owns it. Set to *"Do not block"* and all
+   sixteen crawler toggles released on their own.
+
+Also learned: **Google-Extended has no crawler toggle at all** — it is a
+robots.txt-only token, so it was only ever blocked through the managed file.
+
+The instruction that saved this was telling the agent to *find* the setting and
+describe what it actually saw rather than trust my description. That rule exists
+because of an earlier incident where a confident wrong premise from me produced
+confident wrong work from it; this time it produced a correction instead.
+
+### I relayed a claim I had not checked
+
+Another agent's audit said four pages were unindexed and I passed the list on
+verbatim. URL inspection, on the actual property:
+
+| Page | Reality |
+|---|---|
+| `/pdf/merge` | not on Google — *Discovered, currently not indexed*, never crawled |
+| `/pdf/from-images` | same |
+| `/convert/svg-to-png` | **already indexed**, crawled 11 Aug 09:03 |
+| `/convert/png-to-webp` | **already indexed**, crawled 11 Aug 09:03 |
+
+Half the list was wrong, and two Request-Indexing quota slots were spent on pages
+that did not need them. Earlier in this same session I wrote the rule that a
+criterion must be verified against a known-good artefact before being handed over,
+and then handed over someone else's list without doing it. Second-hand evidence
+needs the same check as my own.
+
+**The real finding is more useful than the wrong one.** The two PDF routes are
+*"Discovered – currently not indexed"* with **no crawl ever attempted** — a
+discovery and crawl-budget matter, not a quality rejection. Google knows they exist
+and has not spent a fetch.
+
+I then wrote that the lever was internal links from higher-authority pages, and
+**that was wrong too — checked it and it does not hold**:
+
+| Route | Inbound internal links | Indexed |
+|---|---|---|
+| `/pdf/merge` | **30**, including the homepage | no |
+| `/pdf/from-images` | **30**, including the homepage | no |
+| `/convert/svg-to-png` | **4** | **yes** |
+
+The uncrawled pages are among the most linked on the site; the indexed one is
+among the least. Three of five `/pdf/` routes are indexed, so it is not a pattern
+in that prefix either.
+
+**So there is nothing to build, and building something would be cargo cult.** The
+correct action was the Request Indexing already performed. What remains is a
+six-day-old property's crawl scheduling, and the only honest response is to wait
+and look again. Worth recording precisely because the instinct was to ship an
+internal-linking change that the evidence says would have done nothing.
+
+Also: Search Console was **already** verified with `sitemap.xml` submitted on 5 Aug,
+last read 11 Aug, 29 pages discovered, status Success. My step-by-step for setting
+it up was unnecessary — I should have checked before writing it.
+
+### Crawler Hints is compatible with the privacy posture
+
+It was enabled, and the card warns about sharing "website information required for
+feature functionality". That is Cloudflare telling IndexNow which URLs changed and
+when — **server to server, about pages rather than people**. It adds no client
+script, no request from the browser, and nothing to the response body. docs/06 §5
+governs bodied requests from the user's browser and non-`self` origins; this
+touches neither. `monitor.mjs` confirms nothing new is served: robots.txt is
+byte-identical and no third-party script tag appears.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
