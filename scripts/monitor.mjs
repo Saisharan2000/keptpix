@@ -163,7 +163,97 @@ if (page.ok) {
   }
 }
 
-/* ── 3. Is production the build we think it is? ──────────────────────────── */
+/* ── 3. Is robots.txt still ours? ───────────────────────────────────────── */
+
+/**
+ * THE HOST CAN REWRITE THIS FILE, and did.
+ *
+ * Cloudflare prepends a "Managed content" block to robots.txt that issues
+ * `Disallow: /` for ClaudeBot, GPTBot, Google-Extended, CCBot, Amazonbot,
+ * Applebot-Extended, Bytespider and meta-externalagent. Our own block below it
+ * says `Allow: /` for several of the same agents, so each appears twice with
+ * opposite rules — and a crawler that takes the first matching group leaves.
+ *
+ * That is not a cosmetic conflict. ADR-001 chose prerendered HTML for every route
+ * *because* those crawlers do not execute JavaScript; being readable by them is
+ * the reason the architecture looks the way it does. Blocking them discards the
+ * benefit the whole design was paying for.
+ *
+ * Same class as D-66, where Cloudflare injected a tracking beacon: nothing in the
+ * repository changed, and `grep` over dist/ finds nothing wrong. Only a check
+ * against the live origin can see it (docs/12 D-99).
+ */
+const WELCOMED = [
+  'GPTBot',
+  'ClaudeBot',
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'Claude-SearchBot',
+  'PerplexityBot',
+  'Google-Extended',
+];
+
+const robots = await get(ORIGIN + '/robots.txt');
+if (!robots.ok || robots.status !== 200) {
+  findings.push({
+    severity: 'critical',
+    title: 'robots.txt is unreachable',
+    evidence: `GET ${ORIGIN}/robots.txt -> ${robots.ok ? robots.status : robots.error}`,
+  });
+} else {
+  // Parse into groups: consecutive User-agent lines share the rules that follow.
+  const lines = robots.body.split(/\r?\n/).map((l) => l.trim());
+  /** @type {Map<string, string[]>} agent -> rules seen anywhere in the file */
+  const groups = new Map();
+  let current = [];
+  for (const line of lines) {
+    if (line === '' || line.startsWith('#')) continue;
+    const ua = /^user-agent:\s*(.+)$/i.exec(line);
+    if (ua !== null) {
+      current.push(ua[1].trim());
+      continue;
+    }
+    const rule = /^(disallow|allow):\s*(.*)$/i.exec(line);
+    if (rule !== null) {
+      for (const agent of current) {
+        const key = agent.toLowerCase();
+        groups.set(key, [...(groups.get(key) ?? []), `${rule[1].toLowerCase()}:${rule[2].trim()}`]);
+      }
+      continue;
+    }
+    // Any other directive ends the current agent list (Sitemap, Content-Signal).
+    current = [];
+  }
+  // A fresh agent list starts after a rule line too; simplest correct reset.
+  const blocked = WELCOMED.filter((agent) => {
+    const rules = groups.get(agent.toLowerCase()) ?? [];
+    return rules.includes('disallow:/');
+  });
+
+  if (blocked.length > 0) {
+    findings.push({
+      severity: 'critical',
+      title: `robots.txt blocks ${blocked.length} crawler(s) this site exists to be readable by`,
+      evidence:
+        `${blocked.join(', ')} carry Disallow: / — almost certainly Cloudflare's ` +
+        `"Managed content" block, which our own Allow rules below it contradict. ` +
+        `ADR-001 prerenders every route for exactly these agents. Fix in the ` +
+        `Cloudflare dashboard: turn off the managed robots.txt / AI bot blocking.`,
+    });
+  } else {
+    checked.push(`robots.txt welcomes all ${WELCOMED.length} intended crawlers`);
+  }
+
+  if (!robots.body.includes('Sitemap:')) {
+    findings.push({
+      severity: 'warning',
+      title: 'robots.txt no longer advertises a sitemap',
+      evidence: 'crawlers then have to discover every route by following links',
+    });
+  }
+}
+
+/* ── 4. Is production the build we think it is? ──────────────────────────── */
 
 if (existsSync(path.join(DIST, 'sitemap.xml'))) {
   const localRoutes = [

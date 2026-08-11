@@ -3703,6 +3703,68 @@ with the command to fix it. Confirmed: it flagged the real staleness, went green
 after `install`, and `--queue` then suppressed all five on the second run.
 
 ---
+## 🔴 D-99 — Cloudflare is telling the crawlers ADR-001 exists for to go away
+
+Reported by another agent auditing the live site, and verified here by fetching
+`/robots.txt`: production serves **2752 bytes** where we generate **916**. The
+difference is a "Cloudflare Managed content" block prepended at the edge, and it
+contains:
+
+```
+User-agent: ClaudeBot          User-agent: GPTBot
+Disallow: /                    Disallow: /
+```
+
+Our own block, further down the same file, says `Allow: /` for both. So each agent
+appears twice with opposite rules. RFC 9309 says groups for the same user-agent
+are merged and the most specific path wins, which leaves `Allow: /` and
+`Disallow: /` tied — Google resolves a tie toward Allow, but a crawler that takes
+the first matching group and stops simply leaves.
+
+**This attacks the architectural premise of the product.** ADR-001 prerenders
+every route specifically because GPTBot, ClaudeBot and PerplexityBot execute no
+JavaScript, and being readable by them is the distribution this product is built
+for. Blocking them discards the entire benefit the design was paying for — the
+`docs/09` §5 comment in our own robots.txt says so in as many words.
+
+Affected: GPTBot, ClaudeBot, Google-Extended carry `Disallow: /` while we
+explicitly allow them. Cloudflare also blocks CCBot, Amazonbot,
+Applebot-Extended, Bytespider and meta-externalagent, which we take no position
+on. Its `Content-Signal: search=yes,ai-train=no,use=reference` is roughly aligned
+with wanting citation without training, so that part is not the harm.
+
+### Same class as D-66, and that is the lesson
+
+Nothing in the repository changed. `dist/robots.txt` is correct, every test
+passes, `grep` over the build finds nothing wrong. Cloudflare injected a tracking
+beacon into every HTML response once before under exactly these conditions. **The
+host modifying our output is a recurring failure mode on this platform, and only a
+check against the live origin can see it.**
+
+`monitor.mjs` now parses the served robots.txt into user-agent groups and fails on
+`Disallow: /` for any of the seven crawlers we welcome. Verified against real
+production: 1 critical, exit 1, naming GPTBot, ClaudeBot and Google-Extended. It
+would have caught this on the first scheduled run after the setting appeared.
+
+**Not fixable from here.** The zone is visible to the deploy token but
+`ai_bots_protection`, `ai_crawl_control` and `managed_robots_txt` all return
+"Unauthorized to access requested resource" — so this is a dashboard action,
+queued as blocked rather than attempted.
+
+### An analytics correction while in the same area
+
+The 1-view/118-view discrepancy has been explained elsewhere as "Web Analytics
+needs a JavaScript beacon that bots do not run". That reasoning does not apply to
+this site: **there is no beacon.** D-56 chose edge measurement precisely so none
+ships, and D-66 removed the one Cloudflare tried to inject. `monitor.mjs` confirms
+it — no third-party `<script src>` is served.
+
+The right explanation is that Web Analytics applies bot filtering and the traffic
+overview does not. Same conclusion — trust the 1 — but it matters, because
+believing a beacon is running invites worrying about ad-blockers undercounting,
+when the number has nothing to do with them.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
