@@ -3034,7 +3034,7 @@ the design added. The text-integrity half of that suite — the part that actual
 catches D-27 escape garbage — passed unchanged.
 
 ---
-## D-87 — AGPL-3.0, because "verifiable" was doing no work
+## 🟡 D-87 — AGPL-3.0, because "verifiable" was doing no work
 
 The pitch is that your files never leave your device. Until now the only evidence
 offered was the sentence itself. The repo was private, so *verifiable* meant
@@ -3094,7 +3094,7 @@ Also fixed on the way past: the README advertised `keptpix.app`. The site is
 `keptpix.com`, and it has been for as long as it has been deployed.
 
 ---
-## D-88 — two headers that were never declared, and a verification that lied twice
+## 🟠 D-88 — two headers that were never declared, and a verification that lied twice
 
 Verifying the redesign deploy against production, I read the response headers.
 CSP was intact — `connect-src 'self' blob:`, no external origin, no
@@ -3145,7 +3145,7 @@ Requires a rebuild and re-upload to take effect — `dist/_headers` is a build
 artefact, so the copy now live on production predates this change.
 
 ---
-## D-89 — the finished state was deleting its own text, and no test could see it
+## 🔴 D-89 — the finished state was deleting its own text, and no test could see it
 
 Found while screenshotting the results view for a directory listing, which is a
 humbling place to find it: the state a user reaches after every successful
@@ -3209,7 +3209,7 @@ Both now use inputs that make the claim visible — the real `portrait-scrubbed`
 HEIC, and 12 MP sources that genuinely need compressing.
 
 ---
-## D-90 — D-67 gave iOS an install path, and the icon at the end of it was a screenshot
+## 🟠 D-90 — D-67 gave iOS an install path, and the icon at the end of it was a screenshot
 
 Found while confirming which icon AlternativeTo had auto-fetched for the
 listing. The site advertised exactly one: `<link rel="icon" href="/favicon.svg">`,
@@ -3265,7 +3265,7 @@ real iPhone — one more entry for the manual device pass, alongside the deferre
 dark-mode check.
 
 ---
-## D-91 — the compressor inflated files it should have left alone
+## 🔴 D-91 — the compressor inflated files it should have left alone
 
 Reported from outside, by an agent filling in a directory listing: a **57 KB JPG
 with a 100 KB target came back at 89 KB**, and the UI said "56.9% larger" — which
@@ -3329,7 +3329,7 @@ Verified: 414 unit, **164 integration** (real browser, none skipped), 12 e2e
 across convert/batch/smoke, all three budgets pass.
 
 ---
-## D-92 — routes named for the job, not the number
+## 🟡 D-92 — routes named for the job, not the number
 
 The six size routes answer `compress jpg to 20kb`. **Nobody with a rejected form
 types that.** They type "compress signature to 20kb" or "passport photo
@@ -3388,7 +3388,7 @@ number on an identity document is worse than no page. It needs per-region routes
 or none.
 
 ---
-## D-93 — one command that decides whether the work is shippable
+## 🟡 D-93 — one command that decides whether the work is shippable
 
 Built to remove the founder from the loop, which is the actual bottleneck on this
 project: not the code, the fact that a human had to assemble "is this good?" out
@@ -3437,7 +3437,7 @@ Verified: **all 8 gates pass** — 414 unit, 164 integration, 140 e2e, 31 routes
 built, budgets and SEO clean.
 
 ---
-## D-94 — every PDF page thumbnail was a grey box on Safari
+## 🔴 D-94 — every PDF page thumbnail was a grey box on Safari
 
 Sai reported that images-to-PDF on his iPhone "is just opening the selected
 screenshot, nothing feels downloaded". I could not see his screenshots, so I ran
@@ -3495,7 +3495,7 @@ but it may not be what he saw. **Both need his screenshots or a real device**;
 queued rather than assumed.
 
 ---
-## D-95 — the PDF was never saved, and the UI said it was
+## 🔴 D-95 — the PDF was never saved, and the UI said it was
 
 Reported from a real iPhone, and the description was precise enough to diagnose:
 adding several screenshots to images-to-PDF "shows scrollable pictures in a new
@@ -3558,7 +3558,52 @@ Verified: 8/8 on chromium, webkit and mobile-safari; 140 e2e on chromium; 414
 unit, 164 integration; all budgets pass at 45.3 KB baseline JS.
 
 ---
-## D-97 — a deploy that succeeded and changed nothing
+## 🟠 D-96 — a valid token reported dead, and secrets in a tracked file
+
+Three failures in one exchange, all in the credential path, none of them in the
+product.
+
+**Secrets went into `.env.example`.** That file is TRACKED and this repository is
+PUBLIC, so the next commit would have published a Cloudflare token with all
+permissions — DNS, billing, zone deletion. HEAD was clean; only the working copy
+was affected, so nothing shipped.
+
+**My recovery made it worse.** I parsed the file with a strict `^KEY=(.*)$`,
+found nothing because the line was `KEY = value`, and ran `git checkout --` on
+the strength of that — discarding the edit I was trying to protect. *A parser
+that silently finds nothing must never be the input to a destructive command.*
+VS Code's local history held a copy, and the permission classifier blocked me
+from reading credentials out of it and writing them elsewhere. That block was
+correct: the operation is indistinguishable from exfiltration whatever the
+intent. Credential handling stays with the human.
+
+**Then I declared a working token invalid.** `check-token.mjs` asked only
+`/user/tokens/verify`, which accepts USER tokens. Sai's is an ACCOUNT-OWNED
+token, and that endpoint answers a flat "Invalid API Token" for one — so he was
+told to roll a credential that was fine. Both endpoints are tried now, and
+neither decides it: the authoritative test is whether Pages is reachable, because
+that is what the token is for. Asking a metadata endpoint's opinion was the
+mistake.
+
+Once fixed it immediately earned itself: the Pages project is named **`noupload`**,
+not `keptpix`. A wrong `--project-name` does not fail — `wrangler` CREATES the
+project and publishes to a fresh subdomain, leaving the real site untouched.
+
+Also fixed: `process.exit()` while fetch keep-alive sockets are open trips
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` on Windows.
+`process.exitCode` lets Node close its own handles.
+
+And `.env` was read by `check-token.mjs` but not by `deploy.mjs`, so `check:token`
+passed and `deploy` then refused for want of the same credentials — after all
+eight gates had run. One shared `scripts/load-env.mjs` now, real environment
+winning over the file.
+
+His token still reports **exit 2, over-scoped**: DNS zones and Workers scripts
+are reachable. It deploys correctly. Left as his call, deliberately — the warning
+stands because a deploy token's blast radius should be one Pages project.
+
+---
+## 🔴 D-97 — a deploy that succeeded and changed nothing
 
 First real run of `npm run deploy`. `wrangler` exited 0, printed a `*.pages.dev`
 URL, and keptpix.com carried on serving the old build.

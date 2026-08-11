@@ -27,7 +27,9 @@
     "deploy": "node scripts/deploy.mjs",
     "deploy:check": "node scripts/deploy.mjs --dry-run --skip-verify",
     "check:token": "node scripts/check-token.mjs",
-    "new-project": "node scripts/new-project.mjs"
+    "new-project": "node scripts/new-project.mjs",
+    "status": "node scripts/status.mjs",
+    "status:write": "node scripts/status.mjs --write"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",
