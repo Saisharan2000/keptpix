@@ -59,28 +59,28 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Typecheck
-        run: npm run typecheck
+      # ONE COMMAND, not seven steps, and the reason is drift.
+      #
+      # This job used to list every gate itself: typecheck, lint, unit,
+      # integration, build, budgets. `scripts/verify.mjs` lists the same gates
+      # plus `check:seo`, and the two had already diverged — SEO was checked
+      # locally and not here. Two copies of a gate list is the same failure that
+      # produced D-96 and D-98, where a flag existed in one file and not in the
+      # one actually running.
+      #
+      # `--fast` skips only the e2e gate, which the next step runs properly across
+      # all four engines. verify names the failing gate in its own output, so
+      # attribution survives collapsing the steps.
+      - name: Verify (lint, types, unit, build, budgets, seo, integration)
+        run: node scripts/verify.mjs --fast
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm run test
-
-      - name: Integration tests (real browser)
-        run: npm run test:integration
-
-      - name: Build
-        run: npm run build
-
-      # docs/04 §7 — HTML per route, baseline island JS, and per-codec WASM size.
-      # Runs after the build because it measures the real dist/ output.
-      - name: Static budgets
-        run: npm run check:budgets
-
-      # Full e2e across all four engines. The privacy suite in here is the
-      # product's core claim expressed as code — a failure is a release blocker.
+      # Full e2e across all four engines — deliberately BROADER than the local
+      # verify, which runs chromium only so a pre-commit check stays under four
+      # minutes. Two of this project's real defects were engine-specific and
+      # invisible to chromium: D-94 (every PDF thumbnail was a grey box on
+      # Safari, because WebKit has no OffscreenCanvas) and D-74. The privacy
+      # suite in here is the product's core claim expressed as code — a failure
+      # is a release blocker.
       - name: E2E (chromium, firefox, webkit, mobile-safari)
         run: npm run test:e2e
 

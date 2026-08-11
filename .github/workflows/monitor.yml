@@ -1,0 +1,131 @@
+name: Monitor production
+
+# Twice a day, and on demand. Not more often: every check is a real request to
+# the live site, and nothing here changes fast enough to justify hourly noise.
+#
+# WHY A SCHEDULE AT ALL. The failure this exists for did not come from a commit.
+# Cloudflare injected a tracking beacon into every response at the edge — nothing
+# in the repository changed, CI stayed green, and the only reason it was caught is
+# that someone looked (docs/12 D-66). A push-triggered pipeline cannot see a
+# change the host makes on its own.
+on:
+  schedule:
+    - cron: '0 7,19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No `npm install`. monitor.mjs has zero dependencies and makes plain HTTP
+      # requests, so a scheduled job that runs 730 times a year should not spend
+      # a minute of install for it.
+      - name: Check production
+        id: check
+        run: node scripts/monitor.mjs --json > monitor.json
+        continue-on-error: true
+
+      - name: Summarise
+        run: |
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('monitor.json','utf8'));
+            const lines = [];
+            lines.push('## ' + (r.ok ? 'Production looks healthy' : 'Production has problems'));
+            lines.push('');
+            lines.push('Origin: ' + r.origin);
+            lines.push('');
+            for (const c of r.checked) lines.push('- ok — ' + c);
+            for (const f of r.findings) {
+              lines.push('');
+              lines.push('### ' + (f.severity === 'critical' ? 'CRITICAL' : 'warning') + ': ' + f.title);
+              lines.push(f.evidence);
+            }
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+          "
+
+      # An issue, not just a red run. A failed scheduled job emails once and then
+      # sits in a tab nobody opens; an issue is a thing with a state that has to
+      # be closed. Only for criticals — warnings are usually "not deployed yet",
+      # which is normal between a commit and a deploy.
+      - name: Open an issue for critical findings
+        if: ${{ failure() || steps.check.outcome == 'failure' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync('monitor.json', 'utf8'));
+            } catch {
+              report = { findings: [{ severity: 'critical', title: 'monitor could not run', evidence: 'no JSON produced' }] };
+            }
+            const critical = report.findings.filter((f) => f.severity === 'critical');
+            if (critical.length === 0) return;
+
+            const title = 'Production: ' + critical[0].title;
+            const body = [
+              'Found by the scheduled monitor at ' + new Date().toISOString() + '.',
+              '',
+              ...critical.map((f) => '- **' + f.title + '**\n  ' + f.evidence),
+              '',
+              'Reproduce locally with `npm run monitor`.',
+              '',
+              'This is checked from OUTSIDE the site — no client telemetry exists,',
+              'because docs/06 §5 forbids any bodied request. See docs/12 D-98.',
+            ].join('\n');
+
+            // Reuse an open issue with the same title rather than filing a new one
+            // every twelve hours for the same fault.
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'production',
+            });
+            const match = existing.data.find((i) => i.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body: 'Still failing as of ' + new Date().toISOString() + '.',
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['production'],
+              });
+            }
+
+      - name: Upload the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitor-report
+          path: monitor.json
+          retention-days: 14
+
+      # The job must end red if production is broken, regardless of the issue
+      # step succeeding. `continue-on-error` above is what lets the summary and
+      # the issue run at all; this restores the failure.
+      - name: Fail if critical
+        run: node scripts/monitor.mjs

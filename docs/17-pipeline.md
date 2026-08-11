@@ -13,12 +13,12 @@ the pieces already standing.
 | Stage | Today | Needs |
 |---|---|---|
 | 1. Ideation / research | manual (Cowork) | **replaceable in-house** |
-| 2. Specs and docs | manual (Cowork) | **replaceable in-house** |
+| 2. Specs and docs | **scaffolded** | `new-project.mjs`; Cowork's plan imports |
 | 3. Design | manual (Claude Design) | **replaceable, with a quality trade** |
 | 4. Build | automated (`autopilot` + backlog) | done |
 | 5. Verify | automated (`verify.mjs`, 8 gates) | done |
 | 6. Deploy | **automated** (`deploy.mjs`) | a scoped CF token |
-| 7. Maintenance / monitoring | partial | Sentry is connected; needs a reader |
+| 7. Maintenance / monitoring | **automated** | `status.mjs` + `monitor.mjs`; Sentry is unusable here (D-98) |
 
 Four of seven are done. Two of the remaining three are agent work that does not
 need a separate product at all. The last one — anything behind Sai's logins — is
