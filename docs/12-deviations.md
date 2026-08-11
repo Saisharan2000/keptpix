@@ -3952,6 +3952,70 @@ that survives every future reading.
 All 8 gates green: 414 unit, 164 integration, 143 e2e, 32 routes.
 
 ---
+## 🟠 D-103 — the memory budget is measured at last, and it is over
+
+docs/04 §7 budgets **peak memory for a 12 MP image at under 400 MB**. It has been
+*instrumentable but unmeasured* since Milestone 8 (D-45, WO-6), because
+`tests/perf/benchmark.ts` reads `performance.memory.usedJSHeapSize` — on the
+**main thread**, which a conversion barely touches. Every byte is allocated in a
+worker.
+
+### Both ways of reading the worker's heap are closed
+
+Probed rather than assumed:
+
+- **`performance.memory` does not exist inside a Worker.** `typeof` is
+  `'undefined'` there even with `--enable-precise-memory-info`.
+- **CDP cannot read it either.** A worker target attaches fine via
+  `Target.attachToTarget`, and then `Runtime.getHeapUsage`,
+  `Performance.getMetrics` and the HeapProfiler domain are all reported as *not
+  found* on that session.
+
+So WO-6's question — instrument `image.worker.ts`, i.e. change production code for
+a test's benefit? — had a third answer: **measure from outside the browser.**
+`scripts/measure-memory.mjs` sums the working set of the browser process tree
+(the worker runs in a renderer that is a CHILD of the browser process, so the
+browser pid alone would miss it) while driving a real conversion.
+
+That is an **upper bound**, and for a budget of the form "stay under 400 MB" a
+conservative bound is the right direction. It also counts what a heap counter
+misses and the budget cares about: decoded ImageBitmaps, WASM linear memory, and
+GPU-side canvas backing.
+
+### The number, and it fails
+
+Two independent runs, agreeing within 2%:
+
+| Reading | Run 1 | Run 2 | Budget |
+|---|---|---|---|
+| Baseline, page loaded, idle | 105.7 MB | 114.8 MB | — |
+| **Peak** | **528.4 MB** | **530.9 MB** | < 400 MB |
+| Attributable to the conversion | 422.7 MB | 416.1 MB | < 400 MB |
+
+Over on the strict reading by ~32%, and over on the fairest reading — peak minus
+Chromium's own idle footprint — by about 5%. §7 says "Memory peak" unqualified
+with "manual profiling" as its method, which is process memory, so the strict
+reading is the literal one.
+
+**Not wired into `verify`, deliberately.** Each sample spawns a PowerShell CIM
+query costing about a second, so a 2-second conversion yields seven or eight
+samples however short the interval is set — the spawn cost dominates the sleep.
+A peak found from eight samples is reproducible, as the two runs show, but it is
+too coarse to gate a commit on. It is a measurement you take, not a wall you hit.
+
+**Deliberately NOT resolved by amending the budget.** Adjusting a number until the
+measurement passes is the same move as weakening an assertion to make a test
+green, and this log exists partly because that is tempting. Whether 400 MB was
+ever the right figure for a desktop browser measured this way is a real question —
+and it is a separate decision, with the evidence now in hand, rather than a
+side-effect of finally looking. Queued as its own item.
+
+Worth noting what already protects users: `core/guards` scales the hard pixel
+ceiling by device (D-57), so a low-memory phone refuses an image a workstation
+accepts. The budget's *intent* — do not crash a phone — is served by that,
+independently of this figure.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

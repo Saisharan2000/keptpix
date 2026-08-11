@@ -31,7 +31,8 @@
     "status": "node scripts/status.mjs",
     "status:write": "node scripts/status.mjs --write",
     "monitor": "node scripts/monitor.mjs",
-    "monitor:queue": "node scripts/monitor.mjs --queue"
+    "monitor:queue": "node scripts/monitor.mjs --queue",
+    "measure:memory": "node scripts/measure-memory.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^4.1.3",

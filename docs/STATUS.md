@@ -1,6 +1,6 @@
 # Status — noupload
 
-Generated 2026-08-11 17:31 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
+Generated 2026-08-11 18:23 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
 figure below is read from git, the deviations log, the backlog, the built
 output or the live origin, and hand edits are overwritten on the next run.
 
@@ -9,17 +9,15 @@ output or the live origin, and hand edits are overwritten on the next run.
 | | |
 |---|---|
 | Origin | https://keptpix.com |
-| Routes returning 200 | 29/30 |
+| Routes returning 200 | 30/30 |
 | Security headers | 6/6 |
-
-**1 route(s) are not returning 200.** That is a live defect.
 
 ## Build
 
 | | |
 |---|---|
 | Routes in sitemap | 30 |
-| Last built | 2026-08-11 17:30 |
+| Last built | 2026-08-11 18:22 |
 | Baseline JS | 45.3 KB gz of 60.0 KB |
 | HTML per route | 10.5 KB gz of 25.0 KB |
 
@@ -29,12 +27,13 @@ output or the live origin, and hand edits are overwritten on the next run.
 |---|---|
 | Remote | https://github.com/Saisharan2000/keptpix.git |
 | Branch | master |
-| HEAD | `5d9fc94` Delete a duplicate spec set that told agents to install React (D-101) (2026-08-11) |
+| HEAD | `731e611` A PAN card route, and a flaky assertion fixed for the third time (D-102) (2026-08-11) |
 | Uncommitted files | 3 |
 | Unpushed commits | 0 |
 
 ## Recent changes
 
+- `731e611` 2026-08-11 — A PAN card route, and a flaky assertion fixed for the third time (D-102)
 - `5d9fc94` 2026-08-11 — Delete a duplicate spec set that told agents to install React (D-101)
 - `b9202d5` 2026-08-11 — AI crawlers unblocked, and two claims of mine that did not survive checking (D-100)
 - `950f6c2` 2026-08-11 — docs/14 refreshed, and a lock that outlived its process
@@ -46,21 +45,20 @@ output or the live origin, and hand edits are overwritten on the next run.
 - `49af50a` 2026-08-10 — new-project: an idea to a working workspace in one command
 - `fd1699e` 2026-08-10 — A deploy that succeeded and changed nothing (D-97)
 - `3e51323` 2026-08-10 — check:token found the project name was wrong (D-96 follow-up)
-- `a953e9d` 2026-08-10 — Add check:token, after values landed in a tracked file (D-96)
 
 ## Known issues and deviations
 
-`docs/12-deviations.md` holds **100** entries. Most are defects found
+`docs/12-deviations.md` holds **101** entries. Most are defects found
 here and written down rather than quietly fixed; it is the most useful file in
 the repository for anyone about to repeat one.
 
 Most recent:
 
+- **D-103** — the memory budget is measured at last, and it is over
 - **D-102** — a PAN card route, and a flaky assertion fixed for the third time
 - **D-101** — deleted a duplicate spec set that told agents to install React
 - **D-100** — the robots.txt block is off, and I sent someone after the wrong menu
 - **D-99** — Cloudflare is telling the crawlers ADR-001 exists for to go away
-- **D-98** — monitoring without telemetry, and two copies that disagreed
 
 Outstanding, from that log:
 
@@ -74,13 +72,20 @@ Outstanding, from that log:
 
 ## Work queue
 
-Site `keptpix` — 10 done, 1 pending, 1 blocked.
+Site `keptpix` — 11 done, 7 pending, 2 blocked.
 
 **Waiting on a human:**
 
 - #11 File the awesome-privacy issue — _needs Sai's GitHub account. Paste-ready in docs/14 §1 — title 'Add KeptPix', open an ISSUE not a PR_
+- #12 Re-check whether /pdf/merge and /pdf/from-images got crawled — _TIME-GATED, not human-gated: do not claim before 18 Aug. Request Indexing was filed 11 Aug and Google's crawl scheduling is the only variable. Unblock and re-check then_
 
 Queued:
 
-- #12 Re-check whether /pdf/merge and /pdf/from-images got crawled
+- #14 Fix or remove window.__keptpix_store, which reports empty jobs/sources
+- #15 Add a copyable diagnostic block to /selftest
+- #16 Clear the 5 unused eslint-disable directives
+- #17 Settle D-52: does precache truncate over HTTP/2?
+- #18 Re-attempt the Astro 7 upgrade on its branch
+- #19 Audit every route's copy against what the code now does
+- #20 Decide: reduce the 12 MP peak, or amend the 400 MB budget with evidence
 
