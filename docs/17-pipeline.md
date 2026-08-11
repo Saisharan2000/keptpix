@@ -81,7 +81,27 @@ unless `CLAUDE_BACKLOG_SITE` is set; fails open on every error path.
 
 ---
 
-## What to build next, in order of leverage
+## Built since this was written
+
+- **`new-project.mjs`** — an idea to a wired workspace in one command. Copies the
+  machinery, writes CLAUDE.md and a docs skeleton, initialises the backlog,
+  imports a plan, runs doctor. Its scaffolded `verify.mjs` **refuses to pass**
+  until a human reviews the gates, because two `--if-present` gates in an empty
+  project report success while checking nothing.
+- **`status.mjs`** — `docs/STATUS.md` generated from evidence. Reported 10
+  deviations against a file holding 95 on its first run, which is exactly the
+  hazard it exists to prevent; the miscount then exposed a D-96 reference in three
+  source files pointing at an entry nobody had written.
+- **`monitor.mjs`** — production watched from outside. **Sentry turned out to be
+  unusable here** (D-98): docs/06 §5 forbids any bodied request and any
+  non-`self` origin, both release-blocking, so a browser SDK would trade the thing
+  being sold for information about it.
+- **CI runs `verify --fast`** as its single gate list, plus the four-engine e2e
+  suite separately. `monitor.yml` runs twice daily and opens an issue on critical
+  findings — the beacon injection that motivated it came from the host, not a
+  commit, so nothing push-triggered could have seen it.
+
+## Still worth building, in order of leverage
 
 ### A. Cowork replacement: a `spec` skill *(highest leverage)*
 
@@ -127,26 +147,23 @@ The rule: **generated from evidence, never authored.** A maintenance doc that
 claims a state nobody measured is the D-91 and D-95 failure again, and those both
 told a user something false.
 
-### D. Monitoring loop, via the Sentry MCP
+### C. What monitoring still cannot see
 
-Sentry is already connected. An agent can read new issues, reproduce them
-locally, queue them with the stack trace as `--why`, and fix them in the next
-cycle. That is the difference between "built" and **maintained**, which is the
-last word in Sai's request.
+`monitor.mjs` checks the site from outside, which catches host-injected scripts,
+dropped headers, dead routes and stale deploys. It cannot see a JavaScript
+exception in somebody's browser, and by design nothing ever will — that is the
+cost of the privacy claim, paid deliberately.
 
-Rule: read-only until it can reproduce. A fix for an error nobody has reproduced
-is a guess with a commit message.
-
-### E. CI as the second referee
-
-`verify` on push, via GitHub Actions. Not because local verify is untrusted, but
-because a clean machine catches what a warm one hides. Two flakes here appeared
-only under load (D-93, and a mobile-safari run that nearly caused a correct fix
-to be reverted).
+`/selftest` is the compensation: the user runs the diagnostic on their own device
+and reads the result. What would make it useful to US is a way for someone to
+send that result **voluntarily and by hand** — a copyable block, not a beacon.
+That is the only error-reporting design compatible with docs/06 §5, and it is
+worth building before the user base is large enough for silent failures to
+matter.
 
 ---
 
-## The loop, once A–E are in
+## The loop as it now runs
 
 ```
 intent ──> spec skill ──> plan.md ──> backlog import
@@ -156,7 +173,7 @@ intent ──> spec skill ──> plan.md ──> backlog import
         backlog next ──> implement ──> verify ──> deploy.mjs ──> verified live
               ^                                        │
               │                                        v
-              └──── queue from Sentry + from what the work revealed
+              └──── queue from monitor.mjs + from what the work revealed
 ```
 
 Everything in that diagram runs without Sai. What leaves the diagram and waits
