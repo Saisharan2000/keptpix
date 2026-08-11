@@ -166,7 +166,6 @@ export default tseslint.config(
       'playwright-report/**',
       'blob-report/**',
       'docs/**',
-      'NoUploadblueprints/**',
       'stats.html',
     ],
   },

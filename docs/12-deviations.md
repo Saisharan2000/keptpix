@@ -3851,6 +3851,40 @@ touches neither. `monitor.mjs` confirms nothing new is served: robots.txt is
 byte-identical and no third-party script tag appears.
 
 ---
+## 🟡 D-101 — deleted a duplicate spec set that told agents to install React
+
+`NoUploadblueprints/` held a copy of `docs/` from the original blueprint, 12 files,
+and had diverged. CLAUDE.md names `docs/` the source of truth, so the second copy
+could only mislead — but "stale duplicate" understates it. I diffed every file
+before touching anything, and `docs/` is **not** a strict superset: every blueprint
+file has lines that exist nowhere else. Those lines are the problem.
+
+| The blueprint said | Current reality |
+|---|---|
+| `react` and `react-dom` ^19 as dependencies | CLAUDE.md **forbids both** (ADR-007). React 19's runtime alone is 59.45 KB gz and blows the 60 KB budget by itself |
+| privacy allowlist permits "the Cloudflare Insights beacon in Milestone 8" | D-66 removed that beacon. docs/06 §5 is now `self` only, **ever**, and it is a release gate |
+| `noupload.app`, codename NoUpload, license service at that host | the domain is keptpix.com |
+| the original target-size search algorithm | amended by D-02 |
+| `@astrojs/react` ^4 | the project runs Preact via `@astrojs/preact` |
+
+So this was not tidying. An unattended agent reading
+`NoUploadblueprints/docs/07-folder-structure.md` would find React listed as a
+dependency to install, and reading `06-contracts.md` would find a privacy
+allowlist that permits a tracking beacon — the two things this codebase most
+explicitly forbids, stated as instructions, in a folder that looked
+authoritative. The risk was highest exactly when nobody is watching.
+
+Nothing is lost: every byte is in git at `2f4abc43`, retrievable with
+`git show 2f4abc43:NoUploadblueprints/docs/06-contracts.md`. Verified that no code
+or doc depends on the folder before removing it, and cleaned the two now-dangling
+ignore entries in `.prettierignore` and `eslint.config.js` rather than leaving
+config pointing at a path that does not exist.
+
+The reason this took a diff rather than a `rm`: "it's a duplicate" was an
+assumption, and it was wrong in the direction that mattered — the copy was not
+redundant, it was contradictory.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
