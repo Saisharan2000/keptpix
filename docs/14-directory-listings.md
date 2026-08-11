@@ -31,14 +31,15 @@ stakes that some competitor also claims.
 
 ## Facts sheet
 
-Keep every submission consistent with this. All verified against production on
-9 Aug 2026, not recalled.
+Keep every submission consistent with this. All re-verified against the live
+sitemap on 11 Aug 2026, not recalled — the previous version of this table said 20
+tools and 6 compressors, which two new routes had already made false.
 
 | | |
 |---|---|
 | URL | `https://keptpix.com` |
-| Licence | AGPL-3.0-only |
-| Tool routes | **20** — 7 converters, 6 exact-size compressors, 5 PDF tools, metadata viewer, resize |
+| Licence | AGPL-3.0-only, public at github.com/Saisharan2000/keptpix |
+| Tool routes | **22** — 7 converters, 8 compressors (6 by size, 2 by use case), 5 PDF tools, metadata viewer, resize |
 | Total pages | 27 |
 | Platforms | Any modern browser — Chrome, Firefox, Safari, Edge, mobile |
 | Offline | Yes, after first visit (service worker precaches 37 URLs) |
@@ -48,7 +49,8 @@ Keep every submission consistent with this. All verified against production on
 | Tracking | None. CSP-enforced |
 
 Converters: HEIC→JPG, JPG→WebP, PNG→JPG, PNG→WebP, SVG→PNG, WebP→JPG, WebP→PNG.
-Compressors: JPG to 20/50/100/200/500 KB and 1 MB.
+Compressors: JPG to 20/50/100/200/500 KB and 1 MB, plus a signature-to-20KB and
+a passport-photo-to-50KB route with advice specific to each.
 PDF: merge, split, rotate, images→PDF, PDF→images.
 
 **Do not claim:** video tools, QR generation, or PDF compression. They exist in
@@ -57,10 +59,11 @@ is the fastest way to get delisted.
 
 ---
 
-## 1. awesome-privacy — highest value, needs the public repo
+## 1. awesome-privacy — highest value, and now the best odds
 
-**Blocked until the repo is public.** The list's whole premise is reviewable code;
-submitting with a dead GitHub link wastes the one shot.
+**Unblocked.** The repo went public under AGPL-3.0 on 9 Aug and GitHub reports the
+licence in its About panel, so every claim below is checkable by a stranger — which
+is the list's whole premise and was the only thing holding this back.
 
 Worth the wait: there is a real gap. The list has **no Squoosh, no ImageOptim, no
 PDF tools at all**, and its image section is almost entirely desktop and Android
@@ -75,30 +78,49 @@ Title: `Add KeptPix`
 ```markdown
 ### KeptPix
 
-* [KeptPix](https://github.com/<user>/keptpix) - Convert, compress and resize images and edit PDFs entirely in the browser; a replacement for iLovePDF, Smallpdf and TinyPNG.
+* [KeptPix](https://github.com/Saisharan2000/keptpix) - Convert, compress and resize images and edit PDFs entirely in the browser; a replacement for iLovePDF, Smallpdf and TinyPNG.
 * **License**: AGPL-3.0
 * **Why do you think this helps users privacy?**: Files are never uploaded — every conversion runs in a Web Worker on the user's own device, and there is no backend to receive anything. This is enforced rather than promised: the site's CSP sets `connect-src 'self' blob:`, so no external origin is reachable and there is no destination a file could be sent to. A Playwright suite asserts zero bodied requests against the real build and blocks release on failure. There is no analytics of any kind — Cloudflare injected its own RUM beacon at the edge and the CSP refused it. Anyone can confirm all of this from devtools in under a minute, or read the code.
 * **Under what section should this service be listed?**: Photo Editing and Management. The EXIF/GPS metadata viewer would also fit Cloaking → Images if you would rather split it.
-* **Additional comments / info**: 20 tools, no account, no file-size limit, works offline after first visit. Not self-hostable in the usual sense because there is nothing to host — it is static files, so a fork can deploy the built output anywhere.
+* **Additional comments / info**: 22 tools, no account, no file-size limit, works offline after first visit. Not self-hostable in the usual sense because there is nothing to host — it is static files, so a fork can deploy the built output anywhere.
 ```
 
 For the PR line, if they ask:
 
 ```markdown
-* [KeptPix](https://github.com/<user>/keptpix) - Convert, compress and resize images and edit PDFs fully in-browser, no uploads. Alternative to iLovePDF and TinyPNG. `AGPL-3.0` `Web`
+* [KeptPix](https://github.com/Saisharan2000/keptpix) - Convert, compress and resize images and edit PDFs fully in-browser, no uploads. Alternative to iLovePDF and TinyPNG. `AGPL-3.0` `Web`
 ```
 
-**Also worth submitting once public**, same substance, different tone:
+**Also worth submitting**, same substance, different tone:
 Privacy Guides (forum thread first — they reject cold PRs), and the
 `awesome-selfhosted`-adjacent lists are **not** a fit: they require software you
 run on your own server, and KeptPix has no server to run.
 
 ---
 
-## 2. AlternativeTo — most referral traffic, no open-source requirement
+## 2. AlternativeTo — SUBMITTED AND REJECTED, 10 Aug 2026
 
-Submittable today. People arrive here having already decided to leave a
-competitor, which is the highest-intent traffic any directory sends.
+**Do not resubmit.** The listing was completed in full — 22-tool description,
+four screenshots, seven alternatives attached, Open Source ticked with AGPL-3.0 —
+and was declined within a day: *"can't be approved because it doesn't meet the
+quality and benefits we require."*
+
+Their approval policy names the reason. It lists as frequent declines: simple
+converters, resizers, compressors, online PDF tools, and collections of online
+tools — and says they now reject more than before, including where similar
+alternatives are already listed. KeptPix is in that category by description, and
+no rewording changes the category.
+
+**What this cost and what it taught.** Two hours of a Chrome agent's work and a
+$5 priority review that returned a generic FAQ link rather than the written
+critique priority submissions are promised — worth a refund request. The lesson
+is the sorting rule for every future channel: a directory that judges *"is this a
+distinctive app"* will reject a tool in a saturated category, however good it is.
+A directory that judges *"does this respect privacy"* asks a question we can
+answer with a public repo and a CSP. Spend effort on the second kind.
+
+Kept below rather than deleted, because the copy is reusable and the rejection is
+the more useful record.
 
 - **Name:** KeptPix
 - **URL:** `https://keptpix.com`
@@ -114,7 +136,7 @@ Description:
 > is no server to send files to, which you can confirm in devtools by watching
 > the network tab stay empty while a conversion runs.
 >
-> 20 tools: HEIC to JPG, PNG/WebP/SVG conversion, compression to an exact target
+> 22 tools: HEIC to JPG, PNG/WebP/SVG conversion, compression to an exact target
 > size (the "under 100 KB" that job applications and government forms demand),
 > resizing, and an EXIF viewer that shows the GPS coordinates and camera serial
 > number your photos are carrying. For PDFs: merge, split, rotate, build one from

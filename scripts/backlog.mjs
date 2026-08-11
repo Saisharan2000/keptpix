@@ -95,10 +95,23 @@ function withLock(site, fn) {
     rmSync(lock, { force: true });
   }
   writeFileSync(lock, String(process.pid));
+
+  /*
+   * ALSO release on exit, not only in `finally`.
+   *
+   * `die()` calls `process.exit()`, and process.exit SKIPS finally blocks — so
+   * any validation failure inside a locked operation stranded the lock for the
+   * full five-minute staleness window. `backlog done` with nothing in progress
+   * did exactly that, and the very next command refused with "keptpix is locked
+   * (0s old)". An unattended run would stall five minutes per mistake.
+   */
+  const release = () => rmSync(lock, { force: true });
+  process.once('exit', release);
   try {
     return fn();
   } finally {
-    rmSync(lock, { force: true });
+    release();
+    process.removeListener('exit', release);
   }
 }
 
