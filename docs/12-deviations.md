@@ -3885,6 +3885,73 @@ assumption, and it was wrong in the direction that mattered — the copy was not
 redundant, it was contradictory.
 
 ---
+## 🟡 D-102 — a PAN card route, and a flaky assertion fixed for the third time
+
+### The route
+
+`/compress/pan-card-photo`, target 30 KB. It earns a page because the two PAN
+portals disagree and neither number is the one people search for:
+
+| | NSDL | UTIITSL |
+|---|---|---|
+| Photo | 3.5 x 2.5 cm @ 200 DPI, **20–50 KB** | 213 x 213 px @ 300 DPI, **under 30 KB** |
+| Signature | 2 x 4.5 cm @ 200 DPI, 10–50 KB | 400 x 200 px @ 600 DPI, ≤ 60 KB |
+
+**Only 20–30 KB satisfies both**, which is why the target is 30 KB rather than the
+50 KB most guides quote — compressing to 50 KB is still rejected on UTIITSL.
+
+And NSDL sets a **floor of 20 KB**. Every other limit on this site punishes a file
+for being too large; this one also punishes it for being too small, so the usual
+instinct to squeeze as hard as possible is wrong here. No generic size page says
+that, because for every other limit it is not true. That is the whole
+justification for the route under docs/05 §5, which treats a page that ranks while
+being less useful than the destination as doorway abuse.
+
+Smoke-tested through a real browser against **both** bounds — 771 KB → 27 KB,
+under the 30 KB ceiling and above the 20 KB floor. A test that only checked the
+ceiling would have missed the point of the page.
+
+Demand is not assumed: whole domains exist for this — `pancardresizer.com`,
+`pancardsize.com`, `sarkaridna.com`, `formphotoeditor.com`.
+
+### Only one route, not the two the backlog asked for
+
+The obvious second was a PAN *signature* page. Its requirement is 10–50 KB on NSDL
+and ≤ 60 KB on UTIITSL, and `signature-to-20kb` already lands inside both. A
+second page targeting the same band with the same advice is the cannibalisation
+docs/05 §5 warns about, so it was not built. The backlog item said two; the
+evidence supported one.
+
+Also honest on the page itself: it does **not** crop to 3.5 x 2.5 cm or 213 x 213,
+and says so, with the instruction to crop first because cropping afterwards
+changes the file size again.
+
+### The responsiveness assertion, third correction
+
+`stays responsive during a 4 MP conversion` has now flaked three times under
+`verify`, and each fix was a genuine improvement that did not go far enough:
+
+1. Absolute `max(gap) < 50ms` — conflated our work with machine load (D-93).
+2. Compared against a single idle baseline — load drifts across a run.
+3. Baseline on both sides, worse of the two — still `max`, and **max is
+   maximally sensitive to one event**. A single GC pause anywhere in the ~2 s
+   conversion window fails it, provided it misses both 600 ms control windows.
+
+The claim is that the main thread stays RESPONSIVE, which is a property of the
+distribution, not of its worst member. One 60 ms stall in two seconds is
+responsive; fifty consecutive 100 ms gaps is not, and only the second moves a
+**p95**. So: p95 during vs p95 idle, 25 ms headroom — plus a loose `max` ceiling
+so catastrophic blocking cannot hide behind a good percentile.
+
+Verified it still has teeth by injecting 900 ms of real main-thread work: fails
+immediately with *"expected 900.7 to be less than 406.7"*. Then renamed, because
+the test was still called "never blocks for more than 50 ms" and that is no longer
+what it asserts — a test whose name describes an older assertion is a small lie
+that survives every future reading.
+
+All 8 gates green: 414 unit, 164 integration, 143 e2e, 32 routes.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

@@ -315,6 +315,61 @@ const passportPhoto50kb: SizePresetRoute = {
 };
 
 /**
+ * The only route on this site with a size FLOOR to warn about.
+ *
+ * Both PAN portals were checked because they disagree, and the disagreement is
+ * the reason the page earns its place (docs/12 D-102):
+ *
+ *   NSDL      photo 3.5x2.5 cm @ 200 DPI, JPEG, 20-50 KB
+ *   UTIITSL   photo 213x213 px @ 300 DPI, JPEG, under 30 KB
+ *
+ * 20-30 KB is the only band that satisfies both, which is why the target is
+ * 30 KB and not the 50 KB most searches ask for. And NSDL's **20 KB minimum**
+ * inverts the usual advice: every other form on this site rejects a file for
+ * being too big, and this one also rejects it for being too small. No generic
+ * size page mentions that, because for every other limit it is not true.
+ */
+const panCardPhoto: SizePresetRoute = {
+  slug: 'pan-card-photo',
+  format: 'jpeg',
+  targetBytes: 30_000,
+  supported: true,
+  cardName: 'PAN card photo, 30 KB',
+  title: 'Resize a PAN card photo — 30KB, nothing uploaded',
+  h1: 'Compress a PAN card photo',
+  metaDescription:
+    'Compress a PAN card photo to the size NSDL and UTIITSL both accept, in your browser. No upload, no sign-up.',
+  intro:
+    'The two PAN portals do not agree, which is why a single number is hard to find. NSDL wants a JPEG between 20 KB and 50 KB; UTIITSL wants one under 30 KB. Only 20 to 30 KB satisfies both, so that is what this page aims at — and it is why compressing to the 50 KB most guides mention can still be rejected if you are on the UTIITSL form. The more surprising part is NSDL\'s lower bound: it refuses a photo under 20 KB. Every other upload limit you will meet punishes a file for being too large, and this one also punishes it for being too small, so squeezing it as hard as possible is the wrong instinct here.',
+  useCases: [
+    'NSDL (Protean) PAN applications, which want 20-50 KB',
+    'UTIITSL PAN applications, which want under 30 KB',
+    'PAN correction and reprint forms, which use the same uploader',
+    'e-KYC flows that ask for the same photo alongside a signature',
+  ],
+  faq: [
+    {
+      q: 'Which portal am I on?',
+      a: 'Look at the address bar. NSDL applications sit on tin.tin.nsdl.com or onlineservices.nsdl.com, and UTIITSL on pan.utiitsl.com. If you are unsure, aim for 20 to 30 KB — that band is accepted by both, which is what this page targets.',
+    },
+    {
+      q: 'My photo was rejected for being too small. Is that possible?',
+      a: 'Yes, and it is unusual. NSDL sets a floor of 20 KB as well as a ceiling of 50 KB, so a heavily compressed photo fails for the opposite reason to normal. If that happened, raise the target rather than lowering it — this page aims at 30 KB precisely to stay clear of the floor.',
+    },
+    {
+      q: 'Does this crop to 3.5 x 2.5 cm for me?',
+      a: 'No, and it is worth knowing before you start. This page controls file size, not framing. NSDL specifies 3.5 cm tall by 2.5 cm wide at 200 DPI — about 276 x 197 pixels — while UTIITSL wants a 213 x 213 pixel square. Crop to whichever your form asks for first, then compress, because cropping afterwards changes the file size and undoes the work.',
+    },
+    {
+      q: 'Both portals say JPEG. Does that matter?',
+      a: 'Yes. Neither accepts PNG, and a PNG renamed to .jpg is still a PNG inside — the uploader reads the file, not the extension. This page always writes a real JPEG, so a screenshot or a PNG export becomes one on the way through.',
+    },
+    ...SHARED_FAQ_TAIL,
+  ],
+  relatedSlugs: ['signature-to-20kb', 'jpg-to-20kb', 'passport-photo-to-50kb'],
+};
+
+/**
  * Wave 1 ships the six JPG sizes (docs/09 §6). The PNG and WebP size routes are
  * Wave 2 and are pure data additions here — no code changes required.
  */
@@ -327,6 +382,7 @@ export const sizePresetRoutes: SizePresetRoute[] = [
   jpg1mb,
   signature20kb,
   passportPhoto50kb,
+  panCardPhoto,
 ];
 
 /** Same hard gate as the format pairs: never prerender what we cannot perform. */
