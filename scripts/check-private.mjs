@@ -6,7 +6,9 @@
  *
  * This repository is public. `git add -A` committed a Cowork strategy document —
  * target keywords, revenue projections, competitor analysis — to the public repo
- * in 0a69e04, and nobody noticed until the founder read the commit (docs/12 D-111).
+ * and nobody noticed until the founder read the commit (docs/12 D-111). The commit
+ * that introduced it no longer exists — the history was rewritten to remove the
+ * blob, which is why no SHA is cited here.
  *
  * .gitignore alone is not the guard. It stops `git add -A`, and nothing else:
  * `git add -f` overrides it, a file already tracked keeps being tracked no matter

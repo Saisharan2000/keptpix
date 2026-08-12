@@ -35,7 +35,7 @@ Thumbs.db
 # claude-cowork-docs/ is where Cowork drops strategy material — target keywords,
 # revenue projections, competitor analysis. None of it is credential-bearing, and
 # all of it is exactly what a competitor would want. `git add -A` committed the
-# distribution strategy to the public repo in 0a69e04 before anyone looked
+# distribution strategy to the public repo before anyone looked
 # (docs/12 D-111); the file stays on disk at the same path so Cowork keeps
 # working, it just stops being published.
 #
