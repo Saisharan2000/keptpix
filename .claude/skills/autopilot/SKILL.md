@@ -41,6 +41,27 @@ default for interactive work, so set it deliberately.
 
 New site: `backlog init <site> --root . --hours 10`.
 
+## The shape of a session: iterations, not a batch
+
+**One feature, taken from idea to deployed, before the next one starts.** Five
+complete iterations, not five features built and then verified together.
+
+This is a deliberate trade and the reason is regression. Building a batch and
+verifying it at the end means a failure could have come from any member of the
+batch — the KeptPix redesign was done that way and broke ten integration tests
+plus five more, and working out which change caused what took several rounds. One
+feature per iteration costs an extra full `verify` each time, roughly four minutes,
+and buys trivial bisection: one commit, one deploy, one thing that changed.
+
+The rule that makes it real: **do not claim the next item until the current one is
+deployed and green.** `backlog next` enforces the first half by handing back the
+in-progress item rather than a second one; the rest is on you.
+
+If a feature cannot be finished AND deployed inside one iteration, it is too big —
+split it into items that each stand alone, rather than carrying a half-built one
+across iterations. A half-finished feature spanning two cycles is the batch
+problem wearing different clothes.
+
 ## The cycle
 
 One item at a time. Finish it before claiming the next.
@@ -53,6 +74,14 @@ One item at a time. Finish it before claiming the next.
    additions up on your next pass.
 1. **Claim.** `backlog next <site>` prints the item, the repo root, the verify
    command, and how much budget is gone.
+1b. **Ideate, if the item is a feature rather than a fix.** Decide WHAT to build
+   and why, and write the evidence into the item before writing code:
+   `backlog add` it with a `--why` that names a measurement, a competitor's SERP,
+   a rejected form, or a user report. "Users would like this" is not evidence.
+   docs/05 §5 treats a page that ranks while being less useful than the
+   destination as doorway abuse, and that rule has already killed two proposed
+   routes here — a visa page on regionally contradictory facts, and a PAN
+   signature page that would have cannibalised an existing route.
 2. **Research only as far as needed to act.** A search that changes what you build
    is worth it; a search that confirms what you already believed is not. Measure
    rather than assume — `docs/12` is largely entries where an assumption was

@@ -60,6 +60,14 @@ One item at a time. Finish it before claiming the next.
    work mid-session without anybody relaying it.
 1. **Claim.** `backlog next <site>` prints the item, the repo root, the verify
    command, and how much budget is gone.
+1b. **Ideate, if the item is a feature rather than a fix.** Decide WHAT to build
+   and why, and write the evidence into the item before writing code:
+   `backlog add` it with a `--why` that names a measurement, a competitor's SERP,
+   a rejected form, or a user report. "Users would like this" is not evidence.
+   docs/05 §5 treats a page that ranks while being less useful than the
+   destination as doorway abuse, and that rule has already killed two proposed
+   routes here — a visa page on regionally contradictory facts, and a PAN
+   signature page that would have cannibalised an existing route.
 2. **Research only as far as needed to act.** A search that changes what you build
    is worth it; a search that confirms what you already believed is not. Measure
    rather than assume — `docs/12` is largely entries where an assumption was
