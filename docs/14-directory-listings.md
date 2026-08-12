@@ -122,7 +122,7 @@ Title: `Add KeptPix`
 * **License**: AGPL-3.0
 * **Why do you think this helps users privacy?**: Files are never uploaded — every conversion runs in a Web Worker on the user's own device, and there is no backend to receive anything. This is enforced rather than promised: the site's CSP sets `connect-src 'self' blob:`, so no external origin is reachable and there is no destination a file could be sent to. A Playwright suite asserts zero bodied requests against the real build and blocks release on failure. There is no analytics of any kind — Cloudflare injected its own RUM beacon at the edge and the CSP refused it. Anyone can confirm all of this from devtools in under a minute, or read the code.
 * **Under what section should this service be listed?**: Photo Editing and Management. The EXIF/GPS metadata viewer would also fit Cloaking → Images if you would rather split it.
-* **Additional comments / info**: 22 tools, no account, no file-size limit, works offline after first visit. Not self-hostable in the usual sense because there is nothing to host — it is static files, so a fork can deploy the built output anywhere.
+* **Additional comments / info**: 22 tools, no account, no file-size limit, works offline after first visit. There is also an on-device self-test page that reports engine capabilities and produces a copyable diagnostic, since nothing can be reported automatically. Not self-hostable in the usual sense because there is nothing to host — it is static files, so a fork can deploy the built output anywhere.
 ```
 
 For the PR line, if they ask:
