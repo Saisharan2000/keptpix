@@ -589,6 +589,202 @@ Where WebP genuinely loses to JPEG is reach outside the browser: print services,
   relatedSlugs: ['webp-to-jpg', 'png-to-webp', 'png-to-jpg', 'heic-to-jpg'],
 };
 
+/**
+ * The two AVIF routes are docs/09 §2.1 P1 pairs whose engine work shipped long
+ * before their pages did: decode is canvas-native where the browser has it and
+ * libavif WASM (1.17 MB, under the 1.2 MB cap) where it does not — built FOR
+ * these routes, per the header of src/engines/wasm/avif.ts, and then the data
+ * below was never written (docs/12 D-114). AVIF as an OUTPUT stays unshipped:
+ * the encoder binary is 3.48 MB against a 1.2 MB budget (D-46), which is why
+ * there is no jpg-to-avif here.
+ */
+const avifToJpg: FormatPairRoute = {
+  slug: 'avif-to-jpg',
+  from: 'avif',
+  to: 'jpeg',
+  tier: 'p1',
+  supported: true,
+
+  title: 'Convert AVIF to JPG — free, unlimited, nothing uploaded',
+  h1: 'Convert AVIF to JPG',
+  metaDescription:
+    'Convert AVIF images to JPG in your browser — even if your browser cannot display AVIF. No upload, no sign-up, no file limit.',
+
+  intro: `AVIF is the picture form of the AV1 video codec, published by the Alliance for Open Media in 2019. It is the strongest compressor in mainstream use — at comparable visual quality an AVIF is typically around half the size of a JPEG and noticeably smaller than WebP — which is why image-heavy sites and CDNs now serve it automatically to any browser that accepts it.
+
+Support outside the browser is the worst of any modern format. Chrome could display AVIF from 2020 and Firefox from 2021, but Safari only caught up in 16.4 (March 2023), and a great deal of desktop software still opens nothing. Which is how people usually arrive here: an image saved from a modern website, and a machine full of software that refuses it.`,
+
+  whyConvert: [
+    'You saved an image from a website and nothing will open it. Sites increasingly serve AVIF to browsers that accept it, and right-click-save keeps whatever format was served.',
+    'Upload forms reject it. Portals that grudgingly accept WebP still rarely list AVIF at all.',
+    'Desktop software lags years behind: Photoshop opened AVIF natively only from 23.5 (2022), and Windows Photos needs a Microsoft Store codec extension before it will show one.',
+    'Print services and photo labs require JPEG — AVIF is a web delivery format and has no print workflow.',
+    'JPG is the safest thing to hand to someone else when you do not know what they will open it with.',
+  ],
+
+  technicalNotes: `Both formats are lossy, so this is a second lossy pass and some detail is discarded permanently. At quality 85 and above the difference is invisible at normal viewing sizes; we default to 82.
+
+Expect the JPG to be substantially larger than the AVIF — often around twice the size. That is not a fault; it is the whole reason AVIF exists, and the target-size mode is there if the result has to fit a limit.
+
+Transparency is lost: AVIF carries a full alpha channel and JPEG does not, so transparent pixels are flattened onto a background colour, white by default. Convert to PNG instead if the transparency matters. An animated AVIF converts only its first frame, and a 10-bit or HDR AVIF is rendered down to standard 8-bit colour on the way through — JPEG has nowhere to put the extra range.
+
+This converter also works in browsers that cannot display AVIF themselves: where native decoding is missing, a WebAssembly decoder is fetched with the page and runs entirely on your device, the same as everything else here.`,
+
+  comparison: {
+    rows: [
+      {
+        label: 'Compression',
+        from: 'AV1 intra-frame — typically around half the size of JPEG at equal quality',
+        to: 'DCT, standardised 1992 — larger, but implemented everywhere',
+      },
+      {
+        label: 'Support',
+        from: 'Chrome 85 (2020), Firefox 93 (2021), Safari 16.4 (2023); still patchy in desktop software',
+        to: 'Every browser, operating system and image tool since 1992',
+      },
+      {
+        label: 'Transparency',
+        from: 'Yes — full alpha channel, plus animation, HDR and 10/12-bit colour',
+        to: 'No — alpha is flattened onto a background colour',
+      },
+      {
+        label: 'Metadata',
+        from: 'EXIF and XMP (stripped here by default)',
+        to: 'EXIF and GPS (stripped here by default)',
+      },
+      {
+        label: 'Typical size',
+        from: '≈100 KB for a 1200×800 photograph',
+        to: '≈200 KB for the same photo at quality 82',
+      },
+    ],
+  },
+
+  faq: [
+    {
+      q: 'Why is the JPG so much bigger than the AVIF I started with?',
+      a: 'Because AVIF compresses roughly twice as well. A JPEG carrying the same picture at the same visible quality is typically around double the size, and that gap is exactly why the web is moving to AVIF. You are buying compatibility with file size. If the result needs to fit a limit, switch to target-size mode and set one.',
+    },
+    {
+      q: 'My browser cannot even display AVIF files. Will this still work?',
+      a: 'Yes. Where the browser cannot decode AVIF natively — Safari before 16.4, for instance — a WebAssembly decoder is fetched with the page and does the work instead. Either way the decoding happens on your device; the file is never sent anywhere.',
+    },
+    {
+      q: 'Will converting AVIF to JPG lose quality?',
+      a: 'A little. AVIF is already lossy, so re-encoding to JPEG is a second lossy pass and some detail goes permanently. At quality 85 and above it is not visible at normal viewing sizes. If you intend to edit the image afterwards, convert to PNG instead — every additional lossy save compounds.',
+    },
+    {
+      q: 'The JPG looks flatter or duller than the original. Why?',
+      a: 'The AVIF was probably 10-bit or HDR. JPEG holds 8-bit standard-range colour and nothing more, so the extra brightness range is rendered down on the way through. Nothing is wrong with the conversion — JPEG simply has nowhere to put what the AVIF was carrying.',
+    },
+    {
+      q: 'My AVIF is animated. Can I keep the animation?',
+      a: 'Not as a JPG — JPEG cannot store animation, so only the first frame converts. If you need the animation, keep the AVIF or use a video format; that is closer to what an animated AVIF already is.',
+    },
+  ],
+
+  defaultConfig: {
+    outputFormat: 'jpeg',
+    sizeMode: { kind: 'quality', quality: 82 },
+    resize: { kind: 'none' },
+    metadata: { stripAll: true, preserveOrientation: true, preserveColorProfile: false },
+    encoderPreference: 'auto',
+    backgroundColor: '#ffffff',
+  },
+
+  relatedSlugs: ['avif-to-png', 'heic-to-jpg', 'webp-to-jpg', 'png-to-jpg'],
+};
+
+const avifToPng: FormatPairRoute = {
+  slug: 'avif-to-png',
+  from: 'avif',
+  to: 'png',
+  tier: 'p1',
+  supported: true,
+
+  title: 'Convert AVIF to PNG — keeps transparency, nothing uploaded',
+  h1: 'Convert AVIF to PNG',
+  metaDescription:
+    'Convert AVIF to PNG in your browser, keeping transparency intact — even if your browser cannot display AVIF. No upload, no quotas.',
+
+  intro: `AVIF is the newest mainstream image format — the still-image form of the AV1 video codec, published in 2019 — and the most poorly supported outside a browser. PNG is its opposite: the web's lossless workhorse since 1996, carrying a full alpha channel, and readable by essentially every piece of software ever written.
+
+That combination decides the conversion. PNG is what to choose when the transparency has to survive, when the image is going to be edited again, or when the software on the receiving end is old enough that nothing modern is safe to assume.`,
+
+  whyConvert: [
+    'PNG keeps the alpha channel intact, so a logo or icon stays transparent instead of being flattened onto white.',
+    'The PNG step is lossless, so the conversion adds no further generation loss before editing — the right property if the image will be opened and saved again.',
+    'PNG opens everywhere, including software old enough to predate WebP, let alone AVIF.',
+    'Upload forms that name their formats almost always include PNG; almost none include AVIF.',
+  ],
+
+  technicalNotes: `The PNG side of this conversion is lossless, but that does not make the round trip lossless: whatever the AVIF encoder discarded when the file was made is gone, and writing the pixels into PNG does not bring it back. What PNG guarantees is that nothing FURTHER is lost from here.
+
+Expect a large file if the image is a photograph. PNG compresses losslessly and photographs do not compress well losslessly — several times the size of the AVIF is normal. For photos where size matters, convert to JPG instead; PNG earns its keep on graphics, screenshots, logos and anything with transparency.
+
+A 10-bit or HDR AVIF is written as standard 8-bit PNG, so the extra brightness range is rendered down. An animated AVIF converts only its first frame. And as with every AVIF tool on this site, browsers that cannot decode AVIF natively get a WebAssembly decoder fetched with the page — the work still happens entirely on your device.`,
+
+  comparison: {
+    rows: [
+      {
+        label: 'Compression',
+        from: 'AV1 intra-frame, lossy or lossless — the strongest compressor in mainstream use',
+        to: 'DEFLATE, lossless — modest on graphics, very large on photographs',
+      },
+      {
+        label: 'Support',
+        from: 'Chrome 85 (2020), Firefox 93 (2021), Safari 16.4 (2023); still patchy in desktop software',
+        to: 'Everything since 1996',
+      },
+      {
+        label: 'Transparency',
+        from: 'Yes — full alpha channel',
+        to: 'Yes — full alpha channel, preserved by this conversion',
+      },
+      {
+        label: 'Metadata',
+        from: 'EXIF and XMP (stripped here by default)',
+        to: 'Optional text chunks; this tool writes none',
+      },
+      {
+        label: 'Typical size',
+        from: '≈100 KB for a 1200×800 photograph',
+        to: '≈1.5 MB for the same photograph — PNG is not a photo format',
+      },
+    ],
+  },
+
+  faq: [
+    {
+      q: 'Does the transparency survive the conversion?',
+      a: 'Yes, completely. AVIF and PNG both carry a full alpha channel, and the pixels move across unchanged — partial transparency included. This is the conversion to use for logos, stickers and icons saved from the web.',
+    },
+    {
+      q: 'Why is the PNG so much larger than the AVIF?',
+      a: 'Because PNG is lossless and the strongest lossless compression cannot compete with lossy AVIF on a photograph. Several times larger is normal. If the image is a photo and the size matters, convert to JPG instead — PNG is the right answer for graphics, screenshots and transparency, not for holiday pictures.',
+    },
+    {
+      q: 'Is this conversion lossless?',
+      a: 'The PNG step is — nothing further is discarded from the pixels the AVIF contains. But most AVIFs were saved lossily in the first place, and what their encoder threw away at that point is not recoverable. Lossless from here on is the honest description.',
+    },
+    {
+      q: 'My browser cannot display AVIF files. Will this still work?',
+      a: 'Yes. Where native AVIF decoding is missing — Safari before 16.4, for instance — a WebAssembly decoder is fetched with the page and does the work on your device instead. Nothing is uploaded either way.',
+    },
+  ],
+
+  defaultConfig: {
+    outputFormat: 'png',
+    sizeMode: { kind: 'lossless' },
+    resize: { kind: 'none' },
+    metadata: { stripAll: true, preserveOrientation: true, preserveColorProfile: false },
+    encoderPreference: 'auto',
+    backgroundColor: '#ffffff',
+  },
+
+  relatedSlugs: ['avif-to-jpg', 'webp-to-png', 'svg-to-png', 'png-to-jpg'],
+};
+
 const svgToPng: FormatPairRoute = {
   slug: 'svg-to-png',
   from: 'svg',
@@ -693,6 +889,8 @@ export const formatPairRoutes: FormatPairRoute[] = [
   pngToJpg,
   pngToWebp,
   jpgToWebp,
+  avifToJpg,
+  avifToPng,
   svgToPng,
 ];
 

@@ -245,10 +245,22 @@ describe('matchQuery — format vocabulary', () => {
   });
 
   it('suggests nothing rather than a converter for a format it cannot read', () => {
-    // "avif to jpg" satisfied must:['jpg'] on the JPG→WebP entry, because the
-    // query names jpg as its DESTINATION. There is no AVIF pair route, so the
-    // honest answer is nothing.
-    expect(matchQuery('avif to jpg', QUERY_INDEX)).toEqual([]);
+    // Originally asserted with "avif to jpg" — then D-114 shipped the AVIF
+    // routes and the premise moved. BMP is in FORMAT_LABEL (a user can name it)
+    // and has no pair route, so it now carries the claim: a query naming a
+    // source no entry reads must get silence, not the tool for a format the
+    // query never mentioned. If a BMP route ever ships, pick the next
+    // labelled-but-unrouted format rather than deleting the test.
+    expect(matchQuery('bmp to jpg', QUERY_INDEX)).toEqual([]);
+  });
+
+  it('routes the AVIF queries the day their routes exist (D-114)', () => {
+    // The mirror of the test above, and the regression that D-112's fix nearly
+    // shipped: before the excludes were widened, "avif to jpg" was answered
+    // with /convert/jpg-to-webp. Now the route exists it must win outright.
+    expect(top('avif to jpg')).toBe('/convert/avif-to-jpg');
+    expect(top('avif to png')).toBe('/convert/avif-to-png');
+    expect(top('convert avif to jpeg')).toBe('/convert/avif-to-jpg');
   });
 
   it('does not offer an output format the query ruled out', () => {

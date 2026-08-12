@@ -4662,6 +4662,45 @@ the unit suite fails the build.
 - Baseline island JS: 45.4 → 45.5 KB gz. The feature costs 0.1 KB.
 
 ---
+## 🟢 D-114 — The AVIF routes ship two years of engine work that had no front door
+
+**Docs affected:** `09 §2.1/§6` (Wave 2 P1 pairs — two of the five now shipped)
+
+Backlog #27. `avif-to-jpg` and `avif-to-png` were P1 routes in the docs/09 plan,
+and the expensive half was already done: decode is canvas-native where the
+browser has it and libavif WASM (1.17 MB, under the 1.2 MB per-codec cap) where
+it does not — built FOR these routes per the header of `src/engines/wasm/avif.ts`,
+with real integration coverage against an embedded AVIF fixture. The dependency
+cost was paid; the pages that make it reachable were never written. This entry is
+the pages.
+
+Pure data addition, as the Wave design intended: two `FormatPairRoute` entries in
+`formats.ts`, and everything else lit up derivationally — sitemap 30→32 URLs,
+`QUERY_INDEX` grew the entries so "avif to jpg" now routes to the real page
+(yesterday it returned nothing, and before D-112's fix it returned the exact
+reverse converter), RelatedTools cross-links, and the route-driven e2e suites
+picked the pages up on their own (145→151).
+
+Copy stayed inside what is verifiable: Chrome 85 / Firefox 93 / Safari 16.4
+dates, Photoshop 23.5, "around half the size of JPEG" rather than a precise
+ratio, and the honest constraints — second lossy pass, alpha flattened on the
+JPG path and preserved on the PNG path, first frame only for animated, 10-bit/HDR
+rendered down to 8-bit. The differentiator got one line and one FAQ each: the
+converter works in browsers that cannot display AVIF at all, because the WASM
+decoder runs locally.
+
+**AVIF as OUTPUT stays unshipped** — encoder is 3.48 MB against the 1.2 MB
+budget (D-46), so there is deliberately no jpg-to-avif.
+
+One regression test moved WITH its premise: D-112's "avif to jpg suggests
+nothing" existed because no route did — it now asserts the route wins outright,
+and BMP (labelled, unrouted) carries the original silence claim.
+
+34 pages, 428 unit / 164 integration / 151 e2e, baseline JS unchanged at
+45.5 KB gz — the codec loads lazily per ADR-004, so two new routes cost the
+baseline nothing.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
