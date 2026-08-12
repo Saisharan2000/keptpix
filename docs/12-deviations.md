@@ -4297,6 +4297,84 @@ Requeued with this evidence attached, and the remaining critical (`handlebars`) 
 dev-tooling only — it never reaches a build output or a user.
 
 ---
+## 🟠 D-110 — the distribution strategy is right, and its revenue plan breaks its own moat
+
+`claude-cowork-docs/keptpixdistributionstrategy.md` arrived from Cowork. Read
+against what has actually been measured here, it is good work — and it contains one
+contradiction serious enough that acting on the document as written would undo the
+product.
+
+### Where it is independently corroborated
+
+Its central claim is that the winnable ground is exact-size and exam-form tasks in
+India. I reached the same conclusion separately and from different evidence: the
+SERP for `compress jpg to 100kb` is entirely competitor tool pages with no
+discussion threads (docs/14), signature compression has whole domains devoted to it
+(D-92), and the PAN portals' conflicting 20–50 KB and sub-30 KB requirements were
+verifiable from primary sources (D-102). Two independent routes to the same answer
+is the strongest signal in the document.
+
+### Three stale facts
+
+| Doc says | Actually |
+|---|---|
+| "We have ~9 pages" | **30 routes, 22 tools** |
+| AlternativeTo listing, Sep W1–2 | **submitted and rejected 10 Aug** — their policy names converters and PDF tools as frequent declines (docs/14 §2) |
+| "open-source one component" | **the whole repository is public** under AGPL-3.0 since 9 Aug (D-87) |
+
+### The rule collision: 150–400 programmatic pages
+
+docs/05 §5 treats pages built to rank while being less useful than the destination
+as **doorway abuse**, and that rule has already killed two proposed routes here — a
+visa page on regionally contradictory facts, and a PAN signature page that would
+have cannibalised an existing route.
+
+The document is not wrong that the query space is large. The reconciliation is that
+**the exam-spec data is the load-bearing asset, not the page count.** A page
+carrying the real SSC CGL requirement — 20–50 KB at 200×230 px, sourced from the
+notification — is genuinely more useful than the destination. A page carrying
+reworded filler is the thing the rule forbids, and 400 of them is the thing that
+gets a domain penalised. Queued as spec-sourcing work rather than page-generation
+work, deliberately.
+
+### The contradiction that matters
+
+**Section 0 says privacy is the entire moat. Section 7 says AdSense.** Those cannot
+both hold:
+
+- AdSense requires a third-party script. `script-src 'self'` forbids it,
+  `privacy.spec.ts` blocks release over it, and `monitor.mjs` now fails on any
+  third-party `<script src>` (D-98).
+- It would destroy the differentiator I measured directly. Competitors **do**
+  process locally — the claim is not unique — and what separates KeptPix is that
+  they let an ad network watch while doing it. Adding AdSense adopts their
+  weakness and discards ours.
+- Cloudflare already tried to inject a beacon and the CSP refused it (D-66).
+  Voluntarily doing what we blocked involuntarily would be a strange trade.
+
+The document's own mitigation — "one unit below the fold, protects Core Web Vitals
+and trust" — protects the vitals and not the trust. The unit is the trust problem.
+
+**Alternatives that survive the CSP**, both already possible: a plain outbound tip
+link, which is an anchor and needs no script; and the ₹99 exam pack, for which
+docs/06 §4 already specifies an Ed25519 licence-signing Worker that never receives
+user file data. The paid tier was designed to be compatible with the claim. The ad
+tier was not. **This is Sai's call, so it is queued blocked rather than decided.**
+
+### One unverified number
+
+The doc cites "111ms load, 100% green Core Web Vitals" as a competitive advantage.
+I cannot find where that was measured, and D-45 established the perf suite was
+partly unmeasured. Queued: produce the number before it appears in a pitch.
+
+### Note on visibility
+
+`git add -A` committed this document to a **public** repository. Nothing in it is
+credential-bearing, but it is competitive strategy naming target keywords and
+revenue figures. Flagged for Sai rather than quietly removed — and removing it now
+would not help, since it is in the history either way.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
