@@ -4243,6 +4243,60 @@ threshold to pass against.
 8 gates green, deployed and verified.
 
 ---
+## 🟠 D-109 — the Astro 7 item was right for the wrong reason
+
+`#18` said "re-attempt the Astro 7 upgrade", blocked on zustand's React import at
+prerender. Two things made that premise wrong before any code was written.
+
+**The branch is stale.** `astro-7-upgrade` sits at 267f63a, roughly twenty commits
+behind master. Its diff against master is 92 files and 14,468 deletions, which is
+mostly master's newer work missing from it. Nothing there is worth merging forward;
+its only value was the WIP finding, and that is already written down.
+
+**And "upgrade for its own sake" had no justification.** Astro 5 → 7 is two majors
+across 30 routes, 143 e2e tests, a 60 KB budget and four engines. So before
+touching it I looked for a reason, and found one — but not the one the item named.
+
+### `npm audit`: 9 vulnerabilities, 1 critical
+
+The first was `sharp@0.34.5`, which **CLAUDE.md forbids adding** and which arrives
+transitively from `astro@5.18.2`. Established that it is not exploitable here
+before treating it as urgent:
+
+- **Astro's image service is never invoked** — no `astro:assets`, no `<Image>`, no
+  `getImage` anywhere in `src/`. The OG card is a static PNG from our own script.
+- **No sharp binary reaches `dist/`.** Nothing ships.
+
+So it is a build-time path we never execute. Still worth closing: the advisory
+needs `sharp >= 0.35.0` and astro pins `^0.34.0`, so an `overrides` entry forces
+the patched version without touching astro. One line, and sharp is now 0.35.3.
+
+Then `npm audit fix` — **non-major only, deliberately, no `--force`** — cleared the
+rest that did not need a breaking change.
+
+| | Before | After |
+|---|---|---|
+| Total | 9 (1 critical) | **5** |
+| **Prod tree** | **5** | **2** (1 low, 1 high) |
+| Declared dep versions changed | — | **none** |
+
+Astro is still `^5.16.2`, preact `^10.29.7`, zustand `^5.0.8`. Nothing we declare
+moved, so the risk was lockfile-only — and 8 gates pass, including 143 e2e across
+four engines.
+
+### The real justification for Astro 7, recorded rather than acted on
+
+The remaining HIGH is **`astro <=7.0.9`**, and `fixAvailable` names `astro@7.2.1`
+with `isSemVerMajor: true`. So the upgrade now has a security reason where before it
+had none — which is a much better footing than the one the item was written on.
+
+**Deliberately not attempted in this iteration.** A two-major framework upgrade
+wants its own session with room to fail, not the tail of a long one, and
+CLAUDE.md requires `@astrojs/preact` to track Astro's major in the same change.
+Requeued with this evidence attached, and the remaining critical (`handlebars`) is
+dev-tooling only — it never reaches a build output or a user.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
