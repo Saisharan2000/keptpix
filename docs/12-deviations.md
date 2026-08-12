@@ -4194,6 +4194,55 @@ nothing**.
 project's history, which means the next warning to appear will be visible.
 
 ---
+## 🟡 D-108 — D-52 CLEARED, and the check guarding it had expired
+
+### D-52 is resolved
+
+D-52 asked whether the service-worker precache truncates over **HTTP/2**. It never
+reproduced on HTTP/1.1 in any shape, including inside a real SW install, and
+`wrangler` was not a dependency — so the h2 case sat as *"untested rather than
+cleared"* for months.
+
+The answer did not need wrangler. **Production is an HTTP/2 origin**, so a real
+browser against the real edge *is* the untested case, and no local server can
+reproduce what Cloudflare does anyway. Measured:
+
+```
+negotiated protocol : h2
+cache name          : keptpix-shell-908574452adef553
+manifest expects    : 40 URLs
+actually cached     : 40
+complete            : YES
+a route with the network CUT: 200
+```
+
+**No truncation over h2.** Full precache, and a route loads with the network cut.
+Closed on evidence rather than on the absence of a reproduction — which is the
+distinction that kept it open, correctly, until now.
+
+(`curl` in this environment cannot negotiate h2 at all — `--http2` reports the
+libcurl build lacks support — which is worth knowing before anyone tries to settle
+a protocol question with curl here.)
+
+### The check that was supposed to catch it had stopped working
+
+`/selftest`'s "Offline shell precached" compared `entries >= 20` under a comment
+reading *"the manifest is 27 URLs"*. The manifest is now **40** — it grows with
+every route — so a **half-finished install reported "pass"**. The check had
+expired without saying so, which is worse than not having it: it was the thing
+meant to catch D-52's original symptom on a real device.
+
+Now it fetches `/precache-manifest.json` and compares against the real count,
+reporting "N of 40". A hardcoded threshold in a growing system is a check with a
+silent expiry date; asking the source has none.
+
+It also degrades honestly: if the manifest cannot be read — offline, or missing —
+it reports the raw count and says it could not compare, rather than inventing a
+threshold to pass against.
+
+8 gates green, deployed and verified.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
@@ -4209,7 +4258,7 @@ project's history, which means the next warning to appear will be visible.
 | ✅ | ~~Audit work order (docs/13)~~ — WO-1 through WO-12 **done**: D-57 (device-scaled ceiling + truthful copy), D-58 (JXL shelved), D-59 (compare modal), D-60 (screenshot guard replaced), plus WO-2/3/4 fixes and the D-45/D-52 amendments | — |
 | 🟠 | **Measure the WORKER's heap** (D-45, WO-6) — the counter is now live in the harness under `--enable-precise-memory-info`, but it reads the main thread, which a conversion barely touches. The `< 400 MB` budget is now *instrumentable* but still *unmeasured*; sampling inside `image.worker.ts` is production code changed for a test's benefit and wants a decision | A real §7 memory number |
 | 🟡 | **HEIC fixture into CI** (D-36, WO-7) — `scripts/scrub-fixture.mjs` is written and strips GPS/serials/timestamps while PRESERVING orientation and the `irot`/`imir` transforms that caught D-30 and D-34. Needs 2–3 neutral-location HEICs from the founder, then the HEIC suites stop skipping on a fresh clone | Flagship path untested in CI |
-| 🟡 | **Precache truncation on HTTP/2** (D-52, WO-5) — does not reproduce on HTTP/1.1 in any shape, including inside a real SW install; `wrangler` is not a dependency so the HTTP/2 origin case is untested rather than cleared | Knowing, not changing |
+| ✅ | ~~Precache truncation on HTTP/2~~ (D-52) — **CLEARED** (D-108). Measured against production, which negotiates h2: 40 of 40 URLs cached, and a route loads with the network cut. No truncation | — |
 | 🟠 | **Deploy to Cloudflare Pages** (`noupload.app`) — the one M8 acceptance item not doable from here; needs the account. Re-run `privacy.spec.ts` against production once live | Launch |
 | 🟡 | `npx playwright install` is now required for a truthful e2e run — chromium alone silently "passed" while 3 engines never launched (D-55). Worth pinning in CI setup | Honest cross-browser signal |
 | ✅ | ~~Analytics decision (D-56)~~ — **decided**: page views come from Cloudflare's edge, no beacon ships, assertion (a) stays absolute. Read them in the Cloudflare dashboard after deploy; nothing to configure | — |

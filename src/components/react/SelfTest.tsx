@@ -108,14 +108,42 @@ async function serviceWorkerChecks(): Promise<Check[]> {
   const shell = names.find((n) => n.startsWith('keptpix-shell-'));
   const entries = shell === undefined ? 0 : (await (await caches.open(shell)).keys()).length;
 
+  /*
+   * ASK THE MANIFEST how many there should be, rather than hardcoding it.
+   *
+   * This compared against a literal 20, under a comment saying "the manifest is
+   * 27 URLs". The manifest is now **40** — it grows with every route — so a
+   * half-finished install reported "pass" and the check had quietly stopped
+   * meaning anything (docs/12 D-108). A threshold that ages is a check that
+   * expires without telling you.
+   */
+  let expected: number | null = null;
+  try {
+    const manifest = (await (await fetch('/precache-manifest.json')).json()) as {
+      urls?: unknown[];
+    };
+    expected = Array.isArray(manifest.urls) ? manifest.urls.length : null;
+  } catch {
+    // Offline, or the manifest is missing. Fall back to reporting the raw count
+    // rather than inventing a threshold.
+    expected = null;
+  }
+
+  const complete = expected !== null && entries >= expected;
+
   return [
     { name: 'Service worker', status: 'pass', detail: 'active — ' + reg.active.state },
     {
       name: 'Offline shell precached',
-      // The manifest is 27 URLs; anything materially short means install did
-      // not finish (docs/12 D-52's original symptom).
-      status: entries >= 20 ? 'pass' : entries > 0 ? 'warn' : 'fail',
-      detail: entries + ' entries cached' + (entries > 0 && entries < 20 ? ' — still filling' : ''),
+      status: expected === null ? (entries > 0 ? 'warn' : 'fail') : complete ? 'pass' : entries > 0 ? 'warn' : 'fail',
+      detail:
+        expected === null
+          ? entries + ' entries cached (could not read the manifest to compare)'
+          : entries +
+            ' of ' +
+            expected +
+            ' entries cached' +
+            (complete ? '' : ' — install did not finish; reload and re-run'),
     },
   ];
 }
