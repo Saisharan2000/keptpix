@@ -4016,11 +4016,51 @@ accepts. The budget's *intent* — do not crash a phone — is served by that,
 independently of this figure.
 
 ---
+## 🟡 D-104 — the diagnostic was not lying; the way it was read was wrong
+
+D-80 recorded `window.__keptpix_store` as *"reporting empty `jobs`/`sources` while
+the UI shows fifty cards"*, noted that `device` read correctly, and concluded the
+handle was live but not the instance driving the UI. It sat in the outstanding
+table as a diagnostic surface that lies.
+
+**It does not lie.** Measured in a real browser with three files queued:
+
+```
+s.jobs returned across the boundary : {}
+jobs instanceof Map (in page)       : true
+jobs.size read INSIDE the page      : 3
+[...sources.keys()].length          : 3
+device serialises fine              : true
+```
+
+`sources` and `jobs` are `Map`s, and **a Map does not survive a structured clone**
+— crossing a Playwright `evaluate` or devtools boundary it arrives as `{}`.
+`device` is a plain object and arrives intact. That asymmetry is the entire
+symptom: not two store instances, not stale state, just one type that serialises
+and one that does not.
+
+So the store was always correct and the log was wrong about it — for months, in a
+row of a table titled "outstanding work", pointing at a bug that did not exist.
+That is worth more than the fix: a wrong entry in this file costs more than a
+missing one, because someone will act on it.
+
+### Documenting the trap would not have been enough
+
+The next person to reach for the handle would read `state.jobs`, see nothing, and
+believe it — exactly as I did. So `__keptpix_snapshot()` now returns a JSON-safe
+view: counts, `jobStatuses`, `sourceNames`, `device`, `codecs`. Verified across the
+boundary — `sourceCount: 3`, `jobCount: 3`, real names and statuses — with the raw
+`__keptpix_store` handle left in place, because `smoke.spec` and `batch.spec` use
+it for `device` and `setEnvironment` and both were always fine.
+
+The fix is making the trap unreachable rather than signposted.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
 |---|---|---|
-| 🟡 | **`window.__keptpix_store` reports empty `jobs`/`sources` while the UI shows fifty cards** (D-80). `device` reads correctly, so the handle is live but is evidently not the instance driving the UI. Nothing depends on the broken part today — `smoke.spec`'s D-49 assertion reads `device` — but it is a diagnostic surface that lies, and the next test to reach for it will be misled exactly as I was | Trustworthy in-browser diagnostics |
+| ✅ | ~~`window.__keptpix_store` reports empty `jobs`/`sources`~~ — **not a bug** (D-104). `Map` does not survive a structured clone, so it arrives as `{}` across an `evaluate` boundary while the plain-object `device` arrives intact. `jobs.size` reads 3 for three files inside the page. `__keptpix_snapshot()` now returns a JSON-safe view so the trap is unreachable | — |
 | ✅ | ~~D-03 SVG~~, ~~D-34 HEIC orientation~~, ~~privacy.spec.ts~~, ~~real HEIC decode~~ — all **done** and verified against real files | — |
 | ✅ | ~~D-42 Smart App Control~~, ~~a11y sweep~~ — resolved, 69/69 passing across all 22 routes | — |
 | ✅ | ~~Milestone 6~~ (all content), ~~Milestone 7~~ (all suites, D-43/44/45) — **done**, 372 tests green | — |

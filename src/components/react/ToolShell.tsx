@@ -110,6 +110,36 @@ function ImageToolShell({
      */
     (window as unknown as { __keptpix_store?: typeof store }).__keptpix_store = store;
 
+    /**
+     * A JSON-SAFE snapshot, because the raw handle has a trap in it.
+     *
+     * `sources` and `jobs` are `Map`s, and a Map does not survive a structured
+     * clone across a devtools or Playwright `evaluate` boundary — it arrives as
+     * `{}`. `device` is a plain object and arrives intact. That asymmetry is the
+     * whole of docs/12 D-80, which recorded the handle as "reporting empty
+     * jobs/sources while the UI shows fifty cards" and concluded the diagnostic
+     * lied. It never did: `jobs.size` reads 3 for three files INSIDE the page and
+     * `{}` outside it, measured (docs/12 D-104).
+     *
+     * Documenting the trap would not have been enough — the next person to reach
+     * for this would read `state.jobs`, see nothing, and believe it. So the
+     * ergonomic path returns counts and plain arrays, and there is nothing left
+     * to misread.
+     */
+    (
+      window as unknown as { __keptpix_snapshot?: () => Record<string, unknown> }
+    ).__keptpix_snapshot = () => {
+      const s = store.getState();
+      return {
+        sourceCount: s.sources.size,
+        jobCount: s.jobs.size,
+        jobStatuses: [...s.jobs.values()].map((j) => j.status),
+        sourceNames: [...s.sources.values()].map((x) => x.name),
+        device: s.device,
+        codecs: s.codecs,
+      };
+    };
+
     void store
       .getState()
       .hydrateEnvironment()
