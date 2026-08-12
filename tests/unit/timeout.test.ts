@@ -31,7 +31,7 @@ describe('withTimeout', () => {
   });
 
   it('wraps a non-Error rejection in a real Error', async () => {
-    // eslint-disable-next-line prefer-promise-reject-errors
+     
     const fails = Promise.reject('a plain string, not an Error');
     await expect(withTimeout(fails, 1000, 'test')).rejects.toBeInstanceOf(Error);
   });

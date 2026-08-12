@@ -214,6 +214,32 @@ export default tseslint.config(
     rules: {
       'boundaries/element-types': ['error', { default: 'disallow', rules: elementRules }],
       'boundaries/no-private': 'off',
+
+      /*
+       * NO CONSOLE IN SHIPPED SOURCE.
+       *
+       * Free to enable, because `src/` is already at zero — measured before
+       * turning it on, not hoped. So this costs nothing today and prevents a
+       * debugging `console.log` from reaching a user's devtools later.
+       *
+       * It cannot do anything about the 62 console calls that ARE in the bundle:
+       * those come from dependencies (preact, zustand, pdf.js, the codecs) and no
+       * lint rule reaches them.
+       *
+       * Bare `'error'`, with NO `allow` list — not even for `warn` or `error`.
+       * (`allow: []` is rejected by eslint's own schema, which requires at least
+       * one entry if the option is present; omitting it is how you allow
+       * nothing.) There is no case for a console call in this codebase today: a
+       * JobError carries a code from docs/04 §6 rather than a console line. If a
+       * real need appears, an explicit disable with a stated reason is the right
+       * amount of friction.
+       *
+       * NOT enabled for scripts/, tests/ or public/sw.ts, which legitimately
+       * print. Four dead `no-console` disables in tests/perf/benchmark.ts came
+       * from expecting this rule to exist project-wide; it never did (docs/12
+       * D-107).
+       */
+      'no-console': 'error',
     },
   },
 

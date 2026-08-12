@@ -4152,6 +4152,48 @@ redirect rule matches `https://www.*` only. Harmless, since crawlers follow shor
 chains, but it is a chain and not the single hop it appears to be.
 
 ---
+## 🟡 D-107 — five dead directives, and the rule they were guarding against never existed
+
+`npm run lint` printed **5 warnings** on every run: four unused `no-console`
+disables in `tests/perf/benchmark.ts`, one unused `prefer-promise-reject-errors`
+in `tests/unit/timeout.test.ts`. Small, and worth fixing for a specific reason — a
+permanently non-empty warning line is how a real warning goes unread. Every
+`verify` run for weeks ended in "5 warnings" and everyone, me included, learned to
+skip that line.
+
+**Neither rule was configured anywhere.** Not in `eslint.config.js`, not in
+`js.configs.recommended`, not in the typescript-eslint presets. The directives were
+written defensively against rules that had never been enabled, so they had never
+suppressed anything.
+
+### Deleting them would have missed the point
+
+`no-console` **should** be on for shipped source. So before enabling it I counted:
+**zero `console.*` calls in `src/`** — measured, not hoped. Which makes the rule
+free today and a guard tomorrow, rather than a cleanup project.
+
+It cannot help with the **62 console calls that are in the shipped bundle** —
+`console.warn` ×31, `console.log` ×16, `console.error` ×9, plus debug and info.
+Those come from dependencies (preact, zustand, pdf.js, the codecs) and no lint rule
+reaches them. Worth knowing so nobody reads "no-console: error" as a promise about
+the bundle.
+
+Scoped to `src/**` only. `scripts/`, `tests/` and `public/sw.ts` legitimately
+print, and verified they stay quiet: zero complaints there.
+
+Verified the rule actually bites rather than assuming — appended a `console.log`
+to `src/core/naming.ts` and it errored on line 72, then restored the file. A rule
+that has not been observed to fire is the same as a test that has not been observed
+to fail.
+
+`allow: []` was my first attempt and eslint rejects it: the schema requires at
+least one entry if the option is present, so **omitting the option is how you allow
+nothing**.
+
+**`npm run lint` now reports "no problems"** — the first clean run in this
+project's history, which means the next warning to appear will be visible.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

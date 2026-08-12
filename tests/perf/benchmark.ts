@@ -231,7 +231,7 @@ describe('performance benchmark — docs/04 §7 budgets', () => {
         );
       }
 
-      // eslint-disable-next-line no-console
+       
       console.log(
         '\n4 MP time-to-first-result, p75 over ' +
           RUNS_PER_PROFILE +
@@ -290,7 +290,7 @@ describe('performance benchmark — docs/04 §7 budgets', () => {
         // posture (ADR-003: no COOP/COEP), confirmed by the probe above, not
         // assumed. Asserting a number here would be reporting a measurement
         // that was never actually taken.
-        // eslint-disable-next-line no-console
+         
         console.log(
           '\nperformance.memory does not respond to real allocations in this context ' +
             '(crossOriginIsolated=' +
@@ -310,7 +310,7 @@ describe('performance benchmark — docs/04 §7 budgets', () => {
       await benchmarkOnce(device, 12, 998, true);
       const sample = await benchmarkOnce(device, 12, 999, true);
 
-      // eslint-disable-next-line no-console
+       
       console.log(
         '\n12 MP peak heap above baseline: ' +
           (sample.peakHeapDeltaBytes === null ? 'unavailable' : fmtMb(sample.peakHeapDeltaBytes)) +
@@ -376,7 +376,7 @@ describe('performance benchmark — docs/04 §7 budgets', () => {
         }
         const after = perf.memory?.usedJSHeapSize ?? 0;
 
-        // eslint-disable-next-line no-console
+         
         console.log('\n10-run heap delta: ' + fmtMb(after - before) + '\n');
 
         // Generous — this catches a genuine leak (unclosed bitmaps, retained
