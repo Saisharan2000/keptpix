@@ -283,11 +283,23 @@ switch (cmd) {
 
   case 'done': {
     const site = positional[0];
-    if (!site) die('usage: backlog done <site> [--note "..."]');
+    if (!site) die('usage: backlog done <site> [--id <n>] [--note "..."]');
     withLock(site, () => {
       const state = load(site);
-      const item = state.items.find((i) => i.status === 'in_progress');
-      if (item === undefined) die('backlog: nothing in progress');
+      /**
+       * `--id` closes an item that was never claimed through `next`. Blocked items
+       * are resolved OUT of queue order by definition — they are waiting on a
+       * founder decision or an external reply, and the answer arrives while a
+       * different item is in progress. Without this, closing one meant claiming it
+       * first, which reorders the queue to record a decision that is already made.
+       */
+      const item =
+        flags.id === undefined
+          ? state.items.find((i) => i.status === 'in_progress')
+          : state.items.find((i) => i.id === String(flags.id));
+      if (item === undefined) {
+        die(flags.id === undefined ? 'backlog: nothing in progress' : `backlog: no item #${flags.id}`);
+      }
       item.status = 'done';
       item.doneAt = new Date().toISOString();
       item.note = flags.note === undefined ? null : String(flags.note);
