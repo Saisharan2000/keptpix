@@ -7,6 +7,7 @@
  */
 
 import { publishedTools } from '../../core/tools';
+import { TIP_URL, TIP_LABEL } from '../../content/site';
 
 const groups = [
   {
@@ -90,6 +91,24 @@ const analyticsOn = (import.meta.env.PUBLIC_CF_BEACON_TOKEN ?? '').trim().length
         analyticsOn
           ? 'No accounts, no uploads. One cookieless page counter — see Privacy.'
           : 'No accounts, no tracking, no uploads.'
+      }
+      {
+        /* An outbound anchor, so nothing third-party loads until it is clicked.
+           `noopener` denies the opened page a handle on this one; `noreferrer`
+           stops the payment host learning which tool the visitor was using,
+           which Referrer-Policy alone would still have sent as the origin. */
+        TIP_URL !== '' && (
+          <>
+            {' · '}
+            <a
+              href={TIP_URL}
+              rel="noopener noreferrer"
+              class="underline decoration-dotted underline-offset-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {TIP_LABEL}
+            </a>
+          </>
+        )
       }
     </p>
   </div>

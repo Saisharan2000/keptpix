@@ -4488,6 +4488,111 @@ keeps unreachable commits fetchable by SHA until they garbage-collect — that p
 needs GitHub Support, so it is the founder's call, not a silent cleanup.
 
 ---
+## 🔴 D-112 — Real queries, not templates. And the matcher was sending people to the opposite converter
+
+**Docs affected:** `05 §5` (scaled content — reconciled, not overridden),
+`06 §2` (`QueryEntry` gains `order`)
+
+The founder's direction: *"we need to optimise the pipeline as the doc i shared
+even better is possible, we need to provide more and more value and increase
+surface area, we need to keep up with trend keywords."*
+
+### The pipeline: stop guessing the query space
+
+The distribution doc proposes 150–400 pages from ~15 templates over a **guessed**
+query space, which D-110 flagged against docs/05 §5's doorway rule. The
+reconciliation is not to argue about the number of pages. It is that **we do not
+have to guess.** Search Console already knows which queries this site is shown
+for, how often, and at what position.
+
+`scripts/keywords.mjs` reads a Search Console CSV export and runs every real query
+through **the production matcher itself** — possible only because ADR-006 makes
+`src/core/` pure TypeScript that runs under plain Node, and because
+`query-index.ts` derives every entry from published route data. So there is no
+second implementation to drift: if the matcher would send a real visitor nowhere,
+it sends this script nowhere, and that is the finding.
+
+Queries land in five buckets: **GAP** (impressions, no route — measured demand, so
+a page here is not a doorway), **WEAK** (routed on a single token), **NEAR**
+(ranks 5–20, strengthen the page that exists), **FAR** (worse than 20), **SERVED**
+(top 4, leave alone). `--queue` turns the top findings into backlog items carrying
+their impression counts.
+
+No credentials, no API, nothing that can start failing silently — it reads a file
+the founder exports. **That purity rule was written to keep tests fast. This is the
+second thing it paid for.**
+
+### What the first run found: two user-facing bugs under 414 passing tests
+
+**1. The matcher was direction-blind.** Both halves of a reciprocal pair list the
+same two format tokens and each requires its own source, so `webp to png` satisfied
+both entries and scored both at exactly **3** — the winner decided by
+`localeCompare` on the path. Half of all reciprocal-pair queries were answered with
+the converter that produces the **opposite** of the request.
+
+The intent to handle this was already documented and never implemented:
+`normalise()` says "Order is preserved", and `STOPWORDS` deliberately keeps `to`
+out with the comment *"dropping too much turns 'convert image to pdf' and 'convert
+pdf to image' into the same query."* The scorer never looked at position. Fixed
+with `order: [from, to]` on `QueryEntry`, scored ±2 — scored rather than filtered,
+so "jpg to heic" still surfaces the closest existing tool, ranked last.
+
+**2. One route was unreachable from the search box entirely.** Route data spells the
+format `jpeg`; `normalise()` folds every spelling users type down to `jpg`. So
+`must: ['jpeg']` required a token **no query could ever produce**, and
+`/convert/jpg-to-webp` never appeared — "jpg to webp" was answered with
+`/convert/webp-to-jpg`, the exact reverse. Two vocabularies had drifted apart.
+Fixed by putting every format id through `normalise()`, the same function a query
+goes through, so they cannot drift again. A hand-written alias table here would
+have been a second copy of `SYNONYMS`, which is how this happened.
+
+**A regression I introduced while fixing it.** Making `jpg-to-webp` reachable meant
+"avif to jpg" newly satisfied `must: ['jpg']` — the query names jpg as its
+*destination* — and got offered a converter for a format it never mentioned. Before
+the fix it returned nothing, which was accidentally correct. Closed by extending
+`NOT_AN_IMAGE`'s own principle from PDF/video to the image formats: naming a format
+an entry neither reads nor writes disqualifies it. That also sharpened the ordinary
+case — "convert png to jpg" no longer offers PNG→WebP, because the query named the
+output it wanted and it was not WebP.
+
+**Six regression tests, five OBSERVED FAILING** against the pre-fix matcher. The
+sixth (avif) passed before and after: it guards the intermediate state above, which
+is how the regression was caught. 414 → 421 unit tests.
+
+### Two bugs in my own tooling, both of the same family
+
+- **`keywords.mjs` swept position 31 into SERVED.** The final `else` did double duty
+  for "top 4" and "off the map" — opposite findings under one label. Hence FAR.
+- **`verify.mjs` annotated a FAILING eslint gate "no problems".** The digest regex
+  required `problems` plural; eslint writes `✖ 1 problem`. The status column said
+  FAIL and the note beside it said the opposite. Now matches `problems?` and falls
+  back to naming the rule.
+
+That is the third and fourth instance this week of **a summary line that disagreed
+with the thing it summarised.**
+
+### Tip link (#25)
+
+`TIP_URL` in `site.ts`, empty by default so it renders nowhere. A **plain anchor** —
+Buy Me a Coffee and Ko-fi both ship a button `<script>`, which `script-src 'self'`
+forbids and `check-claims.mjs` fails on. An `<a href>` loads nothing until clicked,
+costs zero island JS, and needs no CSP change. `rel="noopener noreferrer"` so the
+payment host does not learn which tool the visitor was using.
+
+The founder chose a coffee URL over UPI because *"upi id has my personal
+information"* — correct, and a VPA on 32 public pages in a public repo would be
+permanent. `check-private.mjs` now **fails the build on any `@` in `TIP_URL`**, and
+that guard was observed rejecting a realistic VPA and accepting a coffee URL. `@` is
+the whole test: a VPA has one, an email has one, a payment page URL never does.
+
+### Still open, and named so it is not forgotten
+
+- **No AVIF convert route**, though `@jsquash/avif` is already a dependency — the
+  cost is paid and the surface area is not taken.
+- **No PDF compression route.** "compress pdf to 200kb" routes to `/pdf/from-images`,
+  which cannot do it. A whole demand class with no tool behind it.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

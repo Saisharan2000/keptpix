@@ -202,6 +202,23 @@ export interface QueryEntry {
   readonly excludes?: readonly string[];
   /** Whether a detected size should be offered as a prefill. */
   readonly takesSize?: boolean;
+  /**
+   * `[from, to]` for an entry whose meaning depends on WORD ORDER.
+   *
+   * Reciprocal format pairs are the case this exists for. `/convert/webp-to-png`
+   * and `/convert/png-to-webp` list the same two format tokens in `terms` and each
+   * requires its own source, so "webp to png" satisfied both and scored both at
+   * exactly 3 — the winner decided by `localeCompare` on the path. Half of all
+   * reciprocal-pair queries therefore got the converter that produces the
+   * OPPOSITE of what was asked for, which is the one failure `query-index.ts`
+   * calls "the only failure that matters here".
+   *
+   * `must` cannot express this: it asks whether a token is present, and both
+   * tokens are present in both directions. Only their relative position separates
+   * the two, and `normalise()` preserves order precisely so this is possible —
+   * `STOPWORDS` keeps "to" out for the same reason (see its comment).
+   */
+  readonly order?: readonly [string, string];
 }
 
 export interface QueryResult {
@@ -249,6 +266,24 @@ export function matchQuery(
 
     if (entry.must !== undefined) score += entry.must.length;
     if (size !== null && entry.takesSize === true) score += 2;
+
+    /*
+     * Direction. Only applies when the query actually names BOTH tokens — "heic
+     * to jpg" says which way round it wants, "convert my heic" does not, and
+     * guessing a direction from a query that never stated one would be worse than
+     * the tie it replaces.
+     *
+     * Scored rather than filtered, deliberately. A hard disqualification would
+     * leave "jpg to heic" with no suggestion at all, when the honest answer is
+     * that the reverse tool is the closest thing that exists and should rank below
+     * anything that matches the stated direction. ±2 is enough to separate two
+     * entries that otherwise tie on term count.
+     */
+    if (entry.order !== undefined) {
+      const from = tokens.indexOf(entry.order[0]);
+      const to = tokens.indexOf(entry.order[1]);
+      if (from !== -1 && to !== -1 && from !== to) score += from < to ? 2 : -2;
+    }
 
     if (score < MIN_SCORE) continue;
 

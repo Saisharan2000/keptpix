@@ -105,7 +105,20 @@ function digest(name, out) {
     case 'seo':
       return pick(/\d+ error\(s\), \d+ warning\(s\)/) ?? pick(/Clean:[^\n]*/);
     case 'lint':
-      return pick(/✖ \d+ problems[^\n]*/) ?? 'no problems';
+      /*
+       * `problems?` — eslint writes "✖ 1 problem" in the singular, which the
+       * plural-only pattern missed, so the fallback fired and a FAILING lint gate
+       * was annotated "no problems". The status column said FAIL and the note
+       * beside it said the opposite; the real error was only in the captured tail.
+       *
+       * The named rule matters more than the count when there is exactly one, so
+       * it is included — that is the line a reader acts on.
+       */
+      return (
+        pick(/✖ \d+ problems?[^\n]*/) ??
+        pick(/^\s*\d+:\d+\s+error\s+.+$/m)?.trim() ??
+        'no problems'
+      );
     case 'typecheck':
       return pick(/error TS[^\n]*/) ?? 'no type errors';
     case 'build':

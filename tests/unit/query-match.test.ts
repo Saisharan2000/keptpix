@@ -188,6 +188,74 @@ describe('matchQuery — what must NOT be suggested', () => {
   });
 });
 
+/*
+ * DIRECTION AND VOCABULARY — docs/12 D-112.
+ *
+ * These two bugs lived under 414 passing tests. Both were found by running real
+ * search queries through the production matcher (scripts/keywords.mjs), not by
+ * any assertion in this file, so the assertions are here now.
+ *
+ * Every case below was OBSERVED FAILING against the pre-fix matcher. A regression
+ * test that has only ever been green is a test that might assert nothing — two of
+ * this project's own regression tests passed against the bugs they were written
+ * for (D-91, D-93).
+ */
+describe('matchQuery — direction', () => {
+  it('answers a reciprocal pair with the direction that was asked for', () => {
+    // Both entries list both format tokens and each requires its own source, so
+    // these tied at score 3 and `localeCompare` on the path picked the winner:
+    // "webp to png" was answered with the PNG→WebP converter.
+    expect(top('webp to png')).toBe('/convert/webp-to-png');
+    expect(top('png to webp')).toBe('/convert/png-to-webp');
+  });
+
+  it('ranks the reverse converter BELOW the one that was asked for', () => {
+    const results = matchQuery('webp to png', QUERY_INDEX, 5);
+    const forward = results.findIndex((r) => r.path === '/convert/webp-to-png');
+    const reverse = results.findIndex((r) => r.path === '/convert/png-to-webp');
+    expect(forward).toBe(0);
+    // Present but demoted, not removed: it is the closest thing that exists.
+    if (reverse !== -1) expect(reverse).toBeGreaterThan(forward);
+  });
+
+  it('does not invent a direction the query never stated', () => {
+    // Naming one format only. Nothing here says which way round, so the order
+    // rule must not fire — guessing would be worse than the tie it replaced.
+    expect(paths('convert my heic')).toContain('/convert/heic-to-jpg');
+  });
+});
+
+describe('matchQuery — format vocabulary', () => {
+  it('can reach every published convert route from a plain query', () => {
+    // /convert/jpg-to-webp was UNREACHABLE: route data spells the format `jpeg`,
+    // normalise() folds every spelling to `jpg`, so `must: ['jpeg']` required a
+    // token no query could produce. "jpg to webp" returned /convert/webp-to-jpg,
+    // the exact reverse.
+    for (const entry of QUERY_INDEX) {
+      for (const required of entry.must ?? []) {
+        expect(normalise(required), `${entry.path} requires "${required}"`).toEqual([required]);
+      }
+    }
+  });
+
+  it('routes jpg-to-webp, the route that was unreachable', () => {
+    expect(top('jpg to webp')).toBe('/convert/jpg-to-webp');
+    expect(top('jpeg to webp')).toBe('/convert/jpg-to-webp');
+    expect(top('convert jpg to webp')).toBe('/convert/jpg-to-webp');
+  });
+
+  it('suggests nothing rather than a converter for a format it cannot read', () => {
+    // "avif to jpg" satisfied must:['jpg'] on the JPG→WebP entry, because the
+    // query names jpg as its DESTINATION. There is no AVIF pair route, so the
+    // honest answer is nothing.
+    expect(matchQuery('avif to jpg', QUERY_INDEX)).toEqual([]);
+  });
+
+  it('does not offer an output format the query ruled out', () => {
+    expect(paths('convert png to jpg')).not.toContain('/convert/png-to-webp');
+  });
+});
+
 describe('the index itself', () => {
   it('has no duplicate paths', () => {
     const paths_ = QUERY_INDEX.map((e) => e.path);

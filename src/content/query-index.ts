@@ -18,8 +18,34 @@
  */
 import { publishedFormatPairRoutes, FORMAT_LABEL } from './formats';
 import { publishedSizePresetRoutes, formatTarget } from './presets';
-import type { QueryEntry } from '../core/query-match';
+import { normalise, type QueryEntry } from '../core/query-match';
 import { publishedTools } from '../core/tools';
+
+/**
+ * A format id as the MATCHER will see it, not as the route data spells it.
+ *
+ * These two vocabularies had drifted. Route data calls the format `jpeg`;
+ * `normalise()` folds every spelling a user types — jpeg, jpe — down to `jpg`.
+ * So `must: ['jpeg']` required a token no query could ever produce, and
+ * `/convert/jpg-to-webp` was **unreachable from the search box entirely**: asking
+ * for "jpg to webp" returned `/convert/webp-to-jpg`, the exact reverse.
+ *
+ * Putting every format id through the same function a query goes through is what
+ * makes the two vocabularies unable to drift again. A hand-written alias map here
+ * would be a second copy of SYNONYMS, which is how this happened.
+ */
+function tok(format: string): string {
+  return normalise(format)[0] ?? format;
+}
+
+/**
+ * Every format the product can NAME, as matcher tokens. Wider than the set it can
+ * convert — `FORMAT_LABEL` carries avif, gif, bmp, tiff and jxl for the reference
+ * pages, and a user will type those whether or not a pair route exists.
+ */
+const ALL_FORMAT_TOKENS: readonly string[] = [
+  ...new Set(Object.keys(FORMAT_LABEL).map(tok)),
+];
 
 /** Words that mean "change this file's format". */
 const CONVERT_TERMS = ['convert', 'change', 'format'] as const;
@@ -48,9 +74,31 @@ const NOT_AN_IMAGE = ['pdf', 'video', 'mp4', 'mov', 'mkv', 'webm', 'audio', 'mp3
 const pairEntries: QueryEntry[] = publishedFormatPairRoutes.map((route) => ({
   path: '/convert/' + route.slug,
   label: (FORMAT_LABEL[route.from] ?? route.from) + ' to ' + (FORMAT_LABEL[route.to] ?? route.to),
-  terms: [...CONVERT_TERMS, route.from, route.to, 'photo', 'image'],
-  must: [route.from],
-  excludes: [...NOT_AN_IMAGE],
+  terms: [...CONVERT_TERMS, tok(route.from), tok(route.to), 'photo', 'image'],
+  must: [tok(route.from)],
+  /*
+   * NOT_AN_IMAGE's principle — naming a format an entry cannot handle removes it
+   * from consideration — extended from PDF/video to the image formats themselves.
+   *
+   * Without this, "avif to jpg" satisfied `must: ['jpg']` on the JPG→WebP entry
+   * (the query names jpg, as its DESTINATION) and was answered with a converter
+   * that reads a format the user never mentioned. There is no AVIF pair route, so
+   * the honest answer is nothing, and nothing is what this produces. It also
+   * sharpens the ordinary cases: "convert png to jpg" no longer offers PNG→WebP,
+   * because the query named the output it wanted and it was not WebP.
+   */
+  excludes: [
+    ...NOT_AN_IMAGE,
+    ...ALL_FORMAT_TOKENS.filter((f) => f !== tok(route.from) && f !== tok(route.to)),
+  ],
+  /*
+   * Both halves of a reciprocal pair (webp→png and png→webp) list the same two
+   * format tokens and each requires its own source, so either query satisfied
+   * both and tied on score — and the winner was whichever path sorted first.
+   * "webp to png" was answered with the PNG→WebP converter, producing the exact
+   * opposite of the request. Position is the only thing that separates them.
+   */
+  order: [tok(route.from), tok(route.to)] as const,
 }));
 
 /**

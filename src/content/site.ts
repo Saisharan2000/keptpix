@@ -62,3 +62,26 @@ function resolveSite(): string {
 }
 
 export const SITE = resolveSite();
+
+/**
+ * Where "buy me a coffee" points. Empty = the link renders nowhere.
+ *
+ * A PLAIN ANCHOR, never a vendor widget. Buy Me a Coffee and Ko-fi both ship a
+ * button `<script>`; loading one would be a third-party script on every page,
+ * which `script-src 'self'` forbids, `check-claims.mjs` fails on, and four of
+ * privacy.spec.ts's five tests block release over. An `<a href>` loads nothing
+ * until the user clicks it, so it costs zero bytes of island JS, needs no CSP
+ * change, and cannot be the thing that falsifies the footer (docs/12 D-111).
+ *
+ * MUST NOT BE A UPI ID. A VPA is `name@bank` and Sai's carries his real name —
+ * putting it here publishes personal information on all 32 pages, permanently,
+ * to a public repo and its mirrors. `check-private.mjs` fails the build on any
+ * `@` in this value, so the mistake cannot be made quietly. A payment page URL
+ * is the indirection that keeps the identifier private.
+ *
+ * Set it, and the footer link appears. Nothing else needs touching.
+ */
+export const TIP_URL = '';
+
+/** Label for the tip link. Deliberately not a nag — no "please", no urgency. */
+export const TIP_LABEL = 'Buy me a coffee';

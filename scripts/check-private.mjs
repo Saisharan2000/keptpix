@@ -20,6 +20,7 @@
  * "private working material" are enumerated here and kept out by name.
  */
 import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 
 /**
  * Paths that must never appear in the index of a public repository.
@@ -66,9 +67,42 @@ for (const { path, why } of NEVER_TRACKED) {
   }
 }
 
+/* ── TIP_URL must never be a UPI ID ───────────────────────────────────────────
+ *
+ * A VPA is `name@bank`, and the founder's carries his real name. Pasted into
+ * site.ts it would render on all 32 pages, be committed to a public repo, and be
+ * mirrored anywhere that clones it — permanently, because git history keeps it.
+ * He flagged this himself when choosing a coffee URL over UPI (docs/12 D-111).
+ *
+ * `@` is the whole test: a VPA always has one, an email always has one, and a
+ * payment page URL never does. A guard that would have to guess the bank suffix
+ * list would miss the next one.
+ */
+const SITE_TS = 'src/content/site.ts';
+if (existsSync(SITE_TS)) {
+  const tipUrl = readFileSync(SITE_TS, 'utf8').match(/^export const TIP_URL\s*=\s*'([^']*)'/m)?.[1];
+  if (tipUrl === undefined) {
+    process.stdout.write('  ??  TIP_URL                  not found in site.ts — did the export change shape?\n');
+    failed = true;
+  } else if (tipUrl === '') {
+    process.stdout.write('  ok   TIP_URL                  unset, no tip link rendered\n');
+  } else if (tipUrl.includes('@')) {
+    process.stdout.write(`  FAIL TIP_URL                  contains "@" — this looks like a UPI ID or email\n`);
+    process.stdout.write(`       ${tipUrl}\n`);
+    process.stdout.write('       A VPA carries a real name and would be published on all 32 pages,\n');
+    process.stdout.write('       in a public repo, permanently. Use a payment PAGE url instead.\n');
+    failed = true;
+  } else if (!/^https:\/\//.test(tipUrl)) {
+    process.stdout.write(`  FAIL TIP_URL                  must be an https:// URL, got: ${tipUrl}\n`);
+    failed = true;
+  } else {
+    process.stdout.write(`  ok   TIP_URL                  ${tipUrl}\n`);
+  }
+}
+
 if (failed) {
-  process.stdout.write('\nprivate paths are tracked. This repository is PUBLIC.\n');
+  process.stdout.write('\nsomething private would be published. This repository is PUBLIC.\n');
   process.exit(1);
 }
 
-process.stdout.write(`\nClean: ${NEVER_TRACKED.length} private path(s), none tracked.\n`);
+process.stdout.write(`\nClean: ${NEVER_TRACKED.length} private path(s) untracked, TIP_URL safe.\n`);
