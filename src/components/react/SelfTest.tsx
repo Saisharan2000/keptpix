@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ingestFiles, QueueController } from '../../state/queue';
 import { useStore } from '../../state/store';
 import { joinJobs, summarise } from '../../state/selectors';
@@ -304,6 +304,76 @@ export default function SelfTest() {
   const failed = checks.filter((c) => c.status === 'fail').length;
   const warned = checks.filter((c) => c.status === 'warn').length;
 
+  const reportRef = useRef<HTMLTextAreaElement | null>(null);
+  const [copied, setCopied] = useState<'idle' | 'ok' | 'fail'>('idle');
+
+  /**
+   * Plain text, not JSON, and that is a decision rather than laziness.
+   *
+   * This gets pasted into a GitHub issue, an email or a Reddit comment. JSON
+   * arrives there as an unreadable wall that the reader skips and the writer
+   * cannot skim before sending — and "read it before you send it" is the entire
+   * privacy proposition of this block. Plain lines survive being quoted.
+   */
+  const report = useMemo(() => {
+    const device = store.getState().device;
+    const codecs = store.getState().codecs;
+    const lines = [
+      'KeptPix self-test report',
+      ranAt === null ? 'run: (not yet)' : 'run: ' + ranAt,
+      'result: ' +
+        (failed > 0 ? failed + ' failed' : warned > 0 ? warned + ' warning(s)' : 'all passed') +
+        ' of ' +
+        checks.length,
+      '',
+      'checks',
+      ...checks.map((c) => '  [' + c.status.toUpperCase() + '] ' + c.name + ' — ' + c.detail),
+      '',
+      'environment',
+      '  ua: ' + (typeof navigator === 'undefined' ? '(none)' : navigator.userAgent),
+      '  hardwareConcurrency: ' + String(navigator.hardwareConcurrency ?? 'unknown'),
+      '  devicePixelRatio: ' + String(globalThis.devicePixelRatio ?? 'unknown'),
+      '  language: ' + (navigator.language ?? 'unknown'),
+      '',
+      'device profile (as the app resolved it)',
+      ...Object.entries(device).map(([k, v]) => '  ' + k + ': ' + String(v)),
+      '',
+      'codec support (as probed, not assumed)',
+      ...Object.entries(codecs).map(([k, v]) => '  ' + k + ': ' + String(v)),
+      '',
+      // PRECISE, because the first draft was not. It claimed "no image
+      // dimensions", and the report plainly contains 400 and 300 — the
+      // self-test's OWN generated image. True in spirit, false as written, which
+      // is the D-91 and D-95 defect in miniature: copy that says slightly more
+      // than the code does. Nobody would have been harmed and it would still have
+      // been a lie in a block whose whole purpose is being trustworthy enough to
+      // read before sending.
+      'Everything above describes this browser and a 400x300 test image the page',
+      'generated itself. No file of yours is named or measured here, and nothing',
+      'was transmitted — the site has no way to transmit it.',
+    ];
+    return lines.join('\n');
+  }, [checks, ranAt, failed, warned, store]);
+
+  const copyReport = useCallback(async () => {
+    // Feature-detected, and the fallback matters: the Clipboard API needs a
+    // secure context AND permission, and WebKit refuses it often enough that a
+    // dead button would be the common case rather than the rare one.
+    try {
+      if (typeof navigator.clipboard?.writeText === 'function') {
+        await navigator.clipboard.writeText(report);
+        setCopied('ok');
+        return;
+      }
+      throw new Error('no clipboard API');
+    } catch {
+      // Select the text so the user can copy it themselves. An honest fallback
+      // beats a button that silently does nothing.
+      reportRef.current?.select();
+      setCopied('fail');
+    }
+  }, [report]);
+
   return (
     <div class="flex flex-col gap-4">
       <div
@@ -349,6 +419,53 @@ export default function SelfTest() {
           </li>
         ))}
       </ul>
+
+      {/*
+        THE ONLY ERROR REPORTING THIS PRODUCT CAN HAVE.
+
+        docs/06 §5 forbids any request with a body and any origin outside `self`,
+        both release-blocking, so a crash in someone's browser is invisible to us
+        by construction — `monitor.mjs` watches production from outside and cannot
+        see a JavaScript exception (docs/12 D-98). An error reporter would trade
+        the thing being sold for information about it.
+
+        A block the user copies and sends BY HAND is the whole remaining design
+        space, and it inverts the usual arrangement: they read it first, and
+        nothing leaves the device unless they choose to send it.
+
+        WHAT IS DELIBERATELY ABSENT: no filename, no file contents, no dimensions
+        of anything they converted, no identifier of any kind. Capabilities and
+        check results only — enough to reproduce a failure, nothing that describes
+        the person or their files.
+      */}
+      <div class="rounded-lg border border-border bg-bg-subtle p-4">
+        <p class="m-0 text-sm font-medium text-text">Reporting a problem</p>
+        <p class="m-0 mt-1 text-xs text-text-muted">
+          Nothing on this page is sent anywhere — the site has no way to send it.
+          If something failed above, copy this and include it wherever you report
+          the problem. Read it first: it describes this browser and a small test
+          image the page made itself, and never a file of yours.
+        </p>
+        <textarea
+          ref={reportRef}
+          readOnly
+          rows={8}
+          aria-label="Diagnostic report, copy this into a bug report"
+          value={report}
+          class="num mt-3 w-full resize-y rounded-md border border-border bg-surface p-2 text-xs text-text"
+          onClick={(event) => (event.currentTarget as HTMLTextAreaElement).select()}
+        />
+        <div class="mt-2 flex items-center gap-2">
+          <Button variant="secondary" onClick={() => void copyReport()} disabled={running}>
+            {copied === 'ok' ? 'Copied' : copied === 'fail' ? 'Select it and copy' : 'Copy report'}
+          </Button>
+          {copied === 'fail' && (
+            <span class="text-xs text-text-muted">
+              This browser blocked the clipboard — the text is selected for you.
+            </span>
+          )}
+        </div>
+      </div>
 
       <div>
         <Button variant="secondary" onClick={() => void run()} disabled={running}>

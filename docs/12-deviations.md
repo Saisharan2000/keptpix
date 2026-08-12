@@ -4056,6 +4056,59 @@ it for `device` and `setEnvironment` and both were always fine.
 The fix is making the trap unreachable rather than signposted.
 
 ---
+## 🟡 D-105 — the only error reporting this product is allowed to have
+
+`monitor.mjs` watches production from outside and **cannot see a JavaScript
+exception in somebody's browser** (D-98). That is not a gap to close, it is the
+price of the privacy claim: docs/06 §5 forbids any request with a body and any
+origin outside `self`, both release-blocking, so an error reporter would trade the
+thing being sold for information about it.
+
+What remains is a block the user **copies and sends by hand**, and it inverts the
+usual arrangement — they read it before anything moves, and nothing moves unless
+they choose. `/selftest` now renders one, with a Copy button.
+
+Deliberately absent: no filename, no file contents, no identifier of any kind.
+Present: the nine check results, the user agent, core count, DPR, language, the
+resolved device profile and the probed codec support — enough to reproduce a
+failure, nothing that describes the person.
+
+**Plain text, not JSON**, and that is a decision. This gets pasted into an issue,
+an email or a comment, where JSON arrives as a wall the reader skips and the
+writer cannot skim before sending — and "read it before you send it" is the entire
+proposition. 1501 characters, which survives being quoted.
+
+The Clipboard API is feature-detected with a real fallback: it needs a secure
+context AND permission, and WebKit refuses often enough that a dead button would
+be the common case. On failure the textarea selects itself and the label changes
+to "Select it and copy".
+
+### My own copy was overclaiming, and the audit caught it
+
+The footer read *"No filenames, file contents, or image dimensions are
+included."* Verified against the rendered output: the report **plainly contains
+400 and 300** — the dimensions of the test image the page generates itself. True
+in spirit, false as written.
+
+Nobody would have been harmed, and it would still have been a lie inside a block
+whose entire purpose is being trustworthy enough to read before sending. It now
+says what is actually there: *"describes this browser and a 400x300 test image the
+page generated itself. No file of yours is named or measured here."* This is the
+same defect as D-91 and D-95, a third time, in a feature about honesty.
+
+Verified: nine checks render, the report is 1501 chars, `selftest.png` never
+appears, and **zero bodied requests** were observed while the page ran its own
+conversion. 8 gates green; deployed.
+
+### A note on the deploy check
+
+Post-deploy verification failed on the first attempt — three hub pages not
+matching `dist/` — and passed on a re-check twenty-five seconds later. That is
+Cloudflare briefly serving the previous build, which the script's own failure
+message predicts. Worth recording because a red first run here is not
+automatically a rollback, and treating it as one would be its own mistake.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

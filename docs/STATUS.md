@@ -1,6 +1,6 @@
 # Status — noupload
 
-Generated 2026-08-12 14:00 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
+Generated 2026-08-12 16:10 UTC by `scripts/status.mjs`. **Do not edit by hand** — every
 figure below is read from git, the deviations log, the backlog, the built
 output or the live origin, and hand edits are overwritten on the next run.
 
@@ -17,7 +17,7 @@ output or the live origin, and hand edits are overwritten on the next run.
 | | |
 |---|---|
 | Routes in sitemap | 30 |
-| Last built | 2026-08-12 13:56 |
+| Last built | 2026-08-12 16:05 |
 | Baseline JS | 45.4 KB gz of 60.0 KB |
 | HTML per route | 10.5 KB gz of 25.0 KB |
 
@@ -27,12 +27,14 @@ output or the live origin, and hand edits are overwritten on the next run.
 |---|---|
 | Remote | https://github.com/Saisharan2000/keptpix.git |
 | Branch | master |
-| HEAD | `f1c5cc3` autopilot: five iterations, not one batch of five (2026-08-12) |
+| HEAD | `ab080be` docs/14: two awesome-privacy lists, an AI canary, and an expired premise (2026-08-12) |
 | Uncommitted files | 2 |
 | Unpushed commits | 0 |
 
 ## Recent changes
 
+- `ab080be` 2026-08-12 — docs/14: two awesome-privacy lists, an AI canary, and an expired premise
+- `2600b8e` 2026-08-12 — The diagnostic was not lying; the way it was read was wrong (D-104)
 - `f1c5cc3` 2026-08-12 — autopilot: five iterations, not one batch of five
 - `57b7f1e` 2026-08-11 — The memory budget is measured at last, and it is over (D-103)
 - `731e611` 2026-08-11 — A PAN card route, and a flaky assertion fixed for the third time (D-102)
@@ -43,22 +45,20 @@ output or the live origin, and hand edits are overwritten on the next run.
 - `e178f78` 2026-08-11 — docs/17: reconcile the prose with its own table
 - `cc91acb` 2026-08-11 — CI runs verify, and a scheduled watch on production
 - `9e36255` 2026-08-11 — Monitoring without telemetry, and two copies that disagreed (D-98)
-- `3b4ff8c` 2026-08-11 — Generated maintenance docs, and the miscount that proved the point (D-96)
-- `49af50a` 2026-08-10 — new-project: an idea to a working workspace in one command
 
 ## Known issues and deviations
 
-`docs/12-deviations.md` holds **102** entries. Most are defects found
+`docs/12-deviations.md` holds **103** entries. Most are defects found
 here and written down rather than quietly fixed; it is the most useful file in
 the repository for anyone about to repeat one.
 
 Most recent:
 
+- **D-105** — the only error reporting this product is allowed to have
 - **D-104** — the diagnostic was not lying; the way it was read was wrong
 - **D-103** — the memory budget is measured at last, and it is over
 - **D-102** — a PAN card route, and a flaky assertion fixed for the third time
 - **D-101** — deleted a duplicate spec set that told agents to install React
-- **D-100** — the robots.txt block is off, and I sent someone after the wrong menu
 
 Outstanding, from that log:
 
@@ -71,7 +71,7 @@ Outstanding, from that log:
 
 ## Work queue
 
-Site `keptpix` — 12 done, 6 pending, 2 blocked.
+Site `keptpix` — 13 done, 5 pending, 2 blocked.
 
 **Waiting on a human:**
 
@@ -80,7 +80,6 @@ Site `keptpix` — 12 done, 6 pending, 2 blocked.
 
 Queued:
 
-- #15 Add a copyable diagnostic block to /selftest
 - #16 Clear the 5 unused eslint-disable directives
 - #17 Settle D-52: does precache truncate over HTTP/2?
 - #18 Re-attempt the Astro 7 upgrade on its branch
