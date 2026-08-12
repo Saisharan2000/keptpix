@@ -253,7 +253,87 @@ if (!robots.ok || robots.status !== 200) {
   }
 }
 
-/* ── 4. Is production the build we think it is? ──────────────────────────── */
+/* ── 4. Is there still exactly ONE canonical host? ──────────────────────── */
+
+/**
+ * WWW MUST REDIRECT, NOT SERVE.
+ *
+ * `www.keptpix.com` was a Namecheap parking page until 12 Aug, when it became a
+ * Cloudflare Pages custom domain — at which point www and the apex served
+ * identical content with no redirect between them, which is duplicate content
+ * against a sitemap and a Search Console property that are both apex-only. A
+ * redirect rule now sends www to the apex with a 301.
+ *
+ * That rule lives in the Cloudflare dashboard, **not in this repository**. Deleting
+ * it, or letting a template overwrite it, would silently restore the duplicate —
+ * nothing in a build or a test could see it. Same class as the robots.txt block
+ * Cloudflare injected (D-99) and the beacon before that (D-66): the host owns
+ * state we depend on, so the only way to know is to ask the live origin.
+ */
+const wwwOrigin = ORIGIN.replace('https://', 'https://www.');
+if (wwwOrigin !== ORIGIN) {
+  try {
+    const res = await fetch(wwwOrigin + '/convert', { redirect: 'manual' });
+    const location = res.headers.get('location') ?? '';
+    const redirectsToApex = res.status === 301 && location.startsWith(ORIGIN + '/');
+    if (res.status === 200) {
+      findings.push({
+        severity: 'critical',
+        title: 'www serves content instead of redirecting to the apex',
+        evidence:
+          `${wwwOrigin}/convert returned 200. The sitemap and the Search Console ` +
+          `property are apex-only, so this is duplicate content. Restore the ` +
+          `Cloudflare redirect rule: www.* -> ${ORIGIN}/$1, 301.`,
+      });
+    } else if (!redirectsToApex) {
+      findings.push({
+        severity: 'warning',
+        title: 'www does not 301 to the apex',
+        evidence: `${wwwOrigin}/convert returned ${res.status}${location ? ' -> ' + location : ''}`,
+      });
+    } else {
+      checked.push('www 301s to the apex');
+    }
+  } catch (e) {
+    findings.push({
+      severity: 'warning',
+      title: 'www is unreachable',
+      evidence: `${wwwOrigin} threw ${String(e).slice(0, 60)} — it may have no DNS record`,
+    });
+  }
+}
+
+/**
+ * And plaintext must upgrade. HSTS only protects a visitor who has already been
+ * here over HTTPS once (D-88), so the redirect is what covers the first request
+ * of a first session — the one that would otherwise cross the network in clear.
+ */
+try {
+  const res = await fetch(ORIGIN.replace('https://', 'http://') + '/convert', {
+    redirect: 'manual',
+  });
+  const location = res.headers.get('location') ?? '';
+  if (res.status >= 300 && res.status < 400 && location.startsWith('https://')) {
+    checked.push('http upgrades to https');
+  } else {
+    findings.push({
+      severity: 'critical',
+      title: 'plain http does not redirect to https',
+      evidence:
+        `returned ${res.status}${location ? ' -> ' + location : ''}. HSTS only ` +
+        `protects a repeat visitor; the first request of a first session is the one ` +
+        `this covers.`,
+    });
+  }
+} catch (e) {
+  findings.push({
+    severity: 'warning',
+    title: 'plain http could not be checked',
+    evidence: String(e).slice(0, 80),
+  });
+}
+
+/* ── 5. Is production the build we think it is? ──────────────────────────── */
 
 if (existsSync(path.join(DIST, 'sitemap.xml'))) {
   const localRoutes = [

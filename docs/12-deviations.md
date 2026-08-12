@@ -4109,10 +4109,54 @@ message predicts. Worth recording because a red first run here is not
 automatically a rollback, and treating it as one would be its own mistake.
 
 ---
+## 🟡 D-106 — infrastructure the repository cannot see, now watched
+
+Three things changed outside this codebase on 12 Aug, each verified here rather
+than taken on report:
+
+| Change | Verified |
+|---|---|
+| `www.keptpix.com` added as a Pages custom domain | was a Namecheap parking CNAME |
+| www → apex 301 redirect rule | `www/convert` → 301 → `keptpix.com/convert` |
+| DMARC record | `_dmarc` TXT = `v=DMARC1; p=reject; sp=reject`, live in DNS |
+
+The www change created a real problem for about a minute of wall time and would
+have persisted indefinitely: www and the apex served **identical content with no
+redirect**, against a sitemap and a Search Console property that are both
+apex-only. That is duplicate content, and nothing in a build, a test or a deploy
+could have detected it.
+
+**So `monitor.mjs` now checks both host invariants**: www must 301 to the apex
+rather than serve 200, and plain http must upgrade to https. Neither rule lives in
+this repository — both are Cloudflare dashboard state — which is the same exposure
+as the robots.txt block Cloudflare injected (D-99) and the beacon before it
+(D-66). *The host owns state we depend on, so the only way to know is to ask the
+live origin.* Verified the checks can fail by pointing them at a foreign origin:
+www warns, http goes critical.
+
+`p=reject` is right despite looking aggressive: the zone has **no outbound sending
+path** — five Namecheap forwarding MX records, an SPF `~all`, no DKIM — so
+rejecting forgeries costs nothing today. Inbound forwarding is unaffected, because
+DMARC governs mail *claiming to be from* the domain, not mail arriving at it. It
+does become a live constraint the moment anything tries to send as
+`@keptpix.com`, and that is now the first line of the outstanding table.
+
+### Two small corrections, both mine
+
+My Chrome prompt said to expect **29** sitemap URLs. It is 30 — the figure predated
+the PAN card route. The agent counted the file rather than trusting me and said so,
+which is exactly the behaviour those prompts ask for, and it caught my error.
+
+`http://www.` takes **two hops** — http-www → https-www → apex — because the
+redirect rule matches `https://www.*` only. Harmless, since crawlers follow short
+chains, but it is a chain and not the single hop it appears to be.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
 |---|---|---|
+| 🟠 | **DMARC is `p=reject` with no sending path configured.** Nothing sends as `@keptpix.com` today, so nothing is broken — but the moment anything does (Gmail send-as, a newsletter tool, a contact form), it will be **rejected outright** until that sender is added to SPF and DKIM is set up. Tell an agent before wiring up any email | Any outbound email |
 | ✅ | ~~`window.__keptpix_store` reports empty `jobs`/`sources`~~ — **not a bug** (D-104). `Map` does not survive a structured clone, so it arrives as `{}` across an `evaluate` boundary while the plain-object `device` arrives intact. `jobs.size` reads 3 for three files inside the page. `__keptpix_snapshot()` now returns a JSON-safe view so the trap is unreachable | — |
 | ✅ | ~~D-03 SVG~~, ~~D-34 HEIC orientation~~, ~~privacy.spec.ts~~, ~~real HEIC decode~~ — all **done** and verified against real files | — |
 | ✅ | ~~D-42 Smart App Control~~, ~~a11y sweep~~ — resolved, 69/69 passing across all 22 routes | — |
