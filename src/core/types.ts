@@ -306,6 +306,21 @@ export interface SizePresetRoute {
    * (docs/12 D-92). Omit it and the derived name is used, unchanged.
    */
   cardName?: string;
+  /**
+   * The next step in the SAME real-world task, shown once a batch completes.
+   *
+   * An exam or PAN application form asks for a photo AND a signature, with
+   * separate limits — a user who finished one genuinely has the other still to
+   * do, and today they leave and re-search for it (docs/12 D-113). `slug` names
+   * another published size preset; `reason` is one honest sentence for why this
+   * is being offered, rendered next to the link.
+   *
+   * Deliberately absent from the generic byte-target routes: "compress to
+   * 100 KB" has no knowable next step, and inventing one would turn a genuine
+   * suggestion into cross-promotion. Only chain what the underlying form
+   * actually requires.
+   */
+  chain?: { slug: string; reason: string };
 }
 
 /**

@@ -13,6 +13,7 @@
  * ZERO JavaScript.
  */
 import { publishedFormatPairRoutes } from '../../content/formats';
+import { publishedSizePresetRoutes, formatTarget } from '../../content/presets';
 import { publishedTools } from '../../core/tools';
 
 interface Props {
@@ -39,6 +40,27 @@ const pairLinks = slugs
   .map((r) => ({ href: '/convert/' + r.slug, label: r.h1 }));
 
 /**
+ * Size-preset slugs, resolved against THEIR table (docs/12 D-113).
+ *
+ * "Unresolved ones are dropped" was written when format pairs were the only
+ * table to resolve against, and the drop was doing its job — protecting launch
+ * ordering. When the compress preset routes reused this component, their
+ * relatedSlugs (`jpg-to-50kb`, `signature-to-20kb`, …) hit the format-pair
+ * lookup, resolved to nothing, and were ALL dropped: every one of the nine
+ * /compress/* pages shipped with zero links to its siblings, verified in the
+ * built HTML. The drop is the right behaviour; it was pointed at one table
+ * when the data lives in two.
+ */
+const sizeLinks = slugs
+  .filter((s) => s !== currentSlug)
+  .map((s) => publishedSizePresetRoutes.find((r) => r.slug === s))
+  .filter((r) => r !== undefined)
+  .map((r) => ({
+    href: '/compress/' + r.slug,
+    label: r.cardName ?? 'Compress to ' + formatTarget(r.targetBytes),
+  }));
+
+/**
  * Manifest tools, derived — so cross-linking between the image routes and the
  * document tools happens by construction rather than by remembering (D-79).
  *
@@ -57,7 +79,10 @@ const hubLinks = [
   { href: '/how-it-works', label: 'How this works without uploading' },
 ];
 
-const links = [...pairLinks, ...toolLinks, ...hubLinks]
+/* Size siblings first among the resolved slugs: on a compress page the author
+   chose those slugs for THIS route, and a sibling limit is closer to the
+   user's task than any converter. Order within each group is the author's. */
+const links = [...sizeLinks, ...pairLinks, ...toolLinks, ...hubLinks]
   .filter((link) => link.href !== currentPath)
   .slice(0, 6);
 ---

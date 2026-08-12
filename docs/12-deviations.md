@@ -4593,6 +4593,75 @@ the whole test: a VPA has one, an email has one, a payment page URL never does.
   which cannot do it. A whole demand class with no tool behind it.
 
 ---
+## 🟠 D-113 — Task chaining, and the discovery that no compress page linked to any other
+
+**Docs affected:** `05 §5` (`SizePresetRoute` gains `chain`, same commit),
+`09 §3` (related-links intent — now actually true on compress routes)
+
+Backlog #29. The highest-leverage revenue lever in the distribution doc is not
+the 150–400 pages — it is one line in its stage 6: exam users always need photo
+AND signature. My D-111 ad arithmetic assumed ~1 pageview per visit; chaining
+multiplies pageviews on **all** traffic, new and existing, with zero doorway
+risk, because the underlying form genuinely requires both uploads.
+
+### What shipped
+
+`chain?: { slug, reason }` on `SizePresetRoute`. Three chains:
+`signature-to-20kb` → `passport-photo-to-50kb`, `passport-photo-to-50kb` →
+`signature-to-20kb`, `pan-card-photo` → `signature-to-20kb`. Once a batch
+completes — `running === 0 && done > 0`, so failures do not hide it, one file
+failing never aborts a batch — the success bar renders the reason and a plain
+anchor to the sibling route. The link resolves at build time from the
+destination route's own data (label from `cardName`), so a dangling slug
+renders nothing and a unit test fails the build on one anyway.
+
+The six generic byte-target routes stay unchained **deliberately**: "compress
+to 100 KB" has no knowable next step, and a chain there is cross-promotion
+wearing a suggestion's clothes. A test pins this so adding one requires
+arguing it here first.
+
+The PAN chain's reason says "with its own size limit" and **no KB figure**: the
+photo bands were verified against both portals (D-102); the signature limits
+were not, and an unverified number in one line of UI copy is exactly how D-91
+and D-95 happened.
+
+### The bigger find: RelatedTools dropped every sibling link on every compress page
+
+While writing the chain validation test I read what `RelatedTools` actually
+does with `relatedSlugs`, instead of assuming: it resolves them against
+`publishedFormatPairRoutes` **only**, and silently drops what does not resolve
+— a drop designed (correctly) to protect launch ordering on the convert routes.
+The compress preset routes reuse the component, their slugs live in a different
+table, so none ever resolved: **all nine `/compress/*` pages shipped with zero
+links to their siblings**, verified in the built HTML before the fix and after
+it. The signature page did not link to the passport page; nothing linked the
+exam cluster together at all.
+
+This is precisely the cluster the distribution strategy depends on, and
+internal linking is one of the doc's own prescriptions. The drop stays — it is
+the right behaviour — but it now resolves against both tables, size siblings
+first on compress pages (the author chose those slugs for that route; a sibling
+limit is closer to the user's task than any converter). Convert pages are
+unchanged by construction: their slugs never match the size table.
+
+The renderer stays silent about unresolved slugs, so the tests got loud:
+every `relatedSlug` and every `chain.slug` must resolve to a published route or
+the unit suite fails the build.
+
+### Verification
+
+- 6 new unit tests (427 total); chain link asserted present in built HTML for
+  the three chained routes' related sections, absent on convert pages.
+- 2 new e2e (145 total): a real conversion on the signature route, the chain
+  link absent from the success bar before the run, present with the right
+  href after, and the click-through lands on the real prerendered page; a
+  conversion on `jpg-to-100kb` whose success bar must contain zero links. The
+  first version of that "absent before" assertion failed against the WRONG
+  element — the page-wide locator matched the new static sibling link in
+  Related tools — and was scoped to the success bar, which is the claim.
+- Baseline island JS: 45.4 → 45.5 KB gz. The feature costs 0.1 KB.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

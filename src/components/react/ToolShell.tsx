@@ -37,6 +37,12 @@ interface Props {
    * pipeline — no tool-specific logic sits on either side of it.
    */
   tool?: ToolManifestEntry;
+  /**
+   * Next step in the same real-world task, shown once the batch completes
+   * (docs/12 D-113). Resolved at build time by the route from its preset data
+   * — this component only renders what it is handed.
+   */
+  chain?: { href: string; label: string; reason: string };
 }
 
 /**
@@ -46,21 +52,23 @@ interface Props {
  * static Astro markup shipping zero JavaScript, so it is fully present in the
  * HTML that AI crawlers receive without rendering.
  */
-export default function ToolShell({ defaultConfig, fromLabel = 'image', tool }: Props) {
+export default function ToolShell({ defaultConfig, fromLabel = 'image', tool, chain }: Props) {
   // A dispatcher, not a branch inside the component body: the image shell below
   // calls a dozen hooks before its first return, so choosing between the two
   // paths mid-body would make hook order depend on a prop.
   if (tool !== undefined) return <ManifestToolShell tool={tool} />;
-  return <ImageToolShell defaultConfig={defaultConfig} fromLabel={fromLabel} />;
+  return <ImageToolShell defaultConfig={defaultConfig} fromLabel={fromLabel} chain={chain} />;
 }
 
 /** The original image tool, unchanged, still serving every image route. */
 function ImageToolShell({
   defaultConfig,
   fromLabel = 'image',
+  chain,
 }: {
   defaultConfig?: Partial<JobConfig>;
   fromLabel?: string;
+  chain?: Props['chain'];
 }) {
   const store = useStore;
   const sources = useStore((s) => s.sources);
@@ -501,6 +509,7 @@ function ImageToolShell({
               busy={busy}
               onClear={clear}
               onDownloadAll={downloadAll}
+              chain={chain}
             />
             <InstallPrompt eligible={summary.done > 0} />
             <PrivacyIndicator processed={summary.done} total={views.length} />

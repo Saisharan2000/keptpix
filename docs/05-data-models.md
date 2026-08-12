@@ -396,6 +396,14 @@ export interface SizePresetRoute {
    * destinations. Omit it and the derived name is used, unchanged.
    */
   cardName?: string;
+  /**
+   * The next step in the SAME real-world task, shown once a batch completes
+   * (docs/12 D-113). `slug` names another published size preset; `reason` is
+   * one honest sentence rendered next to the link. Only set where the
+   * underlying form genuinely requires both uploads (photo + signature);
+   * generic byte-target routes have no knowable next step and stay unchained.
+   */
+  chain?: { slug: string; reason: string };
 }
 ```
 

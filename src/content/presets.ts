@@ -274,6 +274,18 @@ const signature20kb: SizePresetRoute = {
     ...SHARED_FAQ_TAIL,
   ],
   relatedSlugs: ['jpg-to-20kb', 'passport-photo-to-50kb', 'jpg-to-50kb'],
+  /*
+   * The three chains below (signature ↔ photo, PAN → signature) exist because
+   * the underlying forms genuinely require both uploads — an exam portal takes
+   * a photo AND a signature with separate limits, and a user who finished one
+   * still has the other to do. The six generic byte-target routes stay
+   * unchained on purpose: "compress to 100 KB" has no knowable next step
+   * (docs/12 D-113).
+   */
+  chain: {
+    slug: 'passport-photo-to-50kb',
+    reason: 'The same form almost always asks for a photo as well, with its own limit.',
+  },
 };
 
 const passportPhoto50kb: SizePresetRoute = {
@@ -312,6 +324,10 @@ const passportPhoto50kb: SizePresetRoute = {
     ...SHARED_FAQ_TAIL,
   ],
   relatedSlugs: ['jpg-to-50kb', 'signature-to-20kb', 'jpg-to-100kb'],
+  chain: {
+    slug: 'signature-to-20kb',
+    reason: 'Portals that take a photo usually want a signature next, under a tighter limit.',
+  },
 };
 
 /**
@@ -367,6 +383,13 @@ const panCardPhoto: SizePresetRoute = {
     ...SHARED_FAQ_TAIL,
   ],
   relatedSlugs: ['signature-to-20kb', 'jpg-to-20kb', 'passport-photo-to-50kb'],
+  chain: {
+    slug: 'signature-to-20kb',
+    // "also asks for" and no KB figure, deliberately: the photo bands above were
+    // verified against both portals (D-102); the signature limits were not, and
+    // an unverified number in this one line is how D-91/D-95 happened.
+    reason: 'The PAN application also asks for a signature image, with its own size limit.',
+  },
 };
 
 /**

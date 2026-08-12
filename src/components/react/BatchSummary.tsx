@@ -9,6 +9,8 @@ interface Props {
   busy: boolean;
   onClear: () => void;
   onDownloadAll: () => void;
+  /** Next step in the same real-world task — see ToolShell's prop of the same name. */
+  chain?: { href: string; label: string; reason: string };
 }
 
 export function BatchSummary({
@@ -18,7 +20,17 @@ export function BatchSummary({
   busy,
   onClear,
   onDownloadAll,
+  chain,
 }: Props) {
+  /*
+   * The chain waits for the whole batch, not the first success: while jobs are
+   * still running the user has not finished THIS task, and offering the next
+   * one mid-run is a distraction rather than a service. Failures do not hide
+   * it — one file failing never aborts a batch, and a user with 9 of 10 done
+   * still has a signature to compress (docs/12 D-113).
+   */
+  const showChain = chain !== undefined && running === 0 && summary.done > 0;
+
   return (
     <div
       role="status"
@@ -54,6 +66,21 @@ export function BatchSummary({
           Download all (ZIP)
         </Button>
       </div>
+
+      {showChain && (
+        /* w-full so flex-wrap drops it onto its own row. A plain anchor — a
+           navigation to another prerendered route, not an action, so it must
+           work with the island's JS already served and nothing else. */
+        <p class="m-0 w-full border-t border-border pt-3 text-sm text-text-muted">
+          {chain.reason}{' '}
+          <a
+            href={chain.href}
+            class="font-medium text-accent underline decoration-dotted underline-offset-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {chain.label} →
+          </a>
+        </p>
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@ import FaqSection from '../../components/astro/FaqSection.astro';
 import RelatedTools from '../../components/astro/RelatedTools.astro';
 import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
 import ToolShell from '../../components/react/ToolShell';
-import { publishedSizePresetRoutes, formatTarget } from '../../content/presets';
+import { publishedSizePresetRoutes, getSizePresetRoute, formatTarget } from '../../content/presets';
 
 export function getStaticPaths() {
   return publishedSizePresetRoutes.map((route) => ({
@@ -50,6 +50,25 @@ const defaultConfig = {
   outputFormat: route.format,
   sizeMode: { kind: 'target' as const, targetBytes: route.targetBytes },
 };
+
+/**
+ * The next task in the same real-world form, offered on the success screen
+ * (docs/12 D-113). Resolved AT BUILD TIME from route data: the label comes from
+ * the destination route itself rather than being retyped here, and a chain
+ * pointing at an unpublished slug resolves to undefined and renders nothing —
+ * the same "never offer what does not build" discipline as D-79. A unit test
+ * additionally fails the build on a dangling or self-referential chain, so
+ * silence is a backstop, not the only guard.
+ */
+const chainTarget = route.chain === undefined ? undefined : getSizePresetRoute(route.chain.slug);
+const chain =
+  route.chain === undefined || chainTarget === undefined
+    ? undefined
+    : {
+        href: '/compress/' + chainTarget.slug,
+        label: chainTarget.cardName ?? 'Compress to ' + formatTarget(chainTarget.targetBytes),
+        reason: route.chain.reason,
+      };
 ---
 
 <ToolLayout
@@ -64,7 +83,7 @@ const defaultConfig = {
 >
   <Fragment slot="tool">
     <div id="tool" tabindex="-1" class="scroll-mt-20">
-      <ToolShell client:visible defaultConfig={defaultConfig} fromLabel="JPG" />
+      <ToolShell client:visible defaultConfig={defaultConfig} fromLabel="JPG" chain={chain} />
       <noscript>
         <p class="mt-4 mb-0 rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
           The compressor needs JavaScript, because the work runs on your device rather than
