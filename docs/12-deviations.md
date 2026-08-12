@@ -4375,6 +4375,119 @@ revenue figures. Flagged for Sai rather than quietly removed — and removing it
 would not help, since it is in the history either way.
 
 ---
+## 🔴 D-111 — Ads are the revenue model. The mechanism already exists; the wording does not
+
+**Docs affected:** `05 §5` (revenue), `06 §5` (privacy release gate — unchanged, but now
+coupled to the copy), `04 §1` (asset-origin policy — the D-53 exception is the template)
+
+Two founder decisions, both recorded here because both override something I wrote:
+
+> *"i am not comfortable with strategy doc in public repo, coming to revenue i am
+> hoping towards ad revenue people dont buy sub for 5 mins doc work atleast for
+> now."*
+
+### The reasoning is right, and it beats mine
+
+D-110 recommended the ₹99 exam pack over ads. The founder's objection is the
+stronger argument, and the distribution doc's own analysis proves it: stages 1–6
+describe a user who arrives mid-task from a portal error message, converts in under
+a minute, and leaves. A subscription asks a recurring commitment from someone who
+will not return until their next exam cycle. **The paid tier was mismatched to the
+user it was aimed at**, and no amount of CSP purity fixes that.
+
+### Where D-110 overreached
+
+I wrote that privacy-as-moat and ads "cannot both hold." Too strong, and D-53 in
+this same file is the counter-example. When Cloudflare Web Analytics was added, the
+pattern used was:
+
+- **off unless a build sets the flag** (`PUBLIC_CF_BEACON_TOKEN`; nothing sets it)
+- **never injected while a job is in flight**, checked at injection time
+- **named on `/privacy` by a conditional that turns on with the same flag**
+
+So a disclosed, gated, job-blocked third-party script is an established pattern
+here, not a contradiction. **The mechanism transfers to ads. What does not transfer
+is the sentence** — `/privacy` pre-committed that any counter added "will be one
+that sends no personal data," and AdSense cannot satisfy that. An ad unit runs an
+auction, sets cookies, and measures viewability. The honest path is to change the
+wording, in the same commit, not to stretch it.
+
+### The number that changes the plan
+
+The distribution doc projects **₹8–15K/mo at 500 visits/day**. I cannot measure
+AdSense RPM and am not going to pretend otherwise — but the arithmetic only works
+one way, so here it is with the assumption visible:
+
+| | |
+|---|---|
+| 500 visits/day | ≈ 15,000 pageviews/month (≈1 page/visit — the doc's own stage 6) |
+| Indian utility-tool display RPM | **≈ $0.10–0.60**, estimated, not measured |
+| 15,000 pv at $0.30 RPM | **$4.50/mo ≈ ₹400/mo** |
+| To reach ₹10,000/mo at $0.30 | ≈ 380,000 pv/mo ≈ **12,700 visits/day** |
+| Measured traffic today | **~118 visits total**, not per day |
+
+That is roughly **25× the doc's own traffic assumption** to hit its own revenue
+figure. Conclusion: ads are the right **destination** and the wrong **next action** —
+not because of the moat, but because at reachable near-term traffic they pay about
+₹400/mo while every cost below lands on day one.
+
+### The costs, itemised, because they are all countable
+
+| Cost | Size |
+|---|---|
+| Footer claim falsified | **32 pages** (was unconditional — fixed in this commit) |
+| privacy.spec.ts | **4 of 5 tests** assume total network silence |
+| CSP | `script-src 'self'` must widen; ADR-003's no-COOP/COEP stance is unaffected |
+| Consent (EEA/UK) | AdSense requires a CMP — a second third-party script, plus cookies |
+| Approval risk | thin programmatic pages are a common AdSense rejection — collides with D-110's doorway finding |
+
+### Sequencing that follows from the arithmetic
+
+1. **Tip link first.** A UPI / coffee link is a plain `<a>`: no script, no CSP
+   change, no privacy test touched, and it works at *any* traffic level. It fits the
+   one-visit user exactly as the founder describes them. **Blocked on one input —
+   the UPI ID or coffee URL.** I will not invent a payment handle.
+2. **Ads when traffic justifies the costs.** Trigger: sustained **>1,000 visits/day**,
+   where the revenue clears the cost of rewriting the claims. Below that the trade is
+   a worse product for ~₹400.
+3. **When it happens, use the D-53 pattern**: flag-gated, job-blocked, disclosed by a
+   conditional. Not a hardcoded sentence.
+
+### What was built so this cannot go wrong quietly
+
+`scripts/check-claims.mjs` — a verify gate that reads **dist/**, not src/, and
+enforces one implication in both directions: claims present ⟹ no third-party
+content loaded and a `'self'`-only `script-src`; third-party content present ⟹ the
+claims are gone. **Observed failing** against a real injected AdSense tag (both the
+structural and vendor rules fired), and green on the restored tree — a gate never
+watched failing is a gate that might check nothing.
+
+Its first run found two things I had not looked for:
+
+- a **false positive of my own making** — the bare word `doubleclick` matched
+  Preact's `ondoubleclick`→`ondblclick` normalisation in the JSX runtime. Vendor
+  patterns are now hosts, which cannot collide with DOM event names.
+- a **real latent inconsistency**: the `PUBLIC_CF_BEACON_TOKEN` flag lives in the
+  Cloudflare Pages dashboard, not this repo. Setting it there would have made
+  `/privacy` name the counter honestly while the footer denied it on all 32 pages,
+  and **no build would have failed**. The footer is now conditional on the same
+  variable.
+
+### The strategy doc — removal is blocked on a permission
+
+`.gitignore` now excludes `claude-cowork-docs/`, and `scripts/check-private.mjs`
+fails the build while anything under it is tracked, because a .gitignore line does
+nothing against `git add -f` or a future edit to that line. **It is failing right
+now, correctly** — the file is still in the index and I was denied permission to run
+`git rm --cached`. One command clears it; until then `npm run verify` is red on that
+one gate by design.
+
+Exposure while it was public: **0 forks, 0 stars, 0 watchers**, pushed 19:48 UTC.
+Purging the blob from history additionally needs a force-push, and even then GitHub
+keeps unreachable commits fetchable by SHA until they garbage-collect — that part
+needs GitHub Support, so it is the founder's call, not a silent cleanup.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

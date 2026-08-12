@@ -29,6 +29,20 @@ Thumbs.db
 # wrangler (Phase 4)
 .wrangler/
 
+# NEVER PUBLISH. This repository is PUBLIC (AGPL-3.0, github.com/Saisharan2000/keptpix),
+# so anything committed here is world-readable the moment it is pushed.
+#
+# claude-cowork-docs/ is where Cowork drops strategy material — target keywords,
+# revenue projections, competitor analysis. None of it is credential-bearing, and
+# all of it is exactly what a competitor would want. `git add -A` committed the
+# distribution strategy to the public repo in 0a69e04 before anyone looked
+# (docs/12 D-111); the file stays on disk at the same path so Cowork keeps
+# working, it just stops being published.
+#
+# `npm run check:private` fails if anything under these paths is tracked, because
+# a .gitignore line does nothing against `git add -f` or a future edit to this file.
+claude-cowork-docs/
+
 # Test fixture photos are REAL CAMERA FILES carrying GPS coordinates, camera
 # model and capture timestamps. They are deliberately not committed — see
 # tests/fixtures/images/README.md. Suites that need them skip when absent.

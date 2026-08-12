@@ -35,6 +35,23 @@ const groups = [
 ];
 
 const year = new Date().getFullYear();
+
+/**
+ * The footer's privacy line was UNCONDITIONAL while /privacy's disclosure is
+ * conditional — so a build that sets PUBLIC_CF_BEACON_TOKEN would have named the
+ * counter honestly on one page and denied it on all 32 (docs/12 D-111).
+ *
+ * Nothing sets that token today, so the claim is true and this branch is dormant.
+ * It exists because the token lives in the Cloudflare Pages dashboard, not in this
+ * repository: someone can enable analytics without touching a file here, and no
+ * build would have failed. The most-read privacy claim on the site should not
+ * depend on a setting nobody can see from the source.
+ *
+ * Read directly rather than via platform/analytics.ts for the same reason
+ * privacy.astro does: docs/07 §2 gives components/astro/ no grant to platform/,
+ * and this is one boolean. Both read the SAME variable, so they cannot disagree.
+ */
+const analyticsOn = (import.meta.env.PUBLIC_CF_BEACON_TOKEN ?? '').trim().length > 0;
 ---
 
 <footer class="mt-auto border-t border-border bg-bg-subtle">
@@ -69,7 +86,11 @@ const year = new Date().getFullYear();
     </div>
 
     <p class="mt-12 mb-0 text-xs text-text-muted">
-      &copy; {year} KeptPix. No accounts, no tracking, no uploads.
+      &copy; {year} KeptPix. {
+        analyticsOn
+          ? 'No accounts, no uploads. One cookieless page counter — see Privacy.'
+          : 'No accounts, no tracking, no uploads.'
+      }
     </p>
   </div>
 </footer>

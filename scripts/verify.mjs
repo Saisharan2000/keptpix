@@ -98,6 +98,10 @@ function digest(name, out) {
     }
     case 'budgets':
       return pick(/Baseline JS[^\n]*/);
+    case 'private':
+      return pick(/Clean: \d+ private path[^\n]*/) ?? pick(/\d+ file\(s\) TRACKED[^\n]*/);
+    case 'claims':
+      return pick(/Clean: \d+ claim[^\n]*/) ?? pick(/FAIL\s+\[[a-z]+\][^\n]*/);
     case 'seo':
       return pick(/\d+ error\(s\), \d+ warning\(s\)/) ?? pick(/Clean:[^\n]*/);
     case 'lint':
@@ -116,7 +120,19 @@ function digest(name, out) {
 const results = [];
 let hardFail = false;
 
-async function gate(name, label, fn) {
+/**
+ * @param opts.blocking  default true: a failure stops the run, because there is no
+ *   point running browser tests against a build that did not compile.
+ *
+ *   Pass `false` for a gate whose failure says nothing about whether the code
+ *   works. `private` is the case that forced this option: it reports a tracked
+ *   file in a public repo, and as a blocking gate it hid lint, typecheck, build
+ *   and tests behind a git hygiene problem — leaving no evidence that the actual
+ *   code changes in the same commit were sound. A non-blocking failure still sets
+ *   the exit code; it just does not pretend to be a build error.
+ */
+async function gate(name, label, fn, opts = {}) {
+  const { blocking = true } = opts;
   if (hardFail) {
     results.push({ name, label, status: 'skipped', note: 'a prior gate failed' });
     return;
@@ -125,7 +141,7 @@ async function gate(name, label, fn) {
   const { code, out } = await fn();
   const ms = Date.now() - started;
   const ok = code === 0;
-  if (!ok) hardFail = true;
+  if (!ok && blocking) hardFail = true;
   results.push({
     name,
     label,
@@ -149,13 +165,20 @@ if (!JSON_OUT) {
 }
 
 // Cheap and most-likely-to-fail first, so a broken build is not discovered
-// after three minutes of browser tests.
+// after three minutes of browser tests. `private` is first because it costs one
+// `git ls-files` and guards a PUBLIC repository — a strategy doc reached the
+// public remote through `git add -A` before anyone looked (docs/12 D-111).
+await gate('private', 'private paths', () => run('npm', ['run', 'check:private']), {
+  blocking: false,
+});
 await gate('lint', 'eslint', () => run('npm', ['run', 'lint']));
 await gate('typecheck', 'typescript', () => run('npm', ['run', 'typecheck']));
 await gate('unit', 'unit tests', () => run('npm', ['test']));
 await gate('build', 'astro build', () => run('npm', ['run', 'build']));
 await gate('budgets', 'size budgets', () => run('npm', ['run', 'check:budgets']));
 await gate('seo', 'seo structure', () => run('npm', ['run', 'check:seo']));
+// After the build, because it reads dist/ — what is SERVED, not what is written.
+await gate('claims', 'privacy claims', () => run('npm', ['run', 'check:claims']));
 await gate('integration', 'integration (browser)', () =>
   run('npx', ['vitest', 'run', '--project', 'integration']),
 );
