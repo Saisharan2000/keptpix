@@ -5350,6 +5350,50 @@ follows once the scope exists.
 436 unit / 168 integration / 162 e2e; Hindi blocks verified in served HTML.
 
 ---
+## 🟢 D-128 — Cowork D8/D11 executed: the launch runbook exists, SBI ships, RRB refuses to be sourced
+
+**Docs affected:** none public — runbook is private (D6), SBI is a data entry
+
+### #41 — Launch runbook + HN crib sheet (Cowork D8)
+
+`claude-cowork-docs/launch-runbook-and-crib-sheet.md` (private — it is
+strategy). Hour-by-hour: dev.to live BEFORE the HN submit, title fixed
+verbatim, Sai's first comment immediately (HN convention — stops the top
+comment being someone else's guess), 3–4 hours present then three
+check-ins/day for 48h, PH riding 1–2 days later. The bad-day branch is
+written down so it does not get improvised under stress: flagged or <5
+points in 4h → accept, no repost for 30 days, dev.to stays evergreen, PH
+proceeds anyway. Crib sheet covers the seven predictable questions
+(ImageMagick, verification, AGPL, the search algorithm, monetization/rug
+pull, the rasterisation trade, EXIF) — labelled raw material, never to be
+pasted verbatim, because HN detects canned answers. The iOS answer is
+flagged DO-NOT-SAY until the device pass actually runs.
+
+### #42 — SBI verified and live; RRB blocked on its own infrastructure
+
+**SBI** (Cowork D11 rank 2): specs read from the official registration
+portal's own guidelines PDF (ibpsreg.ibps.in, SBI CBO Nov 2025 cycle,
+labelled as such). Four uploads, same shape as IBPS — photo 20–50 KB at
+200×230 px, signature 10–20 KB at 140×60 px (capitals rejected), left thumb,
+handwritten English declaration — now surfacing on the four bank-relevant
+compress pages with a Hindi block. The pinned-order test tripped on the
+insertion, as designed.
+
+**RRB NTPC** (rank 1): aggregators say photo 30–70 KB at 320×240 — and
+aggregators were wrong on every exam this project has checked, so that ships
+nothing. Every official mirror tried (rrbchennai over https and http, rrbcdg
+with and without www — a certificate that does not match its own www
+subdomain, then connection refused, then a 1.2 KB error page) is unreachable
+from here. THE RULE HELD: no primary source, no entry. RRB stays on the
+backlog with a note to retry via rrbapply.gov.in or the Chrome agent; the
+demand is real (docket/exammint farm it), which makes it worth the wait, not
+worth a guess.
+
+436 unit / 168 integration / 162 e2e, deployed. The D7 triage machinery, the
+Sunday loop (#44) and October pre-work (#45) are queued and gated exactly as
+the batch specified.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

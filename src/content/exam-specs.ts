@@ -162,6 +162,60 @@ export const examSpecs: readonly ExamSpec[] = [
     surfaceOn: ['jpg-to-100kb', 'jpg-to-200kb', 'passport-photo-to-50kb'],
   },
   {
+    id: 'sbi',
+    exam: 'SBI (PO / Clerk / CBO — recruitments on the same portal)',
+    org: 'State Bank of India',
+    cycle: '2025-26 (CBO Nov 2025 guidelines)',
+    sourceTitle: 'Guidelines for Scanning and Upload of Documents (ibpsreg.ibps.in, SBI CBO Nov 2025)',
+    sourceUrl:
+      'https://ibpsreg.ibps.in/sbicbonov25/uploads/loadpdf.php?file=k7m5p+fQ15e7vNTWw9jT2d+Yn5S+pdGTpaeV6Kqlcg%3D%3D&t=1LHArOLA2di0yczXwNDa083LmNWypw%3D%3D',
+    verifiedOn: '2026-08-13',
+    caveat:
+      'SBI uses the same four uploads as IBPS: a photo, a signature, a left thumb ' +
+      'impression, and a short declaration written by hand in English. The signature ' +
+      'and the declaration must NOT be in capital letters.',
+    hindi:
+      'SBI (बैंक भर्ती) में चार फ़ाइलें अपलोड होती हैं: फोटो 20–50 KB (200×230 px), हस्ताक्षर 10–20 KB (140×60 px, CAPITAL में नहीं), बाएँ अँगूठे का निशान 20–50 KB, और अंग्रेज़ी में हाथ से लिखा घोषणा-पत्र 50–100 KB।',
+    requirements: [
+      {
+        kind: 'photo',
+        label: 'Photograph',
+        format: 'JPG/JPEG',
+        minKB: 20,
+        maxKB: 50,
+        dimensions: '200 × 230 px (4.5 × 3.5 cm)',
+        notes: 'A recent colour photo, passport style, against a light background.',
+      },
+      {
+        kind: 'signature',
+        label: 'Signature',
+        format: 'JPG/JPEG',
+        minKB: 10,
+        maxKB: 20,
+        dimensions: '140 × 60 px',
+        notes: 'Black ink on white paper. Do NOT write in capital letters — that is rejected.',
+      },
+      {
+        kind: 'thumb',
+        label: 'Left thumb impression',
+        format: 'JPG/JPEG',
+        minKB: 20,
+        maxKB: 50,
+        dimensions: '240 × 240 px @ 200 DPI (3 × 3 cm)',
+      },
+      {
+        kind: 'declaration',
+        label: 'Handwritten declaration',
+        format: 'JPG/JPEG',
+        minKB: 50,
+        maxKB: 100,
+        dimensions: '800 × 400 px @ 200 DPI (10 × 5 cm)',
+        notes: 'Written in English, in your own handwriting, black ink — not in capital letters.',
+      },
+    ],
+    surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb'],
+  },
+  {
     id: 'ibps',
     exam: 'IBPS (and bank recruitments on the same portal)',
     org: 'Institute of Banking Personnel Selection',

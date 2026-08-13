@@ -78,8 +78,8 @@ describe('exam specs (docs/12 D-118)', () => {
 
   it('examSpecsForRoute returns specs in data order and only matches', () => {
     const specs = examSpecsForRoute('signature-to-20kb');
-    // ssc-gd joined in D-125 (GD pre-work, Cowork D4).
-    expect(specs.map((s) => s.id)).toEqual(['ssc-cgl', 'ssc-gd', 'ibps']);
+    // ssc-gd joined in D-125; sbi in D-128 (Cowork D11 rank 2).
+    expect(specs.map((s) => s.id)).toEqual(['ssc-cgl', 'ssc-gd', 'sbi', 'ibps']);
     expect(examSpecsForRoute('jpg-to-1mb')).toEqual([]);
   });
 
