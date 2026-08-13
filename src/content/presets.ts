@@ -251,7 +251,7 @@ const signature20kb: SizePresetRoute = {
   metaDescription:
     'Compress a scanned or photographed signature to under 20KB in your browser. Exact target size, no upload, no sign-up.',
   intro:
-    'Signature fields carry the tightest limit on almost every form, and 20 KB is the usual figure. The good news is that a signature is line art, not a photograph: black strokes on white paper compress extremely well, so 20 KB is roomy rather than punishing, and you should not have to sacrifice legibility to reach it. If your signature will not fit, the compression is rarely the problem — the photograph is. A phone picture of a signature captures the paper as much as the ink: shadows, page texture, the faint grey of a room lit from one side. All of that is detail the encoder has to spend bytes on, and none of it is your signature.',
+    'The signature box usually has the tightest limit on any form, and 20 KB is the usual figure. Good news: a signature compresses very well. It is black ink on white paper, not a photo, so 20 KB is plenty — it should stay sharp and easy to read. If yours will not fit, the problem is usually the picture, not the compression. A phone photo of a signature also captures the paper: shadows, texture, grey light from one side of the room. All of that costs file size, and none of it is your signature. Take the picture in even light and crop close around the ink.',
   useCases: [
     'Bank account opening and KYC forms, which commonly cap signatures at 20 KB',
     'Competitive exam and recruitment portals, where photo and signature have separate limits',
@@ -261,7 +261,7 @@ const signature20kb: SizePresetRoute = {
   faq: [
     {
       q: 'Why does my signature look dirty or grey after compressing?',
-      a: 'That is almost always in the original rather than the compression. Photograph the page in even, indirect light — near a window, not under a single ceiling bulb — and crop tightly to the strokes before you compress. A signature on plain white paper compresses to a few kilobytes while staying crisp; the same signature on a shadowed, lined page spends most of its budget on the paper.',
+      a: 'The problem is almost always in the photo, not the compression. Take the picture in even light — near a window is good, under one ceiling bulb is bad. Then crop close around the ink before compressing. A signature on clean white paper stays crisp at a few kilobytes. The same signature on a shadowy, lined page wastes most of the file on the paper.',
     },
     {
       q: 'Should I scan it or photograph it?',
@@ -301,7 +301,7 @@ const passportPhoto50kb: SizePresetRoute = {
   metaDescription:
     'Compress a passport or visa photo to under 50KB in your browser. Exact target size, no upload, no sign-up.',
   intro:
-    'Fifty kilobytes is the most common ceiling for passport, visa and identity photo uploads, and a properly prepared headshot clears it without looking soft. The order of operations is what decides the outcome: crop to the shape your application requires first, then compress. Do it the other way round and every byte you saved gets spent again the moment you trim the frame. A passport photo is also unusually kind to a compressor — one face, even lighting, a plain background — so if yours will not fit at a reasonable quality, the usual reason is that it is still a full phone photo with a room behind it.',
+    'Fifty kilobytes is the most common limit for passport, visa and ID photo uploads. A properly prepared headshot fits it easily without looking soft. The order matters: crop the photo to the required shape FIRST, then compress. If you compress first and crop after, the file size changes again and the work is wasted. Passport photos also compress well by nature — one face, even light, a plain background. If yours will not fit at a decent quality, the usual reason is that it is still a full phone photo with a whole room behind you. Crop closer.',
   useCases: [
     'Passport applications and renewals with a 50 KB photo cap',
     'Visa portals, which frequently specify both a pixel size and a file size',
@@ -356,7 +356,7 @@ const panCardPhoto: SizePresetRoute = {
   metaDescription:
     'Compress a PAN card photo to the size NSDL and UTIITSL both accept, in your browser. No upload, no sign-up.',
   intro:
-    'The two PAN portals do not agree, which is why a single number is hard to find. NSDL wants a JPEG between 20 KB and 50 KB; UTIITSL wants one under 30 KB. Only 20 to 30 KB satisfies both, so that is what this page aims at — and it is why compressing to the 50 KB most guides mention can still be rejected if you are on the UTIITSL form. The more surprising part is NSDL\'s lower bound: it refuses a photo under 20 KB. Every other upload limit you will meet punishes a file for being too large, and this one also punishes it for being too small, so squeezing it as hard as possible is the wrong instinct here.',
+    'PAN cards are issued through two different websites, and they ask for different photo sizes. NSDL (Protean) wants a JPEG between 20 KB and 50 KB. UTIITSL wants one under 30 KB. Only 20 to 30 KB works for both — so that is what this page aims for. This is also why the "50 KB" number most guides give can still get rejected: it is too big for the UTIITSL form. One more surprise: NSDL also rejects photos SMALLER than 20 KB. So squeezing the file as small as possible is the wrong move here. Aim for the middle.',
   useCases: [
     'NSDL (Protean) PAN applications, which want 20-50 KB',
     'UTIITSL PAN applications, which want under 30 KB',
@@ -423,29 +423,29 @@ const sscGdPhotoSignature: SizePresetRoute = {
   metaDescription:
     'SSC GD 2026: the photo is captured live — there is no photo upload. The signature is the only file you compress: JPEG, 10–20 KB. Do it in your browser.',
   intro:
-    'Most guides for this search are answering a question the SSC portal stopped asking. Since the Commission moved to live photo capture, the GD application takes your photograph through your camera during the form itself — and the notice states that capturing a photo of an existing photograph is grounds for summary rejection. There is no photo file to compress. What you DO upload is your signature: a JPEG between 10 and 20 KB, about 6.0 × 2.0 cm, horizontally aligned. And the notice names the most common rejection reason itself: signatures that are too small — "miniature" — which is what over-compressing produces. This page is preset to land your signature inside the band, not below it.',
+    'SSC GD is the constable recruitment exam run by the Staff Selection Commission (SSC). If you are applying, here is the one thing most websites get wrong: there is NO photo file to upload any more. The form takes your photo live, using your camera, while you fill it in. If you point the camera at an old printed photo, your form is rejected. The only image file you upload is your signature. It must be a JPEG between 10 KB and 20 KB, about 6 cm wide and 2 cm tall. One more trap: the most common reason signatures get rejected is that they are TOO SMALL to read. That happens when people squeeze the file too hard. This page is already set to the right size, so your signature fits the limit and stays easy to read.',
   useCases: [
-    'SSC GD Constable applications (CAPFs, SSF, Assam Rifles) on ssc.gov.in',
-    'Other SSC exams on the same portal — CGL, CHSL, MTS use the same signature band',
-    'Re-uploads after a "blurred or miniature signature" rejection',
-    'The 2027 GD cycle, expected to advertise in September 2026 per SSC’s own calendar',
+    'The SSC GD constable application form on ssc.gov.in',
+    'Other SSC exams on the same website — CGL, CHSL and MTS ask for the same signature size',
+    'Uploading again after the form said your signature was blurred or too small',
+    'The next GD application round, which SSC’s own calendar expects in September 2026',
   ],
   faq: [
     {
       q: 'Why can’t I find where to upload my photo for SSC GD?',
-      a: 'Because there is no photo upload. The application captures your photograph live, through your device camera, inside the form — with rules about light, background, caps and spectacles. The notice explicitly warns against pointing the camera at an existing photo: applications doing that are rejected summarily. Any guide telling you to compress a photo to 20 KB for GD is describing the old process.',
+      a: 'Because there is no photo upload. The form takes your photo live, with your camera, while you fill it in. It has rules: good light, plain background, no cap, no glasses. Do not point the camera at an old photo — the official notice says forms that do this are rejected. Any website telling you to compress a photo to 20 KB for GD is describing the old process.',
     },
     {
-      q: 'What exactly is a "miniature" signature, and why is mine rejected?',
-      a: 'A signature scanned or cropped so small that it is illegible at review size. The notice itself says miniature signatures are the major reason for rejection. It usually happens when people compress too aggressively and shrink the image to get under 20 KB. The fix is the opposite of instinct: crop tightly to the strokes, keep the dimensions near 6.0 × 2.0 cm, and let the compressor find a quality that fits 10–20 KB without shrinking the image into invisibility.',
+      q: 'My signature was rejected as "miniature". What does that mean?',
+      a: 'It means the signature image was too small to read. The official notice says this is the number one reason signatures get rejected. It usually happens when you shrink the image to force the file under 20 KB. The fix: crop close around your signature, keep it about 6 cm wide and 2 cm tall, and let this page lower the quality instead of the size. You get a file that fits 10 to 20 KB and stays readable.',
     },
     {
       q: 'Why is there a 10 KB minimum?',
-      a: 'The portal rejects files under 10 KB as well as over 20 KB. A signature squeezed below 10 KB is almost certainly too small or too degraded to read — which is the miniature problem again, expressed as a file-size floor. This page aims inside the band, so you should not need to think about either edge.',
+      a: 'The form rejects files under 10 KB, not just files over 20 KB. A signature squeezed below 10 KB is almost always too small or too blurry to read. This page aims for the middle of the range, so you do not have to think about either limit.',
     },
     {
-      q: 'Does this apply to the 2027 GD cycle?',
-      a: 'The figures on this page are verified from the 2026 GD notice, and SSC’s published calendar expects the 2027 notice in September 2026. SSC has kept the same signature band across recent cycles, but we re-verify against each new notice when it lands — the source link and verification date are shown with the requirements table above.',
+      q: 'Does this apply to the next (2027) GD application?',
+      a: 'The numbers on this page come from the 2026 GD notice — the official PDF, linked above with the date we checked it. SSC expects to publish the 2027 notice in September 2026. SSC has used the same signature size for years, and we will check the new notice the day it comes out and update this page if anything changes.',
     },
     ...SHARED_FAQ_TAIL,
   ],

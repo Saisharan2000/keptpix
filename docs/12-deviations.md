@@ -5251,6 +5251,54 @@ Spec entry `ssc-gd` surfaces on the new page plus signature-to-20kb and
 jpg-to-20kb. 37 pages, 435 unit / 168 integration / 162 e2e, deployed.
 
 ---
+## 🟢 D-126 — Plain language becomes part of the quality bar, because the founder could not follow his own site
+
+**Docs affected:** `09 §3` (plain-language rule added to the content quality
+bar), plus 26 copy rewrites across presets.ts, exam-specs.ts and
+ExamSpecSection.astro
+
+Sai, reading the GD page: *"keep the wording such that even middle IQ or
+slight dumb person could get what the web page says... the page has terms with
+gd ssc which even i can find confusing."*
+
+That settles the standard better than any style guide could: the reader is an
+applicant under deadline stress, on a phone, often in their second or third
+language — and if the founder trips on the abbreviations, the applicant
+certainly does. The first GD draft was written in the deviations log's voice
+("corrects its own premise", "expressed as a file-size floor"), which is the
+right voice for THIS document and the wrong one for a page.
+
+### What changed, concretely
+
+Every exam-facing surface got rewritten to the new bar — short sentences, one
+idea each, every abbreviation explained on first use, the trap and the fix
+said out loud:
+
+- **GD page**: now opens "SSC GD is the constable recruitment exam run by the
+  Staff Selection Commission (SSC)." The miniature-signature FAQ went from
+  "illegible at review size... the opposite of instinct" to "too small to
+  read... let this page lower the quality instead of the size."
+- **All five ExamSpec caveats and every requirement note**: "grounds for
+  summary rejection (notice §8.5)" became "gets the form rejected"; section
+  numbers moved out of user-facing text (the source link is right below).
+- **signature / passport / PAN intros**: sentence lengths roughly halved;
+  the PAN page now opens by explaining there are two websites before it
+  explains why their numbers differ.
+- **ExamSpecSection framing**: "disagreed with the primary source" became
+  "often get them wrong."
+
+The facts did not move — every number, floor and rejection rule is the same
+verified data. Being specific and being plain are not in tension; the
+sentences carrying the facts got shorter.
+
+### Made durable
+
+docs/09 §3's quality bar now carries the rule, and the memory file
+`plain-language-copy` records the founder's own words as the test. Technical
+write-ups for HN/dev.to keep their audience's voice — this is about the pages.
+435 unit / 168 integration / 162 e2e, deployed.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

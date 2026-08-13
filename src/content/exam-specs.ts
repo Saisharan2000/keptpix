@@ -27,10 +27,9 @@ export const examSpecs: readonly ExamSpec[] = [
       'https://ssc.gov.in/api/attachment/uploads/masterData/NoticeBoards/Notice_of_adv_cgl_2026.pdf',
     verifiedOn: '2026-08-12',
     caveat:
-      'SSC no longer accepts an uploaded photograph: the photo is captured LIVE ' +
-      'inside the application, and capturing a photo of an existing photograph is ' +
-      'listed as grounds for rejection (notice §9.5). The only image you compress ' +
-      'for SSC is the signature.',
+      'SSC no longer asks you to upload a photo. The form takes your photo live, ' +
+      'with your camera, while you fill it in. Pointing the camera at an old photo ' +
+      'gets the form rejected. The only image file you upload is your signature.',
     requirements: [
       {
         kind: 'signature',
@@ -40,9 +39,9 @@ export const examSpecs: readonly ExamSpec[] = [
         maxKB: 20,
         dimensions: '~6.0 × 2.0 cm',
         notes:
-          'Blurred or miniature signatures are rejected summarily (§9.6). One annexure ' +
-          'of the same notice says ~4.0 × 2.0 cm — the portals disagree with themselves, ' +
-          'so keep the strokes large and clear rather than chasing exact centimetres.',
+          'Blurred or very small signatures are rejected. Different parts of the ' +
+          'same notice give slightly different sizes (6 cm and 4 cm wide), so do not ' +
+          'chase exact centimetres — just keep the signature big and clear.',
       },
     ],
     surfaceOn: ['signature-to-20kb', 'jpg-to-20kb'],
@@ -57,11 +56,10 @@ export const examSpecs: readonly ExamSpec[] = [
       'https://ssc.gov.in/api/attachment/uploads/masterData/NoticeBoards/Notice_of_CTGD_2026.pdf',
     verifiedOn: '2026-08-13',
     caveat:
-      'GD has NO photo upload: the photograph is captured LIVE inside the application, and ' +
-      'capturing a photo of an existing photograph is grounds for summary rejection (notice ' +
-      '§8.5). The only image you compress for GD is the signature — and the notice itself says ' +
-      'the major reason signatures are rejected is that they are too small ("miniature"), so ' +
-      'do not over-compress below the 10 KB floor.',
+      'GD has NO photo upload. The form takes your photo live, with your camera. ' +
+      'Pointing the camera at an old photo gets the form rejected. The only file you ' +
+      'upload is your signature — and the notice itself says most rejected signatures ' +
+      'are rejected for being TOO SMALL, so do not squeeze the file below 10 KB.',
     requirements: [
       {
         kind: 'signature',
@@ -71,9 +69,8 @@ export const examSpecs: readonly ExamSpec[] = [
         maxKB: 20,
         dimensions: '~6.0 × 2.0 cm @ 300 DPI',
         notes:
-          'Horizontally aligned, on the 2026 notice’s own emphasis: blurred or MINIATURE ' +
-          'signatures are rejected summarily, and miniature is named as the top rejection ' +
-          'reason (Annexure-III §21).',
+          'Keep it horizontal. The notice says blurred or very small ("miniature") ' +
+          'signatures are rejected — and names "too small" as the number one reason.',
       },
     ],
     surfaceOn: ['ssc-gd-photo-signature', 'signature-to-20kb', 'jpg-to-20kb'],
@@ -87,9 +84,10 @@ export const examSpecs: readonly ExamSpec[] = [
     sourceUrl: 'https://upsconline.nic.in/ngrp/assets/PDF/instruction-photo-signature-upload-upsc.pdf',
     verifiedOn: '2026-08-12',
     caveat:
-      'UPSC also captures a live photograph and face-matches it against your upload — ' +
-      'if the two differ, the application cannot proceed. And the signature upload is ' +
-      'not one signature: it is THREE, one below the other, in a single image.',
+      'UPSC asks for BOTH: an uploaded photo AND a live photo taken with your camera. ' +
+      'The two are compared — if they do not match, the form will not go through. ' +
+      'And the signature upload is not one signature: you sign THREE times, one below ' +
+      'the other, in a single image.',
     requirements: [
       {
         kind: 'photo',
@@ -98,9 +96,9 @@ export const examSpecs: readonly ExamSpec[] = [
         minKB: 20,
         maxKB: 200,
         notes:
-          'File must be NAMED "photo". Face must cover at least 75% of the frame, plain ' +
-          'white background, both ear lobes visible. Note the 20 KB FLOOR: a file ' +
-          'compressed below it is rejected for being too small.',
+          'The file must be named "photo". Your face must fill at least 75% of the ' +
+          'picture, on a plain white background, with both ears visible. Files under ' +
+          '20 KB are rejected for being too small — do not over-compress.',
       },
       {
         kind: 'signature',
@@ -110,8 +108,8 @@ export const examSpecs: readonly ExamSpec[] = [
         maxKB: 100,
         dimensions: '350–500 px',
         notes:
-          'File must be NAMED "signature". Sign three times, one below the other, black ' +
-          'ink on plain white paper, scanned as a single image.',
+          'The file must be named "signature". Sign three times, one below the other, ' +
+          'in black ink on plain white paper. Scan all three as one image.',
       },
     ],
     surfaceOn: ['passport-photo-to-50kb', 'jpg-to-100kb', 'jpg-to-50kb'],
@@ -133,8 +131,8 @@ export const examSpecs: readonly ExamSpec[] = [
         minKB: 10,
         maxKB: 200,
         notes:
-          'Colour or black & white, 80% of the frame must be the face (no mask), ears ' +
-          'visible, white background.',
+          'Colour or black and white. Your face must fill 80% of the picture, no mask, ' +
+          'ears visible, white background.',
       },
       {
         kind: 'signature',
@@ -142,7 +140,7 @@ export const examSpecs: readonly ExamSpec[] = [
         format: 'JPG/JPEG',
         minKB: 10,
         maxKB: 100,
-        notes: 'Full signature in running handwriting on white paper. Capitals rejected.',
+        notes: 'Your full signature in normal handwriting on white paper. CAPITAL LETTERS are rejected.',
       },
       {
         kind: 'thumb',
@@ -150,7 +148,7 @@ export const examSpecs: readonly ExamSpec[] = [
         format: 'JPG/JPEG',
         minKB: 10,
         maxKB: 200,
-        notes: 'Left and right hands, per the bulletin.',
+        notes: 'Both hands — left and right — as the bulletin asks.',
       },
     ],
     surfaceOn: ['jpg-to-100kb', 'jpg-to-200kb', 'passport-photo-to-50kb'],
@@ -165,9 +163,10 @@ export const examSpecs: readonly ExamSpec[] = [
       'https://ibpsreg.ibps.in/cbisofeb26/uploads/loadpdf.php?file=k7m5p+fQ15ervNTm0M%2FKzJucmdWyp5rXppSo3aRx&t=1LHArOLA2di0yczXwNDa083LmNWypw%3D%3D',
     verifiedOn: '2026-08-12',
     caveat:
-      'IBPS wants FOUR uploads, each with its own band — photo, signature, left thumb ' +
-      'impression, and a handwritten declaration in English. A signature in capital ' +
-      'letters is explicitly not accepted.',
+      'IBPS (the body that runs bank recruitment exams) wants FOUR separate uploads, ' +
+      'each with its own size range: a photo, a signature, a left thumb impression, ' +
+      'and a short declaration written by hand in English. A signature written in ' +
+      'CAPITAL LETTERS is not accepted.',
     requirements: [
       {
         kind: 'photo',
@@ -176,7 +175,7 @@ export const examSpecs: readonly ExamSpec[] = [
         minKB: 20,
         maxKB: 50,
         dimensions: '200 × 230 px',
-        notes: 'Recent passport-style colour photo against a light background.',
+        notes: 'A recent colour photo, passport style, against a light background.',
       },
       {
         kind: 'signature',
@@ -185,7 +184,7 @@ export const examSpecs: readonly ExamSpec[] = [
         minKB: 10,
         maxKB: 20,
         dimensions: '140 × 60 px',
-        notes: 'Black ink on white paper. NOT in capital letters — explicitly rejected.',
+        notes: 'Black ink on white paper. Do NOT write in capital letters — that is rejected.',
       },
       {
         kind: 'thumb',
@@ -202,7 +201,7 @@ export const examSpecs: readonly ExamSpec[] = [
         minKB: 50,
         maxKB: 100,
         dimensions: '800 × 400 px @ 200 DPI (10 × 5 cm)',
-        notes: 'In English, in the candidate’s own handwriting, black ink.',
+        notes: 'Written in English, in your own handwriting, with black ink.',
       },
     ],
     surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb'],

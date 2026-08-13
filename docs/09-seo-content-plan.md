@@ -138,6 +138,17 @@ Every `/convert/[pair]` page must contain, **as static HTML present before any J
 
 **Minimum 400 words of substantive, pair-specific prose.** If you cannot write 400 non-generic words about a pair, that pair does not get a route.
 
+**Plain language is part of the quality bar (docs/12 D-126).** The reader is an
+applicant under deadline stress, on a phone, often in their second or third
+language — the founder himself found the first GD draft's abbreviations
+confusing, which settles the standard. Rules: short sentences; one idea per
+sentence; explain every abbreviation the first time it appears ("SSC GD is the
+constable recruitment exam run by the Staff Selection Commission"); say the
+trap and the fix the way a person would say them out loud. Being specific
+(above) and being plain are not in tension — the SSC facts stay exact, the
+sentences carrying them get shorter. Clever phrasing belongs in docs/12, never
+on a page.
+
 ### Anti-pattern examples
 
 | ❌ Generic (fails the policy) | ✅ Specific (passes) |
