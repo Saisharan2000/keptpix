@@ -25,7 +25,7 @@ bottom.
 
 | When | What happens | Source | What to do |
 |---|---|---|---|
-| **Sept 2026** (adv.), closes Oct 2026 | **SSC GD Constable 2027 notification** — the largest-applicant exam in India; application uploads spike immediately | PRIMARY: [SSC Tentative Calendar 2026-27](https://ssc.gov.in/api/attachment/uploads/masterData/ExamCalendar/Tentative_Calendar2026_27_08012026.pdf), row 12, read 2026-08-13 | Backlog #34 (time-gated 1 Sep). Verify GD photo/signature specs from the actual notice; update exam-specs.ts; "ssc gd photo size 20kb" was already a GAP query in the keywords sample |
+| **Sept 2026** (adv.), closes Oct 2026 | **SSC GD Constable 2027 notification** — the largest-applicant exam in India; application uploads spike immediately | PRIMARY: [SSC Tentative Calendar 2026-27](https://ssc.gov.in/api/attachment/uploads/masterData/ExamCalendar/Tentative_Calendar2026_27_08012026.pdf), row 12, read 2026-08-13 | PRE-WORK DONE (D-125): /compress/ssc-gd-photo-signature is LIVE, verified from the 2026 GD notice, headline correcting the query's premise (GD has no photo upload). Notice day (#34) is now a cycle update: re-verify against the 2027 PDF, bump ExamSpec cycle/verifiedOn and the page's cycle mentions |
 | Oct 10–11, 2026 | IBPS Clerk prelims (registration already closed; admit-card season, no upload spike) | SECONDARY: aggregators citing the official calendar of 16 Jan 2026 — verify at ibps.in before acting | Nothing — the upload window has passed for this cycle |
 | Nov–Dec 2026 | IBPS RRB Officer/Assistant prelims + mains | SECONDARY, as above | Nothing this cycle |
 | Jan–Mar 2027 | SSC GD Constable 2027 **exam** | PRIMARY: SSC calendar row 12 | Admit-card season; no upload spike |

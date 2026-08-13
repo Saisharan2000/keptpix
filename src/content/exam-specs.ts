@@ -48,6 +48,37 @@ export const examSpecs: readonly ExamSpec[] = [
     surfaceOn: ['signature-to-20kb', 'jpg-to-20kb'],
   },
   {
+    id: 'ssc-gd',
+    exam: 'SSC GD Constable',
+    org: 'Staff Selection Commission',
+    cycle: '2026 (2027 notice expected Sept 2026 — docs/18)',
+    sourceTitle: 'Constable (GD) in CAPFs & SSF Examination 2026 Notice (ssc.gov.in)',
+    sourceUrl:
+      'https://ssc.gov.in/api/attachment/uploads/masterData/NoticeBoards/Notice_of_CTGD_2026.pdf',
+    verifiedOn: '2026-08-13',
+    caveat:
+      'GD has NO photo upload: the photograph is captured LIVE inside the application, and ' +
+      'capturing a photo of an existing photograph is grounds for summary rejection (notice ' +
+      '§8.5). The only image you compress for GD is the signature — and the notice itself says ' +
+      'the major reason signatures are rejected is that they are too small ("miniature"), so ' +
+      'do not over-compress below the 10 KB floor.',
+    requirements: [
+      {
+        kind: 'signature',
+        label: 'Signature',
+        format: 'JPEG/JPG',
+        minKB: 10,
+        maxKB: 20,
+        dimensions: '~6.0 × 2.0 cm @ 300 DPI',
+        notes:
+          'Horizontally aligned, on the 2026 notice’s own emphasis: blurred or MINIATURE ' +
+          'signatures are rejected summarily, and miniature is named as the top rejection ' +
+          'reason (Annexure-III §21).',
+      },
+    ],
+    surfaceOn: ['ssc-gd-photo-signature', 'signature-to-20kb', 'jpg-to-20kb'],
+  },
+  {
     id: 'upsc-cse',
     exam: 'UPSC Civil Services (and exams on the UPSC OTR portal)',
     org: 'Union Public Service Commission',

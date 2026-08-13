@@ -393,6 +393,66 @@ const panCardPhoto: SizePresetRoute = {
 };
 
 /**
+ * The GD page exists to CORRECT its own query (docs/12 D-125). "ssc gd photo
+ * size 20kb" was a GAP query, and every page ranking for it teaches photo
+ * compression for an application that no longer accepts photo uploads — the
+ * 2026 notice captures the photo live and rejects captures of existing
+ * photographs summarily (§8.5). A page whose headline fixes the searcher's
+ * premise is more useful than the destination, which is docs/05 §5's own test.
+ *
+ * Not a cannibal of signature-to-20kb (the D-102 concern, checked): this page
+ * carries GD-specific verified facts — the no-photo-upload correction, the
+ * notice's own "miniature is the top rejection reason" warning, the 2027
+ * cycle note — none of which belong on the generic signature page.
+ *
+ * DELIBERATELY NO CHAIN: the chain suggests the same form's next upload, and
+ * GD's only upload is this one. Chaining to a photo tool would contradict the
+ * page's own headline.
+ *
+ * Notice-day flip (docs/18, backlog #34): re-verify against the 2027 notice,
+ * update the ssc-gd ExamSpec cycle/verifiedOn and this copy's cycle mentions.
+ */
+const sscGdPhotoSignature: SizePresetRoute = {
+  slug: 'ssc-gd-photo-signature',
+  format: 'jpeg',
+  targetBytes: 20_000,
+  supported: true,
+  cardName: 'SSC GD signature, 10–20 KB',
+  title: 'SSC GD photo & signature size — what actually uploads',
+  h1: 'SSC GD photo and signature size',
+  metaDescription:
+    'SSC GD 2026: the photo is captured live — there is no photo upload. The signature is the only file you compress: JPEG, 10–20 KB. Do it in your browser.',
+  intro:
+    'Most guides for this search are answering a question the SSC portal stopped asking. Since the Commission moved to live photo capture, the GD application takes your photograph through your camera during the form itself — and the notice states that capturing a photo of an existing photograph is grounds for summary rejection. There is no photo file to compress. What you DO upload is your signature: a JPEG between 10 and 20 KB, about 6.0 × 2.0 cm, horizontally aligned. And the notice names the most common rejection reason itself: signatures that are too small — "miniature" — which is what over-compressing produces. This page is preset to land your signature inside the band, not below it.',
+  useCases: [
+    'SSC GD Constable applications (CAPFs, SSF, Assam Rifles) on ssc.gov.in',
+    'Other SSC exams on the same portal — CGL, CHSL, MTS use the same signature band',
+    'Re-uploads after a "blurred or miniature signature" rejection',
+    'The 2027 GD cycle, expected to advertise in September 2026 per SSC’s own calendar',
+  ],
+  faq: [
+    {
+      q: 'Why can’t I find where to upload my photo for SSC GD?',
+      a: 'Because there is no photo upload. The application captures your photograph live, through your device camera, inside the form — with rules about light, background, caps and spectacles. The notice explicitly warns against pointing the camera at an existing photo: applications doing that are rejected summarily. Any guide telling you to compress a photo to 20 KB for GD is describing the old process.',
+    },
+    {
+      q: 'What exactly is a "miniature" signature, and why is mine rejected?',
+      a: 'A signature scanned or cropped so small that it is illegible at review size. The notice itself says miniature signatures are the major reason for rejection. It usually happens when people compress too aggressively and shrink the image to get under 20 KB. The fix is the opposite of instinct: crop tightly to the strokes, keep the dimensions near 6.0 × 2.0 cm, and let the compressor find a quality that fits 10–20 KB without shrinking the image into invisibility.',
+    },
+    {
+      q: 'Why is there a 10 KB minimum?',
+      a: 'The portal rejects files under 10 KB as well as over 20 KB. A signature squeezed below 10 KB is almost certainly too small or too degraded to read — which is the miniature problem again, expressed as a file-size floor. This page aims inside the band, so you should not need to think about either edge.',
+    },
+    {
+      q: 'Does this apply to the 2027 GD cycle?',
+      a: 'The figures on this page are verified from the 2026 GD notice, and SSC’s published calendar expects the 2027 notice in September 2026. SSC has kept the same signature band across recent cycles, but we re-verify against each new notice when it lands — the source link and verification date are shown with the requirements table above.',
+    },
+    ...SHARED_FAQ_TAIL,
+  ],
+  relatedSlugs: ['signature-to-20kb', 'jpg-to-20kb', 'passport-photo-to-50kb'],
+};
+
+/**
  * Wave 1 ships the six JPG sizes (docs/09 §6). The PNG and WebP size routes are
  * Wave 2 and are pure data additions here — no code changes required.
  */
@@ -406,6 +466,7 @@ export const sizePresetRoutes: SizePresetRoute[] = [
   signature20kb,
   passportPhoto50kb,
   panCardPhoto,
+  sscGdPhotoSignature,
 ];
 
 /** Same hard gate as the format pairs: never prerender what we cannot perform. */

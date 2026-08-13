@@ -78,7 +78,19 @@ describe('exam specs (docs/12 D-118)', () => {
 
   it('examSpecsForRoute returns specs in data order and only matches', () => {
     const specs = examSpecsForRoute('signature-to-20kb');
-    expect(specs.map((s) => s.id)).toEqual(['ssc-cgl', 'ibps']);
+    // ssc-gd joined in D-125 (GD pre-work, Cowork D4).
+    expect(specs.map((s) => s.id)).toEqual(['ssc-cgl', 'ssc-gd', 'ibps']);
     expect(examSpecsForRoute('jpg-to-1mb')).toEqual([]);
+  });
+
+  it('the GD page carries the GD spec, and GD stays photo-free (D-125)', () => {
+    const specs = examSpecsForRoute('ssc-gd-photo-signature');
+    expect(specs.map((s) => s.id)).toContain('ssc-gd');
+    const gd = specs.find((s) => s.id === 'ssc-gd');
+    // The page's whole premise: no photo upload exists for GD. If a photo
+    // requirement is ever added to this entry without the notice saying so,
+    // the page's headline becomes a lie — fail here first.
+    expect(gd?.requirements.every((r) => r.kind !== 'photo')).toBe(true);
+    expect(gd?.caveat).toMatch(/live/i);
   });
 });

@@ -5216,6 +5216,41 @@ Baseline JS 46.8 → 47.1 KB gz under Vite 8 chunking (budget 60). 434 unit /
 168 integration / 159 e2e green, deployed byte-verified.
 
 ---
+## 🟢 D-125 — GD pre-work: the page that corrects its own search query, live three weeks before the spike
+
+**Docs affected:** `docs/18` (GD row now says pre-work done), Cowork D4 executed
+
+Cowork D4 pre-approved the queue-jump and asked for pre-work "against 2024/25
+specs marked unverified". Improved on execution: the **2026 GD notice is
+itself a primary source** (74 pages, read in its own PDF text), so the page
+ships VERIFIED for the named cycle today, and notice day (~Sep 1, backlog #34)
+becomes a cycle update rather than a draft flip.
+
+`/compress/ssc-gd-photo-signature` exists to correct its own query. "ssc gd
+photo size 20kb" was a GAP query, and every page ranking for it teaches photo
+compression for an application that **no longer accepts photo uploads** — the
+notice captures the photo live and rejects captures of existing photographs
+summarily (§8.5). A page whose headline fixes the searcher's premise is more
+useful than the destination, which is docs/05 §5's own test.
+
+The content's best fact is the notice's own: **"the major reasons for
+rejection of signatures are miniature signatures"** — i.e. the top failure is
+OVER-compression, people shrinking the image to fit 20 KB. The page teaches
+the counter-intuitive fix (crop tight, hold ~6×2 cm, let quality carry the
+size) and its FAQ explains the 10 KB floor as the same problem expressed as a
+limit. That is advice a generic 20 KB page cannot carry and no aggregator has.
+
+Checked against the D-102 cannibalisation rule before building: unlike the
+killed PAN-signature page, every load-bearing fact here is GD-specific (the
+no-upload correction, the miniature warning, the 2027 cycle note).
+**Deliberately no chain** — GD's only upload is the signature, and chaining to
+a photo tool would contradict the page's own headline; the data tests pin
+GD as photo-free so the headline cannot silently rot.
+
+Spec entry `ssc-gd` surfaces on the new page plus signature-to-20kb and
+jpg-to-20kb. 37 pages, 435 unit / 168 integration / 162 e2e, deployed.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
