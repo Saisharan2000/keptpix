@@ -79,9 +79,24 @@ export const SITE = resolveSite();
  * `@` in this value, so the mistake cannot be made quietly. A payment page URL
  * is the indirection that keeps the identifier private.
  *
- * Set it, and the footer link appears. Nothing else needs touching.
+ * Set it, and the footer and success-screen links appear. Nothing else needs
+ * touching.
+ *
+ * The live value is a Razorpay Payment Page (docs/12 D-116): individual
+ * onboarding, native UPI in INR, and the page shows the brand name "Keptpix"
+ * rather than the owner's legal name — verified by reading the live page as a
+ * visitor. Chosen over Buy Me a Coffee (no India payouts, no UPI, USD-anchored
+ * with a ~$3 floor) and Ko-fi (PayPal India stopped domestic payments in 2021,
+ * and a personal PayPal shows the creator's legal name to supporters).
  */
-export const TIP_URL = '';
+// Annotated `string`, not the inferred literal: the consumers guard on
+// `TIP_URL === ''` so the link can be turned off by emptying this line, and a
+// literal type makes that guard a TS2367 the moment the value is non-empty.
+export const TIP_URL: string = 'https://pages.razorpay.com/keptpix';
 
-/** Label for the tip link. Deliberately not a nag — no "please", no urgency. */
-export const TIP_LABEL = 'Buy me a coffee';
+/**
+ * Label for the tip link. Deliberately not a nag — no "please", no urgency —
+ * and it matches the payment page's own title, so the click lands somewhere
+ * that visibly agrees with what the link promised.
+ */
+export const TIP_LABEL = 'Support KeptPix';

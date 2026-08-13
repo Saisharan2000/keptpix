@@ -6,6 +6,7 @@ import { ingestFiles, QueueController, type RejectedFile } from '../../state/que
 import { completedResults, isWarning, joinJobs, summarise } from '../../state/selectors';
 import { useStore } from '../../state/store';
 import { BatchSummary } from './BatchSummary';
+import { TipLink } from './TipLink';
 import { CompareView } from './CompareView';
 import { ConfigPanel } from './ConfigPanel';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
@@ -511,6 +512,8 @@ function ImageToolShell({
               onDownloadAll={downloadAll}
               chain={chain}
             />
+            {/* After the batch, not during: the ask follows the delivery (D-116). */}
+            {summary.done > 0 && running === 0 && <TipLink />}
             <InstallPrompt eligible={summary.done > 0} />
             <PrivacyIndicator processed={summary.done} total={views.length} />
             {import.meta.env.DEV && <DiagnosticsPanel device={device} views={views} />}

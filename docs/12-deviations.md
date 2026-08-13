@@ -4757,6 +4757,63 @@ pair routes — they light up when Wave 2 ships them — unlike the preset-table
 miss D-113 fixed, where the slugs could never resolve.
 
 ---
+## 🟢 D-116 — The tip link is live: Razorpay, a plain anchor, and the ask that follows the delivery
+
+**Docs affected:** none new — implements the #25 decision from D-111/D-112
+
+The Chrome agent's research and the founder's account work delivered
+`https://pages.razorpay.com/keptpix`: individual onboarding, native UPI in INR
+(the audience largely has no cards), ~2.36% fees on a ₹100 tip, and — the
+decisive requirement — the page shows the brand name "Keptpix" and not the
+founder's legal name, verified by reading the live page as a visitor. Buy Me a
+Coffee was disqualified (no India payouts, no UPI, ~$3 USD floor on a ₹50 tip)
+and Ko-fi too (PayPal India stopped domestic payments in 2021; a personal
+PayPal shows the legal name).
+
+### Placement
+
+Two renders of one URL. The footer link (built in D-112, dormant until now) on
+every page; and a `TipLink` component on the success screens of both shells —
+image batches once `running === 0 && done > 0`, PDF/QR tools alongside the
+delivery line. **After the delivery, never during**: the ask reads as fair
+exactly once, at the moment the product has already done its job. The
+distribution doc said tip jars convert on exam tools; the success screen is
+where that claim gets its test.
+
+A plain `<a>` in both places. Razorpay offers an embed button; it is a
+third-party script, and `script-src 'self'`, check-claims.mjs and
+privacy.spec.ts all exist to keep exactly that out. `noreferrer`, so the
+payment host does not learn which tool the visitor was using.
+
+Kept OUTSIDE the `role="status"` live region, deliberately: a live region that
+suddenly announces a payment link is a screen-reader nag, and chain.spec's
+zero-links assertion on that region now doubles as the test that keeps it out.
+
+### Three small breakages, all mine, all caught by gates
+
+- **TS2367**: once `TIP_URL` was non-empty, its inferred literal type made the
+  `=== ''` guards a compile error — the const now carries a widening `: string`
+  annotation so the link can be turned off by emptying one line.
+- **check-private's regex** did not know about that annotation and failed with
+  "did the export change shape?" — the exact loud failure its unknown-shape
+  branch was built for. Widened.
+- **tool-results.png** regenerated deliberately — the success screen genuinely
+  changed, and the new baseline was eyeballed before being trusted.
+
+Baseline JS 45.5 → 45.8 KB gz (+0.3 KB for TipLink in both shells).
+
+### Handed back to the founder (from the Chrome handoff)
+
+1. **support@keptpix.com does not exist yet** and is printed on the live
+   payment page — Cloudflare Email Routing fixes receiving in minutes. ⚠️ And
+   from the DMARC memory: keptpix.com is `p=reject`, so REPLYING as
+   support@keptpix.com from Gmail will bounce — receiving is unaffected.
+2. **The ₹50 live test** — the one unverified privacy point is the payee name a
+   UPI app shows at pay time. If it shows the legal name, fall back per the
+   handoff.
+3. Page polish: logo upload, post-payment redirect back to keptpix.com.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

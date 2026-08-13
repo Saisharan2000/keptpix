@@ -18,6 +18,7 @@ import {
   type ToolRunResult,
 } from '../../state/tool-runner';
 import { Dropzone } from './Dropzone';
+import { TipLink } from './TipLink';
 import { FileThumbnail } from './FileThumbnail';
 import { PrivacyIndicator } from './PrivacyIndicator';
 import { ProgressBar } from './ProgressBar';
@@ -404,11 +405,15 @@ export function ManifestToolShell({ tool }: Props) {
           )}
 
           {run.status === 'done' && (
-            <Outcome
-              result={run.result}
-              delivery={delivery}
-              onAgain={() => void deliverToolResult(run.result, true).then(setDelivery)}
-            />
+            <>
+              <Outcome
+                result={run.result}
+                delivery={delivery}
+                onAgain={() => void deliverToolResult(run.result, true).then(setDelivery)}
+              />
+              {/* After the delivery line, not during the run (D-116). */}
+              <TipLink />
+            </>
           )}
 
           {run.status === 'error' && (

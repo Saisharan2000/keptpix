@@ -82,7 +82,13 @@ for (const { path, why } of NEVER_TRACKED) {
  */
 const SITE_TS = 'src/content/site.ts';
 if (existsSync(SITE_TS)) {
-  const tipUrl = readFileSync(SITE_TS, 'utf8').match(/^export const TIP_URL\s*=\s*'([^']*)'/m)?.[1];
+  // Optional `: string` annotation: consumers guard on `=== ''`, and once the
+  // value is non-empty that guard is a TS2367 against the inferred literal type,
+  // so the export carries a widening annotation. This gate failed loudly the day
+  // the shape changed — the `undefined` branch below exists for exactly that.
+  const tipUrl = readFileSync(SITE_TS, 'utf8').match(
+    /^export const TIP_URL(?:\s*:\s*string)?\s*=\s*'([^']*)'/m,
+  )?.[1];
   if (tipUrl === undefined) {
     process.stdout.write('  ??  TIP_URL                  not found in site.ts — did the export change shape?\n');
     failed = true;

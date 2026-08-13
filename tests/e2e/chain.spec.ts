@@ -111,5 +111,16 @@ test.describe('task chaining on the success screen', () => {
     const summary = page.getByRole('status').first();
     await expect(summary).toContainText(/1 done/);
     await expect(summary.getByRole('link')).toHaveCount(0);
+
+    /*
+     * The tip link (D-116) DOES appear on completion — on every route, outside
+     * the live region. Inside role="status" it would be announced to screen
+     * readers as a payment nag, and the zero-links assertion above is what
+     * keeps it out. Scoped to #tool so the footer's copy of the same link
+     * cannot satisfy this vacuously.
+     */
+    const tip = page.locator('#tool').getByRole('link', { name: /Support KeptPix/ });
+    await expect(tip).toBeVisible();
+    await expect(tip).toHaveAttribute('href', 'https://pages.razorpay.com/keptpix');
   });
 });
