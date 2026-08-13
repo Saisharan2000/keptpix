@@ -38,6 +38,11 @@ commit. The rule you broke stays in force for every other case.
 - Write components as React. `import { useState } from 'react'` is correct and
   resolves to `preact/compat`. Do NOT install `react` or `react-dom` — React 19's
   runtime alone is 59.45 KB gz and blows the 60 KB budget on its own.
+  NOTE (D-124): package.json DOES declare `"react": "npm:@preact/compat"` — that
+  is an npm ALIAS, not React; node_modules/react is a ~2 KB shim onto preact.
+  It exists because Astro 7's prerender resolves externals with plain Node, where
+  Vite aliases cannot reach. Never repoint it at real React, and never "fix" it
+  by installing react-dom.
 - A dependency that imports React internally must be added to `vite.ssr.noExternal`
   in astro.config.mjs, or the prerender pass fails on it (zustand is already there).
 - `@astrojs/preact` must track Astro's major version. Do not install `@latest`.

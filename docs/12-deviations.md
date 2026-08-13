@@ -5157,6 +5157,65 @@ Footer link added in the same commit — the no-orphans spec exists because
 434 unit / 168 integration / 159 e2e.
 
 ---
+## 🟠 D-124 — Astro 5 → 7 in one sitting: the predicted blocker, the alias one layer down, and a chunk that raced a job
+
+**Docs affected:** `CLAUDE.md` (the react rule gains the alias note, same
+commit), `astro.config.mjs` (the D-124 note where the old fix stopped working)
+
+Backlog #21, executed with the founder's explicit in-session go-ahead
+overriding its own "fresh session" note. Started from master; the stale
+`astro-7-upgrade` branch (20 commits behind, 14k deletions of master's work)
+is deleted so nothing can resume from it.
+
+### The upgrade
+
+`astro 5.16 → 7.2.1` (the version the HIGH advisory names) and
+`@astrojs/preact 4 → 6.0.2` (CLAUDE.md: the integration tracks Astro's major).
+Astro 7 builds on Vite 8 / rolldown — build time dropped 13.4s → 5.7s.
+
+### Blocker 1, exactly as predicted: zustand's `import 'react'` at prerender
+
+D-109's requeue note called it, and the old fix — `vite.ssr.noExternal` plus
+resolve aliases — no longer applies: on Vite 8 the prerender pass resolves
+externals with PLAIN NODE ESM, which no Vite alias reaches. A per-environment
+`environments.prerender` block was tried and failed identically. The fix moved
+one layer down: package.json declares `"react": "npm:@preact/compat@^18.3.2"`
+(plus overrides for anything transitive), so `node_modules/react` IS
+preact/compat — ADR-007's mechanism at install time. A first attempt used
+overrides alone and installed nothing, because overrides only rewrite a
+dependency someone declares, and zustand's react is an optional peer.
+
+CLAUDE.md's "do NOT install react" rule survives with a note in the same
+commit: the package NAMED react is a ~2 KB shim onto preact; the rule's 60 KB
+rationale is untouched, and the note forbids ever repointing it at real React.
+
+### Blocker 2, undocumented and better: a chunk fetch raced a conversion
+
+With rolldown, the full e2e suite failed `privacy.spec`'s absolute in-flight
+rule: `rolldown-runtime-*.js` was fetched DURING a job (full-suite timing
+only; isolation passed). Same-origin static JS, no data carried — but docs/06
+§5(b) is absolute precisely so an allowlist cannot hide a real leak, and the
+test did its job against a bundler swap that changed chunking.
+
+Fix is structural rather than a chase: `warmLazyModules()` at INGEST — files
+being added is the strongest "a job is imminent" signal and is outside any job
+by definition — fire-and-forget imports of the lazy packages (dexie,
+client-zip; the PACKAGES, not their wrappers, because platform/db lazy-imports
+dexie inside a function and warming the wrapper leaves the chunk that matters
+cold). The rolldown runtime rides in with the first of them. Pre-fix: failed
+2 of 2 full-suite runs. Post-fix: 3 full-suite runs clean.
+
+### The security ledger this was for
+
+**Prod tree: 0 critical / 0 high / 0 moderate / 1 low** — the astro HIGH is
+gone. The dev tree keeps a handlebars critical via eslint-plugin-boundaries →
+@boundaries/elements, which parses only this repo's own source at lint time
+and has no fixed version to bump to; noted, not shipped.
+
+Baseline JS 46.8 → 47.1 KB gz under Vite 8 chunking (budget 60). 434 unit /
+168 integration / 159 e2e green, deployed byte-verified.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

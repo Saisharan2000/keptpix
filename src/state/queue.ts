@@ -46,7 +46,35 @@ export interface IngestResult {
  * Turn dropped Files into SourceImages. Never copies the bytes into state —
  * SourceImage holds the File handle itself (docs/05 §4 invariant 2).
  */
+/**
+ * Pre-fetch every lazily-imported module a session can reach, exactly once,
+ * at ingest (docs/12 D-124).
+ *
+ * docs/06 §5(b) demands ZERO requests while a job is in flight — absolute, no
+ * static-asset carve-out, because an allowlist is where a real leak hides.
+ * The lazy modules (dexie, client-zip) and, on Vite 8, rolldown's shared
+ * runtime chunk are same-origin static JS, but a fetch is a fetch: under the
+ * Astro 7 upgrade the runtime chunk was observed landing INSIDE a job window
+ * in full-suite runs. Files being added is the strongest "a job is imminent"
+ * signal there is, and it is outside any job by definition — so the whole
+ * lazy graph is warmed here, fire-and-forget, and nothing static remains to
+ * race a conversion.
+ */
+let lazyGraphWarmed = false;
+function warmLazyModules(): void {
+  if (lazyGraphWarmed) return;
+  lazyGraphWarmed = true;
+  // The PACKAGES, not their wrappers: platform/db lazy-imports dexie inside a
+  // function, so warming the wrapper module would fetch the wrapper's chunk
+  // and leave dexie's — the one that matters — still cold. Failures are
+  // ignored on purpose: these imports retry naturally at their real call
+  // sites, and a warm-up must never break an ingest.
+  void import('dexie').catch(() => {});
+  void import('client-zip').catch(() => {});
+}
+
 export async function ingestFiles(files: readonly File[]): Promise<IngestResult> {
+  warmLazyModules();
   const accepted: SourceImage[] = [];
   const rejected: RejectedFile[] = [];
 

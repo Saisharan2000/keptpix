@@ -93,6 +93,14 @@ export default defineConfig({
     ssr: {
       noExternal: ['zustand'],
     },
+    // Astro 7 note (D-124): on Vite 8 the prerender pass resolves externals
+    // with PLAIN NODE ESM, and neither ssr.noExternal above nor a
+    // per-environment `environments.prerender` block stopped zustand's
+    // `import 'react'` from hitting Node directly (both were tried and both
+    // builds failed identically). The fix lives in package.json instead:
+    // `overrides` aliases the react names to @preact/compat AT INSTALL TIME,
+    // so Node resolution finds a react that IS preact — ADR-007's mechanism,
+    // one layer down. The aliases here still govern everything Vite bundles.
     worker: {
       format: 'es',
     },
