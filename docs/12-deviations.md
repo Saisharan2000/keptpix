@@ -5050,6 +5050,33 @@ tool's own copy, tested. 434 unit / 168 integration / 154 e2e; 35 pages;
 "compress pdf to 200kb" now routes to `/pdf/compress` in the query matcher.
 
 ---
+## 🟢 D-121 — The spike is scheduled: exam calendars as the trend-keyword source
+
+**Docs affected:** new `docs/18-exam-calendar.md`
+
+Backlog #30. For this niche, "keep up with trend keywords" does not mean
+Google Trends — SSC, IBPS, UPSC and NTA publish their calendars months ahead,
+so every "photo 20kb" traffic spike is **scheduled**, and chasing it after it
+starts is the only way to lose to it.
+
+docs/18 now holds the verified windows. The SSC 2026-27 table was read from
+the primary calendar PDF in full; IBPS dates are recorded as secondary-sourced
+and labelled as such — the D-118 rule stands that no SPEC is ever updated from
+an aggregator, and the calendar doc states which sourcing tier each row is.
+
+**The one date that matters most: SSC GD Constable 2027 advertises in
+September 2026** — three weeks away, the largest-applicant exam in India, its
+application uploads spiking immediately, and "ssc gd photo size 20kb" already
+a GAP query in the keywords sample. #34 is queued and TIME-GATED to the
+notice landing, with the discipline written into the gate: specs from the
+notice's own PDF, never from the aggregators that will publish guesses the
+same morning.
+
+Maintenance is one commit per landed notice: re-verify specs, update the
+calendar, queue page work the volume justifies. Windows that pass move to a
+log section, so the doc cannot silently rot the way D-100 catalogued.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
