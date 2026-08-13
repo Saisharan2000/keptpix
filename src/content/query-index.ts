@@ -17,7 +17,7 @@
  * the part worth a human's attention.
  */
 import { publishedFormatPairRoutes, FORMAT_LABEL } from './formats';
-import { publishedSizePresetRoutes, formatTarget } from './presets';
+import { publishedResizePresetRoutes, publishedSizePresetRoutes, formatTarget } from './presets';
 import { normalise, type QueryEntry } from '../core/query-match';
 import { publishedTools } from '../core/tools';
 
@@ -118,6 +118,23 @@ const presetEntries: QueryEntry[] = publishedSizePresetRoutes.map((route) => ({
 }));
 
 /**
+ * Resize presets: /resize/signature-140x60 and friends (docs/12 D-130).
+ *
+ * `must` is the dimension token itself — "resize signature 140x60" keeps
+ * "140x60" as one token through normalise() (the x is alphanumeric), and a
+ * query naming the exact dimensions is the least ambiguous signal a matcher
+ * ever gets. No dimension token, no match; the generic /resize hub serves
+ * "resize my photo".
+ */
+const resizeEntries: QueryEntry[] = publishedResizePresetRoutes.map((route) => ({
+  path: '/resize/' + route.slug,
+  label: route.h1,
+  terms: ['resize', 'size', 'pixels', 'px', route.width + 'x' + route.height],
+  must: [route.width + 'x' + route.height],
+  excludes: [...NOT_AN_IMAGE],
+}));
+
+/**
  * Manifest tools: /pdf/from-images and whatever follows it.
  *
  * Terms come from the tool's own accept list, so a tool that accepts HEIC is
@@ -188,6 +205,7 @@ export const QUERY_INDEX: readonly QueryEntry[] = [
   ...toolEntries,
   ...pairEntries,
   ...presetEntries,
+  ...resizeEntries,
   ...hubEntries,
 ];
 

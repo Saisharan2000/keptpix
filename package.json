@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/build-precache-manifest.mjs && node scripts/build-sw.mjs",
+    "build": "astro build && node scripts/inject-runtime-preload.mjs && node scripts/build-precache-manifest.mjs && node scripts/build-sw.mjs",
     "preview": "astro preview",
     "test": "vitest run --project unit",
     "test:e2e": "playwright test",

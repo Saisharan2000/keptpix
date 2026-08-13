@@ -11,7 +11,7 @@
 import type { APIRoute } from 'astro';
 import { SITE as SITE_URL } from '../content/site';
 import { publishedFormatPairRoutes } from '../content/formats';
-import { publishedSizePresetRoutes } from '../content/presets';
+import { publishedResizePresetRoutes, publishedSizePresetRoutes } from '../content/presets';
 import { publishedTools } from '../core/tools';
 
 // Single source of truth — see src/core/site.ts (docs/12 D-63).
@@ -46,6 +46,10 @@ export const GET: APIRoute = () => {
     ...publishedFormatPairRoutes.map((r) => ({
       path: '/convert/' + r.slug,
       priority: r.tier === 'star' ? '0.9' : '0.6',
+    })),
+    ...publishedResizePresetRoutes.map((r) => ({
+      path: '/resize/' + r.slug,
+      priority: '0.9',
     })),
     ...publishedSizePresetRoutes.map((r) => ({
       path: '/compress/' + r.slug,

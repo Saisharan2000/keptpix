@@ -213,7 +213,7 @@ export const examSpecs: readonly ExamSpec[] = [
         notes: 'Written in English, in your own handwriting, black ink — not in capital letters.',
       },
     ],
-    surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb'],
+    surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb', 'photo-200x230', 'signature-140x60', 'thumb-240x240', 'declaration-800x400'],
   },
   {
     id: 'ibps',
@@ -268,7 +268,7 @@ export const examSpecs: readonly ExamSpec[] = [
     ],
     hindi:
       'IBPS (बैंक भर्ती) में चार फ़ाइलें अपलोड होती हैं: फोटो 20–50 KB (200×230 px), हस्ताक्षर 10–20 KB (140×60 px, CAPITAL में नहीं), बाएँ अँगूठे का निशान 20–50 KB, और अंग्रेज़ी में हाथ से लिखा घोषणा-पत्र 50–100 KB।',
-    surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb'],
+    surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb', 'photo-200x230', 'signature-140x60', 'thumb-240x240', 'declaration-800x400'],
   },
 ];
 

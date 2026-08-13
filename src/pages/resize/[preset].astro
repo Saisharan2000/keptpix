@@ -12,10 +12,12 @@
  * this route builds zero pages today and every page tomorrow.
  */
 import ToolLayout from '../../layouts/ToolLayout.astro';
+import ExamSpecSection from '../../components/astro/ExamSpecSection.astro';
 import FaqSection from '../../components/astro/FaqSection.astro';
 import RelatedTools from '../../components/astro/RelatedTools.astro';
 import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
 import ToolShell from '../../components/react/ToolShell';
+import { examSpecsForRoute } from '../../content/exam-specs';
 import { publishedResizePresetRoutes } from '../../content/presets';
 
 export function getStaticPaths() {
@@ -26,6 +28,9 @@ export function getStaticPaths() {
 }
 
 const { route } = Astro.props;
+
+/** Verified portal requirements whose data names this route (docs/12 D-130). */
+const specs = examSpecsForRoute(route.slug);
 
 const breadcrumbs = [
   { name: 'Home', path: '/' },
@@ -94,6 +99,7 @@ const defaultConfig = {
     </ul>
   </section>
 
+  <ExamSpecSection specs={specs} />
   <FaqSection faq={route.faq} />
   <PrivacyBanner />
   <RelatedTools slugs={route.relatedSlugs} currentSlug={route.slug} />

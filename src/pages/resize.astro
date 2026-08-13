@@ -6,6 +6,7 @@
 import ToolLayout from '../layouts/ToolLayout.astro';
 import PrivacyBanner from '../components/astro/PrivacyBanner.astro';
 import ToolShell from '../components/react/ToolShell';
+import { publishedResizePresetRoutes } from '../content/presets';
 
 const defaultConfig = {
   resize: { kind: 'maxDimension' as const, max: 1920 },
@@ -34,6 +35,31 @@ const defaultConfig = {
       </noscript>
     </div>
   </Fragment>
+
+  {
+    publishedResizePresetRoutes.length > 0 && (
+      <section aria-labelledby="preset-sizes-heading">
+        <h2 id="preset-sizes-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+          Common form sizes
+        </h2>
+        <ul class="mt-5 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+          {publishedResizePresetRoutes.map((route) => (
+            <li>
+              <a
+                href={'/resize/' + route.slug}
+                class="block rounded-md border border-border px-4 py-3 no-underline hover:border-border-strong hover:bg-bg-subtle"
+              >
+                <span class="num block text-sm font-medium text-text">
+                  {route.width} × {route.height} px
+                </span>
+                <span class="mt-1 block text-sm text-text-muted">{route.useCases[0]}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 
   <section aria-labelledby="quality-heading">
     <h2 id="quality-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">

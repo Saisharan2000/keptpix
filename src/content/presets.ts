@@ -487,7 +487,154 @@ export function formatTarget(bytes: number): string {
  * 400x400. The template at /resize/[preset] is built and getStaticPaths reads
  * this array, so adding entries here is the entire change.
  */
-export const resizePresetRoutes: ResizePresetRoute[] = [];
+/**
+ * D10 carve-out (docs/12 D-130): only dimensions that appear in a VERIFIED
+ * exam spec ship as resize presets — the official notices are the demand
+ * evidence. Every number below traces to the same primary PDFs as
+ * exam-specs.ts (IBPS 2026-cycle guidelines; SBI CBO Nov 2025 guidelines).
+ *
+ * HONESTY RULE for this template: `exact` resize STRETCHES — it does not crop
+ * or pad — so every intro says "crop to the right shape first" in plain words
+ * (D-126). That also matches the portals' own advice.
+ */
+const photo200x230: ResizePresetRoute = {
+  slug: 'photo-200x230',
+  width: 200,
+  height: 230,
+  supported: true,
+  title: 'Resize a photo to 200 x 230 pixels — bank exam size',
+  h1: 'Resize a photo to 200 × 230 pixels',
+  metaDescription:
+    'Resize your photo to exactly 200 × 230 pixels for IBPS and SBI forms, in your browser. Nothing is uploaded.',
+  intro:
+    'Bank recruitment forms — IBPS and SBI both — ask for a photo of exactly 200 × 230 pixels, with the file between 20 KB and 50 KB. This page sets the pixel size for you. One thing to know: resizing stretches the picture to fit. If your photo is a very different shape, crop it to roughly passport shape first, then resize here. After resizing, if your file is still over 50 KB, use the compress page linked below — it targets the KB limit.',
+  useCases: [
+    'IBPS bank exam application forms (PO, Clerk, SO)',
+    'SBI recruitment forms — same photo size, same 20–50 KB band',
+    'Other bank and insurance recruitments that copy the IBPS format',
+  ],
+  faq: [
+    {
+      q: 'Will this change the shape of my photo?',
+      a: 'It can. This tool resizes to exactly 200 × 230 pixels by stretching. If your photo is close to passport shape already, the stretch is invisible. If it is a wide photo or a square one, crop it to roughly passport shape first — then resize. That is also what the bank portals themselves advise.',
+    },
+    {
+      q: 'The form also says 20 KB to 50 KB. Does this page do that?',
+      a: 'This page fixes the pixels. The file size usually lands in the right range on its own at this small size — but if the form still rejects it, open the compress page linked below and it will target the KB limit exactly.',
+    },
+    {
+      q: 'Is my photo uploaded?',
+      a: 'No. The resizing happens inside your browser, on your device. You can turn off your internet connection and it still works.',
+    },
+  ],
+  relatedSlugs: ['signature-140x60', 'jpg-to-50kb', 'passport-photo-to-50kb'],
+};
+
+const signature140x60: ResizePresetRoute = {
+  slug: 'signature-140x60',
+  width: 140,
+  height: 60,
+  supported: true,
+  title: 'Resize a signature to 140 x 60 pixels — bank exam size',
+  h1: 'Resize a signature to 140 × 60 pixels',
+  metaDescription:
+    'Resize your signature to exactly 140 × 60 pixels for IBPS and SBI forms, in your browser. Nothing is uploaded.',
+  intro:
+    'IBPS and SBI forms want the signature image at exactly 140 × 60 pixels, with the file between 10 KB and 20 KB, signed in black ink on white paper — and NOT in capital letters, which the forms reject. This page sets the pixel size. Crop close around the ink before you resize, so the signature stays big and readable inside the small box. If the file is then over 20 KB, the compress page linked below targets the KB limit.',
+  useCases: [
+    'IBPS application forms (PO, Clerk, SO)',
+    'SBI recruitment forms — same signature size and band',
+    'Re-uploads after a "signature not as per specification" rejection',
+  ],
+  faq: [
+    {
+      q: 'Why does my signature look squashed?',
+      a: 'The tool stretches your image to exactly 140 × 60 pixels, which is a wide, short box. Crop your scan close around the signature — wide and short, like the box — before resizing. A tall crop squeezed into a short box is what causes the squashed look.',
+    },
+    {
+      q: 'The form rejected my signature in capital letters. Why?',
+      a: 'IBPS and SBI say it directly in their guidelines: a signature written in capital letters is not accepted. Sign normally, in your usual handwriting, with black ink on white paper — then scan, crop and resize.',
+    },
+    {
+      q: 'Is my signature uploaded?',
+      a: 'No. Everything happens inside your browser, on your device. Nothing is sent anywhere.',
+    },
+  ],
+  relatedSlugs: ['photo-200x230', 'signature-to-20kb', 'jpg-to-20kb'],
+};
+
+const thumb240x240: ResizePresetRoute = {
+  slug: 'thumb-240x240',
+  width: 240,
+  height: 240,
+  supported: true,
+  title: 'Resize a thumb impression to 240 x 240 pixels',
+  h1: 'Resize a thumb impression to 240 × 240 pixels',
+  metaDescription:
+    'Resize a left thumb impression to exactly 240 × 240 pixels (3 × 3 cm) for IBPS and SBI forms, in your browser.',
+  intro:
+    'Bank forms ask for a left thumb impression at 240 × 240 pixels — a 3 × 3 cm square at 200 DPI — with the file between 20 KB and 50 KB. Put your left thumb impression on white paper with black or blue ink, photograph or scan it, crop to a square around the impression, and this page sets the exact pixels. The guidelines say: if you do not have a left thumb, use the right; if no thumbs, a finger.',
+  useCases: [
+    'IBPS application forms (PO, Clerk, SO)',
+    'SBI recruitment forms — same size and band',
+    'Any bank or insurance form that copies the IBPS upload format',
+  ],
+  faq: [
+    {
+      q: 'Which ink, and which thumb?',
+      a: 'Left thumb, black or blue ink, on white paper — that is what the IBPS and SBI guidelines say. If you do not have a left thumb, the guidelines allow the right thumb, and if neither, a finger starting from the forefinger.',
+    },
+    {
+      q: 'Should I crop before resizing?',
+      a: 'Yes — crop to a square around the impression first. This page stretches to an exact square, so a square crop keeps the impression round and clear instead of stretched.',
+    },
+    {
+      q: 'Is anything uploaded?',
+      a: 'No. The whole job runs in your browser on your device.',
+    },
+  ],
+  relatedSlugs: ['declaration-800x400', 'photo-200x230', 'jpg-to-50kb'],
+};
+
+const declaration800x400: ResizePresetRoute = {
+  slug: 'declaration-800x400',
+  width: 800,
+  height: 400,
+  supported: true,
+  title: 'Resize a handwritten declaration to 800 x 400 pixels',
+  h1: 'Resize a handwritten declaration to 800 × 400 pixels',
+  metaDescription:
+    'Resize the handwritten declaration to exactly 800 × 400 pixels (10 × 5 cm) for IBPS and SBI forms, in your browser.',
+  intro:
+    'IBPS and SBI forms ask for a short declaration written by hand, photographed, and uploaded at 800 × 400 pixels — 10 × 5 cm at 200 DPI — with the file between 50 KB and 100 KB. Write it in English, in YOUR handwriting, with black ink, not in capital letters. Photograph it straight-on in good light, crop to just the text, and this page sets the exact pixels.',
+  useCases: [
+    'IBPS application forms (PO, Clerk, SO)',
+    'SBI recruitment forms — same size and band',
+    'Re-uploads after a "declaration not as per specification" rejection',
+  ],
+  faq: [
+    {
+      q: 'What exactly do I write?',
+      a: 'The exact sentence is shown on the application form itself — copy it word for word, by hand, in English, with black ink. If someone else writes it, or it is written in capital letters, the application is treated as invalid. That is stated in the bank guidelines themselves.',
+    },
+    {
+      q: 'My handwriting slopes. Will it be rejected?',
+      a: 'Sloping handwriting is fine — it just has to be YOUR handwriting, readable, in English, not capitals. Photograph the page straight-on so the lines do not distort, and crop close to the text before resizing.',
+    },
+    {
+      q: 'Is the declaration uploaded anywhere from here?',
+      a: 'No. The resize runs in your browser on your device. Nothing is sent to us.',
+    },
+  ],
+  relatedSlugs: ['thumb-240x240', 'signature-140x60', 'jpg-to-100kb'],
+};
+
+export const resizePresetRoutes: ResizePresetRoute[] = [
+  photo200x230,
+  signature140x60,
+  thumb240x240,
+  declaration800x400,
+];
 
 export const publishedResizePresetRoutes = resizePresetRoutes.filter((r) => r.supported);
 

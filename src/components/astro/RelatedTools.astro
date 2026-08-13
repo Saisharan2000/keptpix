@@ -13,7 +13,11 @@
  * ZERO JavaScript.
  */
 import { publishedFormatPairRoutes } from '../../content/formats';
-import { publishedSizePresetRoutes, formatTarget } from '../../content/presets';
+import {
+  publishedResizePresetRoutes,
+  publishedSizePresetRoutes,
+  formatTarget,
+} from '../../content/presets';
 import { publishedTools } from '../../core/tools';
 
 interface Props {
@@ -61,6 +65,19 @@ const sizeLinks = slugs
   }));
 
 /**
+ * The THIRD table (docs/12 D-130). D-113 taught that "unresolved slugs are
+ * dropped" silently deletes every link whose table this component does not
+ * know about — the resize presets are that third table, added the same day
+ * their first entries shipped rather than after someone notices the links
+ * missing.
+ */
+const resizeLinks = slugs
+  .filter((s) => s !== currentSlug)
+  .map((s) => publishedResizePresetRoutes.find((r) => r.slug === s))
+  .filter((r) => r !== undefined)
+  .map((r) => ({ href: '/resize/' + r.slug, label: r.h1 }));
+
+/**
  * Manifest tools, derived — so cross-linking between the image routes and the
  * document tools happens by construction rather than by remembering (D-79).
  *
@@ -82,7 +99,7 @@ const hubLinks = [
 /* Size siblings first among the resolved slugs: on a compress page the author
    chose those slugs for THIS route, and a sibling limit is closer to the
    user's task than any converter. Order within each group is the author's. */
-const links = [...sizeLinks, ...pairLinks, ...toolLinks, ...hubLinks]
+const links = [...sizeLinks, ...resizeLinks, ...pairLinks, ...toolLinks, ...hubLinks]
   .filter((link) => link.href !== currentPath)
   .slice(0, 6);
 ---

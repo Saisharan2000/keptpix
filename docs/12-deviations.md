@@ -5434,6 +5434,51 @@ Nothing pending from the founder's side — it is purely a fetch problem
 (D-128). A one-line Chrome task was offered for whenever convenient.
 
 ---
+## 🟢 D-130 — Four resize presets from verified specs, the third RelatedTools table, and the runtime chunk pinned down for good
+
+**Docs affected:** none structural — Wave 2's resize template gets its first
+content, exactly as docs/09 §2.3 designed ("pure data addition")
+
+Backlog #43, Cowork D10's carve-out: only dimensions that appear in a VERIFIED
+spec ship. Four pages, all traceable to the same primary PDFs as
+exam-specs.ts: `/resize/photo-200x230`, `/resize/signature-140x60`,
+`/resize/thumb-240x240`, `/resize/declaration-800x400` — the complete IBPS/SBI
+upload set. "resize signature 140x60" was a GAP query in the very first
+keywords sample.
+
+Written to the D-126 plain-language bar, and honest about the one thing that
+matters: **`exact` resize STRETCHES** (verified in core/resize.ts — no crop,
+no pad), so every intro says "crop to the right shape first" and the
+signature FAQ explains the squashed-look failure in plain words.
+
+Wiring, all gated by the machines built earlier this week: sitemap (the
+D-123 coverage gate would have failed without it), the /resize hub's new
+"Common form sizes" section (no-orphans would have failed), the query index
+(`must` = the dimension token — "140x60" survives normalise() as one token,
+the least ambiguous signal a matcher gets), the exam-spec tables + Hindi
+blocks now rendering on resize pages, and **RelatedTools' THIRD table** —
+added the same day its first entries shipped, because D-113 taught what
+"unresolved slugs are silently dropped" does to a table the component does
+not know about.
+
+### The runtime chunk, resolved structurally
+
+The full suite failed the absolute in-flight rule AGAIN on
+`rolldown-runtime-*.js` — a different interleaving than D-124's (the ingest
+warm-up held; this fetch came through a page-graph import the warm-up does
+not own). Root cause measured, not guessed: Astro's modulepreload list covers
+the island entry graph but NOT Vite 8's shared runtime, so the first lazy
+import on a page pays a live fetch at an arbitrary time.
+`scripts/inject-runtime-preload.mjs` now runs post-build (before the precache
+manifest, so the SW hashes what is served) and modulepreloads the runtime in
+every page — the fetch happens at page load, and every later import resolves
+from the module map with zero network. The in-flight test has passed five
+consecutive full-suite runs since; before the fix it failed reproducibly.
+
+41 pages, 436 unit / 168 integration / 174 e2e, baseline 48.2/60 KB
+(the preloaded runtime now counts into the measured modules, honestly).
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

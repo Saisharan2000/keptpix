@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { examSpecs, examSpecsForRoute } from '../../src/content/exam-specs';
-import { getSizePresetRoute } from '../../src/content/presets';
+import { getResizePresetRoute, getSizePresetRoute } from '../../src/content/presets';
 
 describe('exam specs (docs/12 D-118)', () => {
   it('every spec carries a primary source and a verification date', () => {
@@ -35,11 +35,12 @@ describe('exam specs (docs/12 D-118)', () => {
     }
   });
 
-  it('every surfaceOn slug resolves to a PUBLISHED compress route', () => {
+  it('every surfaceOn slug resolves to a PUBLISHED compress or resize route', () => {
+    // Two tables since D-130 — the resize presets carry these specs too.
     for (const spec of examSpecs) {
       expect(spec.surfaceOn.length, spec.id).toBeGreaterThan(0);
       for (const slug of spec.surfaceOn) {
-        const route = getSizePresetRoute(slug);
+        const route = getSizePresetRoute(slug) ?? getResizePresetRoute(slug);
         expect(route, `${spec.id} surfaces on "${slug}"`).toBeDefined();
         expect(route?.supported, `${spec.id} surfaces on unpublished "${slug}"`).toBe(true);
       }
