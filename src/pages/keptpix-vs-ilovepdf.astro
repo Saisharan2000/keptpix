@@ -1,0 +1,178 @@
+---
+/**
+ * /keptpix-vs-ilovepdf — the honest comparison page (docs/12 D-123).
+ *
+ * The distribution strategy's stage-4 prescription: comparison pages seed both
+ * classic SEO and the LLM-sourced answers that increasingly decide "best free
+ * pdf tool". The strategy for THIS page is radical fairness — it says plainly
+ * what iLovePDF does better, because a comparison that only scores its own
+ * goals is read (by people and by ranking systems) as the ad it is.
+ *
+ * EVERY FACTUAL CLAIM about iLovePDF below was read on their own pages on
+ * 2026-08-13 (pricing page; help/security). Their terms change; before any
+ * substantive edit to this page, RE-VERIFY against those pages — a stale
+ * competitor claim is a D-91 with legal teeth. Facts verified this pass:
+ *   - files are uploaded and processed on their servers (help/security)
+ *   - "automatically and permanently deleted within two hours of being
+ *     processed" (help/security, quoted verbatim below)
+ *   - free tier: per-tool caps (Word-to-PDF 15 MB; Merge 25 files), OCR
+ *     paywalled, ad-free listed as a PREMIUM feature; Premium ₹283/month
+ *     (their INR pricing page)
+ *
+ * ZERO JavaScript. iLovePDF is a trademark of its owner; nominative use only,
+ * no logo, affiliation disclaimed on-page.
+ */
+import ContentLayout from '../layouts/ContentLayout.astro';
+import FaqSection from '../components/astro/FaqSection.astro';
+
+const faq = [
+  {
+    q: 'Is iLovePDF safe to use?',
+    a: 'For most documents, reasonably — their published policy deletes processed files within two hours, which is better than many competitors, and transfers are encrypted. The honest framing is different: any upload tool asks you to trust a policy, while a tool that never uploads asks you to trust nothing. For an Aadhaar card, a passport scan or a medical record, "no server ever saw it" is a stronger guarantee than "the server deleted it within two hours".',
+  },
+  {
+    q: 'What does iLovePDF do that KeptPix cannot?',
+    a: 'A real list: OCR (turning scans into selectable text), PDF-to-Word and PDF-to-Excel conversion, e-signatures, desktop and mobile apps, and PDF compression that keeps text selectable — their servers re-compress the document internally, while our in-browser compressor re-renders pages as images to hit an exact size. If you need any of those, use them or a tool like them; this page is not going to pretend otherwise.',
+  },
+  {
+    q: 'What does KeptPix do that iLovePDF cannot?',
+    a: 'Process your file without possessing it — their architecture requires the upload; ours makes it impossible, which you can verify in your browser’s network tab or by working offline. Compress to an exact target — 20 KB means at most 20 KB, not a quality preset. And do it without file-size caps, task quotas, accounts or ads, because there is no server bill that needs recovering.',
+  },
+  {
+    q: 'Why is KeptPix free with no catch?',
+    a: 'Because your device does the work, our costs barely move when usage grows — a static page is cheap to serve. Server-based tools genuinely cannot say this: every file costs them compute, so free tiers get caps, queues, ads and upsells. The limits are not meanness; they are the economics of uploading. We simply do not have them.',
+  },
+  {
+    q: 'Is this page affiliated with iLovePDF?',
+    a: 'No. iLovePDF is a trademark of its owner, with which KeptPix has no affiliation. The figures on this page were read from ilovepdf.com’s own pricing and security pages on 13 August 2026 and may have changed since — their current pages are authoritative.',
+  },
+];
+
+const cell = 'border-b border-border px-4 py-3 align-top text-sm text-text-muted';
+---
+
+<ContentLayout
+  title="KeptPix vs iLovePDF — an honest comparison"
+  description="What an upload-free tool can and cannot do compared with iLovePDF — including the things iLovePDF genuinely does better. Verified against their own pages."
+  path="/keptpix-vs-ilovepdf"
+  h1="KeptPix vs iLovePDF"
+  lede="Different architectures, honestly compared — including what they do better."
+  breadcrumbs={[
+    { name: 'Home', path: '/' },
+    { name: 'KeptPix vs iLovePDF', path: '/keptpix-vs-ilovepdf' },
+  ]}
+>
+  <section aria-labelledby="difference-heading">
+    <h2 id="difference-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      One difference explains every other difference
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      iLovePDF processes your files on its servers. That is not an accusation — it is their
+      published design, their security page is upfront about it, and their deletion policy
+      (<em>“automatically and permanently deleted within two hours of being processed”</em>) is
+      genuinely better than most of the category, which says nothing at all.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      KeptPix never uploads anything. The work happens inside your browser, on your device, which
+      you can verify in under a minute: open your browser’s network tab and convert something, or
+      disconnect from the internet entirely and watch it still work. A file that never leaves your
+      device does not need a deletion policy.
+    </p>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Everything else on this page — their caps and our lack of them, their ads and our absence of
+      them, what each side can and cannot do — follows from that one architectural choice.
+    </p>
+  </section>
+
+  <section aria-labelledby="table-heading">
+    <h2 id="table-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      Side by side
+    </h2>
+    <p class="mt-3 mb-0 max-w-[68ch] text-sm text-text-muted">
+      iLovePDF figures read from their own pricing and security pages, 13 August 2026.
+    </p>
+    <div class="mt-5 overflow-x-auto" tabindex="0" role="region" aria-labelledby="table-heading">
+      <table class="w-full min-w-[36rem] border-collapse text-left">
+        <thead>
+          <tr>
+            <th scope="col" class={cell + ' font-semibold text-text'}></th>
+            <th scope="col" class={cell + ' font-semibold text-text'}>iLovePDF (free)</th>
+            <th scope="col" class={cell + ' font-semibold text-text'}>KeptPix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>Where your file goes</th>
+            <td class={cell}>Uploaded to their servers, deleted within 2 hours (their policy)</td>
+            <td class={cell}>Nowhere — processed on your device, verifiable in the network tab</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>File size and count caps</th>
+            <td class={cell}>Per-tool caps on the free tier (e.g. 15 MB Word-to-PDF, 25 files per merge)</td>
+            <td class={cell}>None — your device’s memory is the only limit, stated honestly</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>Ads</th>
+            <td class={cell}>Yes on free — “ad-free” is listed as a Premium feature (₹283/month)</td>
+            <td class={cell}>None, and no analytics or trackers either — enforced by our CSP</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>Account</th>
+            <td class={cell}>Optional for basics; required for premium features</td>
+            <td class={cell}>No accounts exist</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>Compress to an exact KB target</th>
+            <td class={cell}>No — quality presets</td>
+            <td class={cell}>Yes — 20 KB means at most 20 KB, searched and measured</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>PDF compression keeps text selectable</th>
+            <td class={cell}>Yes — server-side recompression preserves the text layer</td>
+            <td class={cell}>No — pages are re-rendered as images to hit the target, and we say so</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>OCR, PDF-to-Word, e-signatures, apps</th>
+            <td class={cell}>Yes (mostly Premium)</td>
+            <td class={cell}>No — server-class features we will not fake in a browser</td>
+          </tr>
+          <tr>
+            <th scope="row" class={cell + ' font-medium text-text'}>Works offline</th>
+            <td class={cell}>No — uploading is the mechanism</td>
+            <td class={cell}>Yes, after first visit — there is no server to need</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="them-heading">
+    <h2 id="them-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      When iLovePDF is the better choice
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      Use them — or a tool like them — when you need OCR on a scan, a PDF turned back into an
+      editable Word document, an e-signature workflow, or a compressed PDF whose text must remain
+      selectable. Those genuinely require server-grade tooling, and a comparison page that
+      pretended otherwise would deserve the scepticism all comparison pages get. Just know what
+      the trade is: your document makes a round trip to someone else’s computer, under a policy
+      you are trusting rather than verifying.
+    </p>
+  </section>
+
+  <section aria-labelledby="us-heading">
+    <h2 id="us-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">
+      When KeptPix is the better choice
+    </h2>
+    <p class="mt-4 mb-0 max-w-[68ch] text-base text-text-muted">
+      When the document is an Aadhaar card, a PAN application, a passport scan, a medical record —
+      anything where “no server ever saw it” beats “the server deleted it within two hours”. When
+      a portal demands an exact size and a quality slider will not land it. When you have forty
+      files and no patience for caps, queues or sign-up walls. And when your connection is the
+      bottleneck: an 8 MB scan on slow mobile data uploads slowly, but it rasterises locally at
+      full speed.
+    </p>
+  </section>
+
+  <FaqSection faq={faq} />
+</ContentLayout>

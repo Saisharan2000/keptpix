@@ -5118,6 +5118,45 @@ Visual baselines regenerated (idle + results — the control changes the panel);
 baseline JS 46.7 → 46.8 KB gz. 434 unit / 168 integration / 156 e2e.
 
 ---
+## 🟢 D-123 — The vs-iLovePDF page, built on radical fairness and facts read this week
+
+**Docs affected:** none — a static content page, linked from the footer's
+Project group (the no-orphans rule)
+
+Backlog #32, the one stage-4 item in the distribution doc that had no owner.
+Comparison pages seed classic SEO and the LLM-sourced "best free pdf tool"
+answers alike — and the strategy for this one is **radical fairness**: it has a
+whole section titled "When iLovePDF is the better choice", listing OCR,
+PDF-to-Word, e-signatures and text-selectable PDF compression as things they
+genuinely do and we genuinely do not. A comparison that only scores its own
+goals is read — by people and by ranking systems — as the ad it is. Fairness
+is also the only version an LLM can safely cite.
+
+Every claim about iLovePDF was read on THEIR OWN pages on 2026-08-13, recorded
+in the page's header comment with the re-verification rule (a stale competitor
+claim is a D-91 with legal teeth): files upload to their servers and are
+"automatically and permanently deleted within two hours of being processed"
+(their security page, quoted verbatim ON the page, and credited as genuinely
+better than the category norm); free-tier per-tool caps (Word-to-PDF 15 MB,
+Merge 25 files); OCR paywalled; "ad-free" listed as a Premium feature at
+₹283/month — which is the polite way their own pricing page confirms the free
+tier carries ads.
+
+The page's one-sentence thesis does the work the table cannot: **a file that
+never leaves your device does not need a deletion policy.** Everything else —
+their caps and our absence of them, their ads and our absence of them — is
+derived from that single architectural difference, stated without heat.
+
+Also on the page, in the comparison table AGAINST us: our PDF compression does
+not keep text selectable and theirs does. Putting our own trade-off in the
+unfavourable column is what makes the favourable columns believable.
+
+Nominative trademark use only, no logo, affiliation disclaimed in the FAQ.
+Footer link added in the same commit — the no-orphans spec exists because
+/pdf/from-images once shipped reachable only by typing its URL. 36 pages,
+434 unit / 168 integration / 159 e2e.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
