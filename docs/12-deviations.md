@@ -4928,6 +4928,67 @@ Console shows which specs draw impressions, and PyMuPDF was used only as a
 local research tool; nothing AGPL ships.
 
 ---
+## 🔴 D-119 — CWV measured at last, and the edge serves browsers a different document than it serves our monitors
+
+**Docs affected:** `04 §7` (page-experience budgets — now measured by
+`npm run measure:cwv`), `docs/14` (the "111ms" claim retired)
+
+Backlog #24. Two findings, and the second is a class of failure this log has
+been circling for weeks.
+
+### The numbers (Lighthouse 13.4.1, mobile emulation, LAB not field)
+
+| Route | LCP | TBT | CLS | perf | a11y | BP | seo |
+|---|---|---|---|---|---|---|---|
+| `/` | 1541 ms | 0 | 0 | 100 | 100 | **92** | 100 |
+| `/compress/signature-to-20kb` | 1556 ms | 0 | 0 | 99 | 100 | **92** | 100 |
+| `/convert/heic-to-jpg` | 1548 ms | 0 | 0 | 99 | 100 | **92** | 100 |
+
+Every Core Web Vital is inside its §7 budget. The distribution doc's **"111ms
+load, 100% green"** is retired: the honest sentence is *"LCP ≈ 1.5 s under
+Lighthouse mobile throttling, all vitals green"* — still comfortably ahead of
+the competition, and now it has a command that produces it.
+
+### The one failure, and what it exposed
+
+best-practices 92 on every route, from a single cause: **Cloudflare injects its
+Web Analytics beacon into our HTML at the edge, and our CSP blocks it** — the
+console error and DevTools issue are the two audits that fail. D-66 recorded
+this injection once; it is still switched on.
+
+The discovery inside the discovery: **the injection only happens for requests
+carrying browser `Sec-Fetch-*` metadata.** curl sees clean HTML. monitor.mjs
+saw clean HTML. check-claims reads `dist/`, which is clean by construction. So
+every guard reported "no third-party script tags" while **every real visitor's
+HTML carried one** — reproduced both ways with curl, with and without the
+fetch-metadata headers. The CSP is why no data ever flowed (`status -1`, blocked
+before leaving), so the privacy claims held at runtime — but the tag was in the
+document, and the tooling was green about a document nobody actually receives.
+
+monitor.mjs now sends full browser fetch-metadata on every request and was
+**observed failing** against the live origin (1 critical, exit 1). It stays red
+until the injection is off — an honest red pointing at a real state.
+
+### What only Sai can do
+
+The token cannot reach the RUM API (403 — Pages-scoped, least-privilege working
+as intended). One dashboard minute: **Cloudflare dash → Web Analytics → the
+keptpix.com site → disable automatic injection** (or Pages project → Metrics →
+Web Analytics off). The injected tag carries an active beacon token, so a Web
+Analytics site definitely exists in the account. After the toggle:
+`npm run monitor` should go clean and best-practices should reach 100 — nothing
+else fails anywhere.
+
+### Also fixed en route
+
+- `measure-cwv.mjs` tolerates chrome-launcher's Windows EBUSY cleanup crash by
+  treating the written report as the success signal — the exit code of a
+  succeeded run was being poisoned by upstream teardown.
+- Read a "1 critical" monitor result next to `exit: 0` and nearly believed it —
+  the 0 was grep's exit code in a pipeline, the same PIPESTATUS mistake this
+  log already contains. Re-ran unpiped: exit 1, correct.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

@@ -49,9 +49,32 @@ const say = (s) => {
 const findings = [];
 const checked = [];
 
+/**
+ * Full browser fetch-metadata on every request, because the edge serves a
+ * DIFFERENT DOCUMENT to browsers than to plain fetches (docs/12 D-119).
+ *
+ * Cloudflare's Web Analytics auto-injection adds its beacon <script> only to
+ * HTML responses whose request carries Sec-Fetch-* headers — so this script,
+ * curl, and check-claims all saw a clean page and reported "no third-party
+ * script tags" while every real visitor's HTML carried one (blocked by our
+ * CSP, which is why no data flowed — but the tag was THERE, and it cost the
+ * Lighthouse best-practices score its §7 floor). A monitor that fetches
+ * without these headers is green about a document nobody actually receives.
+ */
+const BROWSER_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+};
+
 async function get(url) {
   try {
-    const res = await fetch(url, { redirect: 'manual' });
+    const res = await fetch(url, { redirect: 'manual', headers: BROWSER_HEADERS });
     return { ok: true, status: res.status, headers: res.headers, body: await res.text() };
   } catch (e) {
     return { ok: false, status: 0, error: String(e).slice(0, 100) };
