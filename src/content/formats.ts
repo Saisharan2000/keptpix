@@ -97,7 +97,7 @@ EXIF orientation is applied to the pixels before encoding, so photos do not come
     },
     {
       q: 'Can I convert many photos at once?',
-      a: 'Yes. Drop a whole folder — there is no file count limit and no upload cap or daily quota, because the work happens on your device rather than on a server somebody has to pay for. Your device’s own memory is the only real limit, and very large images are handled by scaling them down rather than failing. Files are processed in parallel across your available CPU cores, and results download individually or together as a ZIP.',
+      a: 'Yes. Drop a whole folder — there is no file count limit and no upload cap or daily quota, because the work happens on your device rather than on a server somebody has to pay for. Your device’s own memory is the only real limit: large images are scaled to fit where possible, and an image too big to decode safely is refused with a clear error naming the file, so one enormous panorama never crashes the rest of the batch. Files are processed in parallel across your available CPU cores, and results download individually or together as a ZIP.',
     },
     {
       q: 'Are my photos uploaded anywhere?',
@@ -195,7 +195,7 @@ Animated WebP converts only its first frame, because JPEG has no concept of anim
     },
     {
       q: 'My WebP has a transparent background. What happens to it?',
-      a: 'JPEG has no alpha channel, so transparency is flattened onto a solid colour — white unless you change it. For a logo or a sticker that usually looks wrong against a coloured page. Convert to PNG instead if the transparency matters.',
+      a: 'JPEG has no alpha channel, so transparency is flattened onto white. For a logo or a sticker that usually looks wrong against a coloured page. Convert to PNG instead if the transparency matters.',
     },
     {
       q: 'Why will my photo editor not open WebP?',
@@ -339,7 +339,7 @@ For a photograph, PNG is the wrong tool. Lossless compression cannot exploit the
 
   technicalNotes: `This is the one conversion where the source is lossless, so there is no accumulated generation loss to worry about — the JPEG you get is a first-generation encode of the original pixels. That makes PNG a genuinely good starting point.
 
-Transparency is the thing to watch. PNG supports a full alpha channel and JPEG supports none, so any transparent pixel is flattened onto a background colour, white unless you change it. A logo that looked fine on a white page will suddenly have a white box around it on a coloured one. If the transparency matters, convert to WebP instead — it keeps alpha and still compresses well.
+Transparency is the thing to watch. PNG supports a full alpha channel and JPEG supports none, so any transparent pixel is flattened onto white. A logo that looked fine on a white page will suddenly have a white box around it on a coloured one. If the transparency matters, convert to WebP instead — it keeps alpha and still compresses well.
 
 Content matters more here than in most conversions. JPEG's DCT compression is built for photographs and handles smooth gradients beautifully, but it smears hard edges. Screenshots of text, line art, diagrams and pixel art will show visible ringing around the edges even at high quality. Keep those as PNG, or use WebP.`,
 
@@ -380,7 +380,7 @@ Content matters more here than in most conversions. JPEG's DCT compression is bu
     },
     {
       q: 'My PNG has a transparent background. What happens?',
-      a: 'JPEG has no alpha channel, so transparency is flattened onto a solid colour — white unless you change it. A logo with a transparent background will end up in a white box. If you need the transparency, convert to WebP instead: it keeps alpha and is still far smaller than PNG.',
+      a: 'JPEG has no alpha channel, so transparency is flattened onto white. A logo with a transparent background will end up in a white box. If you need the transparency, convert to WebP instead: it keeps alpha and is still far smaller than PNG.',
     },
     {
       q: 'Will the JPG look worse than my PNG?',
@@ -628,7 +628,7 @@ Expect the JPG to be substantially larger than the AVIF — often around twice t
 
 Transparency is lost: AVIF carries a full alpha channel and JPEG does not, so transparent pixels are flattened onto a background colour, white by default. Convert to PNG instead if the transparency matters. An animated AVIF converts only its first frame, and a 10-bit or HDR AVIF is rendered down to standard 8-bit colour on the way through — JPEG has nowhere to put the extra range.
 
-This converter also works in browsers that cannot display AVIF themselves: where native decoding is missing, a WebAssembly decoder is fetched with the page and runs entirely on your device, the same as everything else here.`,
+This converter also works in browsers that cannot display AVIF themselves: where native decoding is missing, a WebAssembly decoder is fetched the moment it is first needed and runs entirely on your device — the page itself stays light, and nothing loads until you actually convert something.`,
 
   comparison: {
     rows: [
@@ -667,7 +667,7 @@ This converter also works in browsers that cannot display AVIF themselves: where
     },
     {
       q: 'My browser cannot even display AVIF files. Will this still work?',
-      a: 'Yes. Where the browser cannot decode AVIF natively — Safari before 16.4, for instance — a WebAssembly decoder is fetched with the page and does the work instead. Either way the decoding happens on your device; the file is never sent anywhere.',
+      a: 'Yes. Where the browser cannot decode AVIF natively — Safari before 16.4, for instance — a WebAssembly decoder is fetched the moment you convert your first file and does the work instead. Either way the decoding happens on your device; the file is never sent anywhere.',
     },
     {
       q: 'Will converting AVIF to JPG lose quality?',
@@ -722,7 +722,7 @@ That combination decides the conversion. PNG is what to choose when the transpar
 
 Expect a large file if the image is a photograph. PNG compresses losslessly and photographs do not compress well losslessly — several times the size of the AVIF is normal. For photos where size matters, convert to JPG instead; PNG earns its keep on graphics, screenshots, logos and anything with transparency.
 
-A 10-bit or HDR AVIF is written as standard 8-bit PNG, so the extra brightness range is rendered down. An animated AVIF converts only its first frame. And as with every AVIF tool on this site, browsers that cannot decode AVIF natively get a WebAssembly decoder fetched with the page — the work still happens entirely on your device.`,
+A 10-bit or HDR AVIF is written as standard 8-bit PNG, so the extra brightness range is rendered down. An animated AVIF converts only its first frame. And as with every AVIF tool on this site, browsers that cannot decode AVIF natively get a WebAssembly decoder fetched on first use — the work still happens entirely on your device.`,
 
   comparison: {
     rows: [
@@ -769,7 +769,7 @@ A 10-bit or HDR AVIF is written as standard 8-bit PNG, so the extra brightness r
     },
     {
       q: 'My browser cannot display AVIF files. Will this still work?',
-      a: 'Yes. Where native AVIF decoding is missing — Safari before 16.4, for instance — a WebAssembly decoder is fetched with the page and does the work on your device instead. Nothing is uploaded either way.',
+      a: 'Yes. Where native AVIF decoding is missing — Safari before 16.4, for instance — a WebAssembly decoder is fetched the moment you convert your first file and does the work on your device instead. Nothing is uploaded either way.',
     },
   ],
 

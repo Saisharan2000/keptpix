@@ -4701,6 +4701,62 @@ and BMP (labelled, unrouted) carries the original silence claim.
 baseline nothing.
 
 ---
+## 🟢 D-115 — The copy audit: 40+ mechanical claims verified, three failed
+
+**Docs affected:** none — copy corrected to match code, not the reverse
+
+Backlog #19, queued because D-91, D-95 and D-92 were all the site claiming
+behaviour the code lacked, and three of one kind is a pattern. Method: extract
+every MECHANICAL claim in route copy — numbers, defaults, behaviours — and
+verify each against the engine, not against memory.
+
+### Verified true (the ones worth recording)
+
+| Claim | Where checked |
+|---|---|
+| "accepted between 92% and 100% of your target" | `tolerance: 0.08` in target-size.ts |
+| "never more than eight" passes | `maxPasses: 8` |
+| "we default to 82" | `DEFAULT_QUALITY = 82` |
+| GPS/EXIF stripped by default | `stripAll: true` in config.slice |
+| "parallel across your available CPU cores" | pool sizes from `hardwareConcurrency` |
+| "one-tap option to allow resizing" | ErrorCard `onAllowResize`, gated on E_TARGET_UNREACHABLE |
+| "keeps working with your network disconnected" | privacy.spec's network-cut test |
+| PDF page reorder "controls work by keyboard" | ManifestToolShell move buttons with per-file aria-labels |
+| PDF tool accepts AVIF | `image/avif` in the tools.ts accept list |
+| No hardcoded tool counts anywhere | grep — all derived |
+
+### The three that failed
+
+1. **"White unless you change it" ×3** (webp-to-jpg FAQ, png-to-jpg notes + FAQ).
+   `backgroundColor` flows store → worker → encoder end to end — and **no UI
+   exposes it**, so a user cannot change it. Rewritten to "flattened onto
+   white". The plumbing being complete makes the missing control a one-input
+   feature, queued as #31; when it ships, the richer copy can return.
+
+2. **"Fetched with the page" ×4** — my own AVIF copy from D-114, one session
+   old. The WASM decoder loads lazily on first use (ADR-004), not at page load.
+   Rewritten to "fetched the moment it is first needed", which is also the
+   better story: the page stays light. Writing an overclaim into the same file
+   whose older overclaims I was about to audit is the strongest argument this
+   audit should recur.
+
+3. **"Very large images are handled by scaling them down rather than failing"**
+   (heic-to-jpg FAQ). Above the pixel ceiling (80 MP mobile / 300 MP absolute),
+   decode is REFUSED with E_TOO_LARGE — deliberately, per D-43, so one
+   panorama cannot take down a batch. The FAQ denied the refusal that the
+   engine is proud of. Rewritten to say both halves: scaled where possible,
+   refused with a clear per-file error where not, batch unaffected.
+
+### Left alone, with reasons
+
+"White by default" (×3 more) states the default without promising a control —
+accurate. "No file limit" in meta descriptions means quotas, and the FAQ now
+states the real memory ceiling honestly. heic-to-jpg's relatedSlugs naming
+unbuilt routes (heic-to-png, heic-to-webp) is the DESIGNED wave mechanism for
+pair routes — they light up when Wave 2 ships them — unlike the preset-table
+miss D-113 fixed, where the slugs could never resolve.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
