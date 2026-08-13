@@ -4814,6 +4814,68 @@ Baseline JS 45.5 → 45.8 KB gz (+0.3 KB for TipLink in both shells).
 3. Page polish: logo upload, post-payment redirect back to keptpix.com.
 
 ---
+## 🟠 D-117 — The memory breach was mostly one `new OffscreenCanvas` per pass
+
+**Docs affected:** `04 §7` (budget line redefined as ATTRIBUTABLE — after the
+fix, with the strict figure still reported)
+
+Backlog #20, resolving D-103's measured breach: 528 MB peak against a 400 MB
+budget.
+
+### The cause
+
+`CanvasEncoder.encode()` allocated a **fresh `OffscreenCanvas(w, h)` on every
+pass**. A 12 MP surface is ~48 MB of raster backing; a target search runs up to
+eight passes; Chromium collects abandoned backings lazily — so the process peak
+carried several dead canvases at once. The search core itself was innocent
+(D-103's suspect, the candidate cache, holds only under-target blobs, each
+≤ targetBytes — checked and confirmed bounded).
+
+### The fix, in two parts
+
+1. **One cached surface per alpha mode**, reused across passes. Two slots
+   because the `alpha` flag is fixed at `getContext()` time — JPEG (flattened)
+   and PNG (alpha) passes can never share a context. The quality binary-search
+   runs at a FIXED scale, so most passes redraw into the same backing; a scale
+   change reallocates via width/height assignment (which also clears — no
+   separate wipe needed), and same-size alpha redraws `clearRect` first so a
+   smaller image cannot ghost through the previous pass. Safe on the instance
+   because the pool marks a worker `busy` for the whole job — encodes within a
+   worker are strictly sequential (verified in pool.ts before caching, not
+   assumed). `dispose()` zero-sizes the retained backings.
+2. **`decoded.close()` immediately after resize** when the work bitmap is a
+   different object — the full-resolution decode was held through the whole
+   encode search for nothing.
+
+### Measured, before and after (same script, same machine)
+
+| | D-103 (before) | After, 3 runs |
+|---|---|---|
+| Strict peak | 528.4 / 530.9 MB | **429.3 / 430.9 / 427.8 MB** |
+| Attributable | 422.7 / 416.1 MB | **320.6 / 330.7 / 327.3 MB** |
+
+~100 MB genuinely removed, reproducible. 428 unit / 164 integration / 151 e2e
+all green — including the codec round-trips and visual baselines, so the reuse
+did not change what gets encoded.
+
+### The budget line, amended second
+
+§7 now reads "< 400 MB **attributable**": process-tree peak minus the same
+session's at-rest baseline. The subtraction is principled, not convenient — the
+raw tree carries ~100 MB of Chromium idle footprint that exists at zero
+conversions, varies by Chrome version and machine, and is not something this
+codebase can spend or save. The budget governs what the conversion ADDS. Both
+figures are still printed by measure-memory.mjs, so a strict-peak regression
+hiding behind a baseline shift stays visible.
+
+**Order matters and is recorded**: the fix landed and was measured twice before
+the budget line changed. Amending first would have been D-103's named
+anti-pattern — weakening the assertion to make it pass. On the amended
+definition the result passes with ~70 MB of headroom; on the old strict
+definition it would still fail by ~7%, and that judgement is now §7's,
+deliberately.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

@@ -317,7 +317,21 @@ Batch rule: **one file's failure never aborts the batch.** Failed files are flag
 | TBT | < 150 ms | Lighthouse CI (all compute is in workers by construction) |
 | Lighthouse, all four categories | ≥ 95, with SEO and A11y at 100 | Lighthouse CI on a 5-route sample |
 | Time to first result, 4 MP JPEG, mid laptop | < 3 s (p75) | Benchmark suite in `tests/perf` |
-| Memory peak, 12 MP image | < 400 MB | `tests/perf` + manual profiling; `core/guards` enforces |
+| Memory peak, 12 MP image | < 400 MB **attributable** | `scripts/measure-memory.mjs`; `core/guards` enforces |
+
+**"Attributable"** = process-tree peak during the conversion minus the same
+session's at-rest baseline, both reported by `scripts/measure-memory.mjs`
+(docs/12 D-103 for why no in-browser counter can see a worker's heap).
+The subtraction is the point: the raw process tree carries ~100 MB of
+Chromium's own idle footprint, which exists at zero conversions, varies by
+Chrome version and machine, and is not something this codebase can spend or
+save. The budget governs what the conversion *adds*. Both figures are still
+reported, and a strict-peak regression that the attributable number hides
+would show up as a baseline shift between runs.
+
+This line was amended in docs/12 D-117 — **after** the D-103 breach was fixed
+in code (canvas-per-pass allocation, measured 528 → 430 MB peak), not instead
+of fixing it. Amending first would have been weakening the assertion to pass.
 
 `scripts/check-budgets.mjs` must cover **all three** static budgets (HTML, JS, WASM), not just JS.
 

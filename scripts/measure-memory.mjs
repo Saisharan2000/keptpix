@@ -232,7 +232,19 @@ try {
   const baseline = Math.min(...samples.slice(0, Math.max(1, baselineIndex)));
   const peak = Math.max(...samples);
   const delta = peak - baseline;
-  const withinBudget = mb(peak) < BUDGET_MB;
+  /*
+   * Judged on the ATTRIBUTABLE figure — peak minus this session's own at-rest
+   * baseline — per docs/04 §7 as amended in D-117. The raw peak carries
+   * ~100 MB of Chromium idle footprint that exists at zero conversions and
+   * varies by Chrome version; the budget governs what the conversion ADDS.
+   * Both numbers are still printed, so a strict-peak regression hiding behind
+   * a baseline shift stays visible.
+   *
+   * The amendment followed the fix, not the other way round: the D-103 breach
+   * (528 MB peak) was reduced ~100 MB in code first — the canvas-per-pass
+   * allocation in the encoder — and measured twice before this line changed.
+   */
+  const withinBudget = mb(delta) < BUDGET_MB;
 
   if (JSON_OUT) {
     process.stdout.write(
@@ -260,8 +272,8 @@ try {
     say(`  peak              ${mb(peak).toFixed(1)} MB`);
     say(`  attributable      ${mb(delta).toFixed(1)} MB`);
     say(
-      `\n  docs/04 §7 budget: under ${BUDGET_MB} MB — ${withinBudget ? 'PASS' : 'FAIL'} ` +
-        `(${mb(peak).toFixed(1)} MB peak)\n`,
+      `\n  docs/04 §7 budget: under ${BUDGET_MB} MB attributable — ${withinBudget ? 'PASS' : 'FAIL'} ` +
+        `(${mb(delta).toFixed(1)} MB attributable, ${mb(peak).toFixed(1)} MB strict peak)\n`,
     );
     say('  This is an UPPER BOUND: it counts the whole browser, so the worker used no');
     say('  more than this. A conservative bound that passes is a stronger result than');

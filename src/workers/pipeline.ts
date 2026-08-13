@@ -221,6 +221,14 @@ export async function runPipeline(
     const targetDims = computeTargetDimensions(sourceDims, config.resize);
     state.resized = await scaleBitmap(decoded, targetDims);
     const work = state.resized;
+    if (work !== decoded) {
+      // The full-resolution decode has no further reader once a smaller work
+      // bitmap exists — for a 12 MP source that is ~48 MB held through the
+      // whole encode search for nothing (docs/12 D-117). The finally block
+      // still guards every path; this just stops paying for the common one.
+      decoded.close();
+      state.decoded = null;
+    }
     const workDims: Dimensions = { width: work.width, height: work.height };
     onProgress({ jobId, phase: 'resizing', progress: 1 });
 

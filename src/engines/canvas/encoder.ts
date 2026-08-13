@@ -56,6 +56,51 @@ export class CanvasEncoder implements Encoder {
   /** Widened by probeNativeEncodeFormats() at pool startup. */
   #formats: OutputFormat[] = [...BASE_FORMATS];
 
+  /**
+   * ONE canvas per alpha mode, reused across encode passes (docs/12 D-117).
+   *
+   * A fresh `new OffscreenCanvas(w, h)` per pass was the main driver of the
+   * D-103 budget breach: a 12 MP surface is ~48 MB of raster backing, a target
+   * search runs up to eight passes, and Chromium collects abandoned backings
+   * lazily — so the measured process peak carried several dead canvases at
+   * once (528 MB against a 400 MB budget). The quality binary-search runs at a
+   * FIXED scale, so most passes can redraw into the very same backing.
+   *
+   * Two cache slots, not one, because the `alpha` flag is fixed at
+   * getContext() time and cannot be flipped afterwards — a JPEG (flattened)
+   * pass and a PNG (alpha) pass can never share a context.
+   *
+   * Safe to hold on the instance: the pool marks a worker `busy` for the whole
+   * job, so encode calls within one worker are strictly sequential.
+   */
+  #surfaces: Partial<
+    Record<'alpha' | 'opaque', { canvas: OffscreenCanvas; ctx: OffscreenCanvasRenderingContext2D }>
+  > = {};
+
+  #surface(width: number, height: number, wantsAlpha: boolean) {
+    const key = wantsAlpha ? 'alpha' : 'opaque';
+    let entry = this.#surfaces[key];
+    if (entry === undefined) {
+      const canvas = new OffscreenCanvas(width, height);
+      const ctx = canvas.getContext('2d', { alpha: wantsAlpha });
+      if (ctx === null) throw new Error('OffscreenCanvas 2d context unavailable');
+      entry = { canvas, ctx };
+      this.#surfaces[key] = entry;
+    } else if (entry.canvas.width !== width || entry.canvas.height !== height) {
+      // Assigning width/height reallocates the backing AND clears the surface,
+      // so a dimension change needs no separate clear. Old backing becomes
+      // garbage — but only on a scale change (2–3 per search), not every pass.
+      entry.canvas.width = width;
+      entry.canvas.height = height;
+    } else if (wantsAlpha) {
+      // Same-size redraw on an alpha surface: the previous pass's pixels are
+      // still there, and a smaller draw would ghost through. Opaque formats
+      // skip this — their background fillRect below covers everything anyway.
+      entry.ctx.clearRect(0, 0, width, height);
+    }
+    return entry;
+  }
+
   get formats(): readonly OutputFormat[] {
     return this.#formats;
   }
@@ -74,15 +119,12 @@ export class CanvasEncoder implements Encoder {
 
   async encode(input: EncodeInput): Promise<EncodeOutput> {
     const { bitmap, format, quality, backgroundColor } = input;
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const ctx = canvas.getContext('2d', { alpha: !FLATTENS_ALPHA.has(format) });
-    if (ctx === null) {
-      throw new Error('OffscreenCanvas 2d context unavailable');
-    }
+    const flattens = FLATTENS_ALPHA.has(format);
+    const { canvas, ctx } = this.#surface(bitmap.width, bitmap.height, !flattens);
 
     // JPEG has no alpha, so transparent pixels must be flattened onto a colour
     // or they render as black (docs/05 §1 JobConfig.backgroundColor).
-    if (FLATTENS_ALPHA.has(format)) {
+    if (flattens) {
       ctx.fillStyle = backgroundColor ?? '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
@@ -98,7 +140,15 @@ export class CanvasEncoder implements Encoder {
   }
 
   dispose(): void {
-    // No retained resources.
+    // Release the retained raster backings — a 12 MP surface is ~48 MB, and a
+    // torn-down worker must not pin one (docs/06 §2 rule 2's spirit applies to
+    // canvases as much as bitmaps). Zero-sizing frees the backing without
+    // waiting for the canvas object itself to be collected.
+    for (const entry of Object.values(this.#surfaces)) {
+      entry.canvas.width = 0;
+      entry.canvas.height = 0;
+    }
+    this.#surfaces = {};
   }
 }
 
