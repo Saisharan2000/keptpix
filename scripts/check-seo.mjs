@@ -131,6 +131,39 @@ for (const file of files) {
   }
 }
 
+/*
+ * SITEMAP COVERAGE — every indexable built page must be IN the sitemap.
+ *
+ * The inverse of the no-orphans rule, and it had no gate until
+ * /keptpix-vs-ilovepdf shipped live, footer-linked, returning 200 — and
+ * absent from the sitemap, because the generator's STATIC_ENTRIES list is
+ * hand-maintained and nobody's checklist said "update it" (docs/12 D-123).
+ * The no-orphans spec walks sitemap → links; nothing walked built pages →
+ * sitemap. Noindex pages and /404 are exempt for the same reason they are
+ * exempt from every other rule here: they are not search results.
+ */
+{
+  const sitemapXml = readFileSync(join(DIST, 'sitemap.xml'), 'utf8');
+  const inSitemap = new Set(
+    [...sitemapXml.matchAll(/<loc>\s*https?:\/\/[^/<]+([^<\s]*)\s*<\/loc>/g)].map((m) => {
+      // "https://keptpix.com/" captures "/" and "https://keptpix.com" captures
+      // "" — both are the root. Strip a trailing slash only when something
+      // remains, or the homepage flags itself as missing.
+      const p = m[1] === '' ? '/' : m[1];
+      return p !== '/' && p.endsWith('/') ? p.slice(0, -1) : p;
+    }),
+  );
+  for (const file of files) {
+    const route = routeOf(file);
+    if (route === '/404') continue;
+    const html = readFileSync(file, 'utf8');
+    if (/<meta[^>]+name="robots"[^>]+content="[^"]*noindex/i.test(html)) continue;
+    if (!inSitemap.has(route)) {
+      errors.push(`${route}: built and indexable but MISSING from sitemap.xml`);
+    }
+  }
+}
+
 console.log(`\nOn-page SEO — ${files.length} built pages\n`);
 if (errors.length > 0) {
   console.log('  ERRORS');

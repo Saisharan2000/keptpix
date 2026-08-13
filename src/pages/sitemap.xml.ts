@@ -35,6 +35,9 @@ const STATIC_ENTRIES: Entry[] = [
   { path: '/how-it-works', priority: '0.7' },
   { path: '/privacy', priority: '0.5' },
   { path: '/about', priority: '0.5' },
+  // Comparison pages are search entry points, not footnotes — the whole point
+  // of /keptpix-vs-ilovepdf is to be found (docs/12 D-123).
+  { path: '/keptpix-vs-ilovepdf', priority: '0.7' },
 ];
 
 export const GET: APIRoute = () => {
