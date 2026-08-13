@@ -324,6 +324,54 @@ export interface SizePresetRoute {
 }
 
 /**
+ * One upload artefact an exam portal demands (docs/12 D-118).
+ *
+ * `minKB` matters as much as `maxKB`: several portals reject files for being
+ * too SMALL (NSDL's 20 KB photo floor, UPSC's 20 KB floor), which inverts the
+ * usual compression advice and is precisely the kind of fact a generic size
+ * page never carries.
+ */
+export interface ExamUploadRequirement {
+  kind: 'photo' | 'signature' | 'thumb' | 'declaration';
+  /** As the table renders it — "Signature (three, in one image)". */
+  label: string;
+  format: string;                // "JPG/JPEG"
+  minKB?: number;
+  maxKB?: number;
+  /** As published, in the source's own units — "140 × 60 px", "~6.0 × 2.0 cm". */
+  dimensions?: string;
+  /** The rule that gets an upload rejected — "black ink; not in capitals". */
+  notes?: string;
+}
+
+/**
+ * One exam's verified upload requirements, traceable to a primary source.
+ *
+ * EVERY FIELD OF EVERY ENTRY MUST COME FROM `sourceUrl` — an official
+ * notification, bulletin or portal instruction — read this cycle, with
+ * `verifiedOn` recording when. No entry may be written from an aggregator
+ * site: they disagreed with the primary source in every exam checked
+ * (docs/12 D-118), and an unverified number in UI copy is how D-91/D-95
+ * happened. This is the doorway-rule reconciliation from D-110: a page
+ * carrying a real sourced spec is more useful than the destination; a page
+ * carrying reworded filler is what the rule forbids.
+ */
+export interface ExamSpec {
+  id: string;                    // "ssc-cgl"
+  exam: string;                  // "SSC CGL"
+  org: string;                   // "Staff Selection Commission"
+  cycle: string;                 // "2026"
+  sourceTitle: string;
+  sourceUrl: string;             // the primary document, https
+  verifiedOn: string;            // ISO date the source was read
+  requirements: ExamUploadRequirement[];
+  /** Compress-route slugs whose page should surface this spec. */
+  surfaceOn: string[];
+  /** The fact that changes what the user should do, if there is one. */
+  caveat?: string;
+}
+
+/**
  * docs/09 §2.3 specifies 12 /resize/[preset] routes and §2.4 specifies 11
  * /formats/[format] reference pages, but docs/05 §5 only defines the types for
  * format pairs and size presets. These two are the missing shapes.

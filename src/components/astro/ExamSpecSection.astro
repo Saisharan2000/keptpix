@@ -1,0 +1,109 @@
+---
+/**
+ * src/components/astro/ExamSpecSection.astro — verified portal requirements on
+ * a compress route (docs/12 D-118).
+ *
+ * The distribution strategy's stage-5 prescription, made real: "Show the exam's
+ * official spec right there — it confirms the user is in the right place." What
+ * makes this NOT a doorway (docs/05 §5) is that every figure is read from the
+ * primary source linked beside it, with the date it was verified — content the
+ * destination portal itself often buries in a 130-page PDF.
+ *
+ * ZERO JavaScript.
+ */
+import type { ExamSpec } from '../../core/types';
+
+interface Props {
+  specs: ExamSpec[];
+  headingId?: string;
+}
+
+const { specs, headingId = 'exam-specs-heading' } = Astro.props;
+
+const kb = (r: { minKB?: number; maxKB?: number }): string =>
+  r.minKB !== undefined && r.maxKB !== undefined
+    ? `${r.minKB}–${r.maxKB} KB`
+    : r.maxKB !== undefined
+      ? `up to ${r.maxKB} KB`
+      : r.minKB !== undefined
+        ? `at least ${r.minKB} KB`
+        : '—';
+
+const cell = 'border-b border-border px-4 py-3 align-top text-sm text-text-muted';
+---
+
+{
+  specs.length > 0 && (
+    <section aria-labelledby={headingId}>
+      <h2 id={headingId} class="m-0 text-2xl font-semibold tracking-tight text-text">
+        What the portals actually require
+      </h2>
+      <p class="mt-3 mb-0 max-w-[68ch] text-base text-text-muted">
+        Read from each exam's official notification — not from other tool sites, which
+        disagreed with the primary source on every exam we checked. The source and the
+        date we read it are next to each table.
+      </p>
+
+      {specs.map((spec) => (
+        <div class="mt-8">
+          <h3 class="m-0 text-lg font-semibold text-text">
+            {spec.exam}
+            <span class="ml-2 text-sm font-normal text-text-muted">{spec.cycle}</span>
+          </h3>
+          {spec.caveat && (
+            <p class="mt-2 mb-0 max-w-[68ch] rounded-md border border-warning bg-warning-subtle px-4 py-3 text-sm text-text">
+              {spec.caveat}
+            </p>
+          )}
+          {/*
+            tabindex="0" + role="region" is the D-55 pattern: the table overflows
+            on phones, and a scrollable region must be keyboard-reachable (axe
+            scrollable-region-focusable, serious).
+          */}
+          <div
+            class="mt-3 overflow-x-auto"
+            tabindex="0"
+            role="region"
+            aria-label={spec.exam + ' upload requirements'}
+          >
+            <table class="w-full min-w-[36rem] border-collapse text-left">
+              <thead>
+                <tr>
+                  <th scope="col" class={cell + ' font-semibold text-text'}>Upload</th>
+                  <th scope="col" class={cell + ' font-semibold text-text'}>Size</th>
+                  <th scope="col" class={cell + ' font-semibold text-text'}>Dimensions</th>
+                  <th scope="col" class={cell + ' font-semibold text-text'}>Rules</th>
+                </tr>
+              </thead>
+              <tbody>
+                {spec.requirements.map((r) => (
+                  <tr>
+                    <th scope="row" class={cell + ' font-medium text-text'}>
+                      {r.label}
+                      <span class="block text-xs font-normal text-text-muted">{r.format}</span>
+                    </th>
+                    <td class={cell + ' whitespace-nowrap num'}>{kb(r)}</td>
+                    <td class={cell}>{r.dimensions ?? '—'}</td>
+                    <td class={cell}>{r.notes ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-2 mb-0 text-xs text-text-muted">
+            Source:{' '}
+            <a
+              href={spec.sourceUrl}
+              rel="noopener noreferrer"
+              class="underline decoration-dotted underline-offset-2 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {spec.sourceTitle}
+            </a>
+            {' · '}verified {spec.verifiedOn}. Specs change each cycle — the notification
+            for your year is authoritative.
+          </p>
+        </div>
+      ))}
+    </section>
+  )
+}

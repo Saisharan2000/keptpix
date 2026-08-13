@@ -10,10 +10,12 @@
  * route needed no changes to it.
  */
 import ToolLayout from '../../layouts/ToolLayout.astro';
+import ExamSpecSection from '../../components/astro/ExamSpecSection.astro';
 import FaqSection from '../../components/astro/FaqSection.astro';
 import RelatedTools from '../../components/astro/RelatedTools.astro';
 import PrivacyBanner from '../../components/astro/PrivacyBanner.astro';
 import ToolShell from '../../components/react/ToolShell';
+import { examSpecsForRoute } from '../../content/exam-specs';
 import { publishedSizePresetRoutes, getSizePresetRoute, formatTarget } from '../../content/presets';
 
 export function getStaticPaths() {
@@ -60,6 +62,9 @@ const defaultConfig = {
  * additionally fails the build on a dangling or self-referential chain, so
  * silence is a backstop, not the only guard.
  */
+/** Verified portal requirements whose data names this route (docs/12 D-118). */
+const specs = examSpecsForRoute(route.slug);
+
 const chainTarget = route.chain === undefined ? undefined : getSizePresetRoute(route.chain.slug);
 const chain =
   route.chain === undefined || chainTarget === undefined
@@ -115,6 +120,8 @@ const chain =
       }
     </ul>
   </section>
+
+  <ExamSpecSection specs={specs} />
 
   <section aria-labelledby="how-heading">
     <h2 id="how-heading" class="m-0 text-2xl font-semibold tracking-tight text-text">

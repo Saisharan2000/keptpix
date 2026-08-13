@@ -4876,6 +4876,58 @@ definition it would still fail by ~7%, and that judgement is now §7's,
 deliberately.
 
 ---
+## 🟢 D-118 — The exam-spec database: primary sources only, and the aggregators were wrong about every exam checked
+
+**Docs affected:** `05` (ExamSpec / ExamUploadRequirement types), `05 §5`
+(doorway rule — this is the reconciliation D-110 promised)
+
+Backlog #22. The distribution doc's load-bearing asset, built the only way it is
+not a doorway: **every figure read from the primary document, in its own PDF
+text, with the source URL and verification date rendered beside it.**
+
+### What was verified, from where
+
+| Exam | Source read | The facts |
+|---|---|---|
+| **SSC CGL 2026** | CGL notice, ssc.gov.in, 132 pp | Signature JPEG **10–20 KB**, ~6×2 cm (§9.6; an annexure says 4×2 — the notice disagrees with itself, recorded). **Photo: LIVE capture only** — photographing an existing photo is grounds for rejection (§9.5) |
+| **UPSC CSE 2026** | Official photo/signature instruction PDF, upsconline.nic.in | Photo JPG **20–200 KB**, must be named "photo", 75% face; live capture + face-match mandatory. Signature = **THREE signatures in one image**, 20–100 KB, 350–500 px, named "signature" |
+| **NEET UG 2026** | Information Bulletin, 124 pp, released 08-02-2026 | Photo 10–200 KB, signature 10–100 KB, thumb/finger impressions 10–200 KB, certificates PDF 50–300 KB |
+| **IBPS 2026 cycle** | Upload guidelines, ibpsreg.ibps.in | Photo 20–50 KB @ 200×230 px; signature 10–20 KB @ 140×60 px (capitals rejected); left thumb 20–50 KB; handwritten declaration 50–100 KB, English only |
+
+### Why primary sources are the rule and not a preference
+
+The aggregator sites — the ones ranking for these queries today — were wrong
+about **every exam checked**: they carry UPSC's photo cap as 300 KB (official
+instruction says 200), a NEET "postcard photo" upload the 2026 bulletin does
+not ask for, and SSC photo-compression advice for an application that **no
+longer accepts photo uploads at all**. That last one is the single most
+valuable fact in the dataset, and a unit test now guards it against being
+edited away.
+
+This is D-110's reconciliation delivered: the same facts that make a page
+useful (docs/05 §5) are the ones nobody else bothered to read.
+
+### Shape
+
+`ExamSpec` in core/types (docs/05 same commit), data in
+`content/exam-specs.ts`, rendered by `ExamSpecSection.astro` (zero JS, D-55
+scrollable-region pattern) on the compress routes each spec names via
+`surfaceOn`. Six data tests, including one with teeth: **a spec may only
+surface on a page whose prefilled target can actually satisfy at least one of
+its bands** — a 20 KB page carrying only floors above 20 KB would have the
+page's own default produce files every listed portal rejects as too small.
+
+HTML stayed ~10 KB gz per page against the 25 KB budget. 434 unit / 164
+integration / 151 e2e green.
+
+### Deliberately not done
+
+No new routes. The specs strengthen pages that exist — the D-112 NEAR
+principle. Dedicated `/exams/[exam]` pages are a later decision once Search
+Console shows which specs draw impressions, and PyMuPDF was used only as a
+local research tool; nothing AGPL ships.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
