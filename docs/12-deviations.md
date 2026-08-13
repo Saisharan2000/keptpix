@@ -5394,6 +5394,46 @@ Sunday loop (#44) and October pre-work (#45) are queued and gated exactly as
 the batch specified.
 
 ---
+## 🟢 D-129 — Gate (a) cleared, the CSV pipeline's first real run, and traffic numbers without a beacon
+
+**Docs affected:** none — a script, a memory update, and three loops closing
+
+### The ₹50 test PASSES
+The payer's UPI app showed **"Keptpix"** — the founder's personal name stayed
+hidden at the one point no documentation could confirm in advance. **Launch
+gate (a) is cleared**; only the real-device pass (gate b) stands before the
+D8 runbook fires. Settlement to bank is T+1/T+2 and was explained as normal.
+
+### The keywords pipeline ran on real GSC data
+First real export: 5 queries, 5 impressions, all FAR (position 45–84) — the
+site is a week old and this is what sandboxing looks like. Nothing for D7 to
+triage yet, which is the correct null result, not a failure. The signal that
+DID arrive validates the thesis: "compress jpg 500kb" twice, exactly the
+exact-size family the site is built on. The Sunday loop (#44) stays gated
+until data accumulates.
+
+### `npm run traffic` — the zero-beacon metrics loop closes (#39)
+The Chrome agent added Zone→Analytics→Read (Edit only, secret intact — its
+report was thorough enough to quote the no-new-secret-screen proof).
+`scripts/traffic-snapshot.mjs` pulls 7 days of edge-side GraphQL analytics
+and appends one line to the backlog journal. First real week: **15,728
+requests, 8,244 pageViews, peak 229 uniques/day** — labelled loudly as
+bots-included, so uniques are a CEILING on humans; the D-111 ads gate reads
+these conservatively for exactly that reason. Better than the ~118-total
+belief either way.
+
+### Flagged, no action demanded
+The Chrome report revealed the deploy token carries ~45 account-wide WRITE
+permissions (Workers, D1, R2, rulesets…) — far broader than the
+"Pages Edit"-scoped token this project believed it had. Nothing is wrong
+today; least-privilege says narrow it someday. Recorded in memory so the
+next token conversation starts from the truth.
+
+### RRB
+Nothing pending from the founder's side — it is purely a fetch problem
+(D-128). A one-line Chrome task was offered for whenever convenient.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

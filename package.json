@@ -36,7 +36,8 @@
     "monitor": "node scripts/monitor.mjs",
     "monitor:queue": "node scripts/monitor.mjs --queue",
     "measure:memory": "node scripts/measure-memory.mjs",
-    "measure:cwv": "node scripts/measure-cwv.mjs"
+    "measure:cwv": "node scripts/measure-cwv.mjs",
+    "traffic": "node scripts/traffic-snapshot.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "^6.0.2",
