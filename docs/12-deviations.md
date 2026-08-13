@@ -5077,6 +5077,47 @@ calendar, queue page work the volume justifies. Windows that pass move to a
 log section, so the doc cannot silently rot the way D-100 catalogued.
 
 ---
+## 🟢 D-122 — The background-colour control ships, and the copy it re-legalises comes back
+
+**Docs affected:** `05` (OUTPUT_FLATTENS_ALPHA joins core/types — the fact
+moved, not changed)
+
+Backlog #31, closing the loop D-115 opened: `JobConfig.backgroundColor` flowed
+store → worker → encoder from the beginning, defaulting white, and no UI
+exposed it — which made "white unless you change it" an overclaim in three
+places. The fix was always going to be one input; now it exists, and the
+richer copy is restored as "white unless you pick another in the settings
+panel", true again in all three places.
+
+### Shape
+
+- **The alpha fact moved to core.** `FLATTENS_ALPHA` lived in engines/types,
+  which components/react/ may not import (docs/07 §2). Two hand-maintained
+  copies of "which formats flatten" would be D-112's jpeg/jpg vocabulary drift
+  all over again, so `OUTPUT_FLATTENS_ALPHA` now lives in core/types and
+  engines re-exports it under its local name — one source, both layers.
+- **A native `<input type="color">`** in a `BackgroundColorControl`, rendered
+  by ConfigPanel only when the output format actually flattens — a background
+  picker on a PNG route is a control that does nothing, which is a lie with a
+  label. Native, because the OS picker is keyboard-operable and handles
+  colour-vision affordances better than anything hand-rolled here.
+
+### The e2e failed twice before it passed, both times teaching the page's own
+structure
+
+The spec asserted against an empty page: first the settings `<details>` is
+collapsed, then — the real lesson — **the whole settings area does not exist
+until a file is queued**; an idle route is just the dropzone. The test now
+takes the path a real user takes: add a file, open Settings, then assert. On
+the JPG route the control is visible, defaults `#ffffff`, and a `fill()` to
+`#e11d48` round-trips through the store to the visible hex; on the PNG route
+the panel is proven hydrated by another control and the colour input has
+count 0, scoped inside #tool so nothing can satisfy it vacuously.
+
+Visual baselines regenerated (idle + results — the control changes the panel);
+baseline JS 46.7 → 46.8 KB gz. 434 unit / 168 integration / 156 e2e.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

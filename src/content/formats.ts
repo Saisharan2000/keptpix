@@ -195,7 +195,7 @@ Animated WebP converts only its first frame, because JPEG has no concept of anim
     },
     {
       q: 'My WebP has a transparent background. What happens to it?',
-      a: 'JPEG has no alpha channel, so transparency is flattened onto white. For a logo or a sticker that usually looks wrong against a coloured page. Convert to PNG instead if the transparency matters.',
+      a: 'JPEG has no alpha channel, so transparency is flattened onto a solid colour — white unless you pick another in the settings panel. For a logo or a sticker that usually looks wrong against a coloured page; convert to PNG instead if the transparency itself matters.',
     },
     {
       q: 'Why will my photo editor not open WebP?',
@@ -339,7 +339,7 @@ For a photograph, PNG is the wrong tool. Lossless compression cannot exploit the
 
   technicalNotes: `This is the one conversion where the source is lossless, so there is no accumulated generation loss to worry about — the JPEG you get is a first-generation encode of the original pixels. That makes PNG a genuinely good starting point.
 
-Transparency is the thing to watch. PNG supports a full alpha channel and JPEG supports none, so any transparent pixel is flattened onto white. A logo that looked fine on a white page will suddenly have a white box around it on a coloured one. If the transparency matters, convert to WebP instead — it keeps alpha and still compresses well.
+Transparency is the thing to watch. PNG supports a full alpha channel and JPEG supports none, so any transparent pixel is flattened onto a background colour — white unless you pick another in the settings panel. A logo that looked fine on a white page will suddenly sit in a visible box on a coloured one. If the transparency matters, convert to WebP instead — it keeps alpha and still compresses well.
 
 Content matters more here than in most conversions. JPEG's DCT compression is built for photographs and handles smooth gradients beautifully, but it smears hard edges. Screenshots of text, line art, diagrams and pixel art will show visible ringing around the edges even at high quality. Keep those as PNG, or use WebP.`,
 
@@ -380,7 +380,7 @@ Content matters more here than in most conversions. JPEG's DCT compression is bu
     },
     {
       q: 'My PNG has a transparent background. What happens?',
-      a: 'JPEG has no alpha channel, so transparency is flattened onto white. A logo with a transparent background will end up in a white box. If you need the transparency, convert to WebP instead: it keeps alpha and is still far smaller than PNG.',
+      a: 'JPEG has no alpha channel, so transparency is flattened onto a solid colour — white unless you pick another in the settings panel. A logo with a transparent background will end up in a filled box. If you need the transparency, convert to WebP instead: it keeps alpha and is still far smaller than PNG.',
     },
     {
       q: 'Will the JPG look worse than my PNG?',

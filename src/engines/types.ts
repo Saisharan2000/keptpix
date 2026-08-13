@@ -102,5 +102,10 @@ export const OUTPUT_MIME: Record<OutputFormat, string> = {
   jxl: 'image/jxl',
 };
 
-/** Formats with no alpha channel — the source must be flattened first. */
-export const FLATTENS_ALPHA: ReadonlySet<OutputFormat> = new Set<OutputFormat>(['jpeg']);
+/**
+ * Formats with no alpha channel — the source must be flattened first.
+ * Re-exported from core under the engine-local name so the encoder's call
+ * sites read naturally; the single source of truth moved to core in D-122
+ * because the config UI needs the same fact and cannot import engines/.
+ */
+export { OUTPUT_FLATTENS_ALPHA as FLATTENS_ALPHA } from '../core/types';

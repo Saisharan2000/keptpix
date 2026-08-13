@@ -1,4 +1,11 @@
-import type { CodecSupport, JobConfig, SizeMode, StoredPreset } from '../../core/types';
+import {
+  OUTPUT_FLATTENS_ALPHA,
+  type CodecSupport,
+  type JobConfig,
+  type SizeMode,
+  type StoredPreset,
+} from '../../core/types';
+import { BackgroundColorControl } from './BackgroundColorControl';
 import { FormatSelect } from './FormatSelect';
 import { ModeToggle } from './ModeToggle';
 import { QualityControl } from './QualityControl';
@@ -63,6 +70,15 @@ export function ConfigPanel({
         <QualityControl
           quality={config.sizeMode.quality}
           onChange={(quality) => onChange({ sizeMode: { kind: 'quality', quality } })}
+        />
+      )}
+
+      {/* Only when the output actually flattens — a background picker on a PNG
+          route would be a control that does nothing (D-122). */}
+      {OUTPUT_FLATTENS_ALPHA.has(config.outputFormat) && (
+        <BackgroundColorControl
+          value={config.backgroundColor}
+          onChange={(backgroundColor) => onChange({ backgroundColor })}
         />
       )}
 

@@ -18,6 +18,19 @@ export type InputFormat =
 
 export type OutputFormat = 'jpeg' | 'png' | 'webp' | 'avif' | 'jxl';
 
+/**
+ * Output formats with no alpha channel: transparency is flattened onto
+ * `JobConfig.backgroundColor` on the way through (docs/12 D-122).
+ *
+ * Lives in core because two layers need the same fact and may not meet: the
+ * encoder (engines/) uses it to decide whether to fill before drawing, and the
+ * config UI (components/react/, which docs/07 §2 does not grant engines
+ * access) uses it to decide whether offering a background colour makes any
+ * sense. Two hand-maintained copies of "which formats flatten" drifting apart
+ * would be D-112's jpeg/jpg vocabulary bug all over again.
+ */
+export const OUTPUT_FLATTENS_ALPHA: ReadonlySet<OutputFormat> = new Set<OutputFormat>(['jpeg']);
+
 export type EncoderId =
   | 'canvas'      // native convertToBlob
   | 'mozjpeg'     // WASM, better quality-per-byte
