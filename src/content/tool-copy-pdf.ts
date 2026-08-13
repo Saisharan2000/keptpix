@@ -332,3 +332,76 @@ export const rotatePdfCopy: ToolCopy = {
     },
   ],
 };
+
+export const compressPdfCopy: ToolCopy = {
+  title: 'Compress PDF to an exact size, nothing uploaded | KeptPix',
+  metaDescription:
+    'Compress a PDF to an exact target size — 200KB, 500KB, whatever the form demands — in your browser. No upload, no sign-up.',
+  lede:
+    'Set the size the portal demands, drop the PDF, get one back that fits. It happens on your device, so the document never leaves it.',
+
+  table: {
+    caption: 'What this trades, stated plainly',
+    headers: ['Part of the document', 'What happens to it'],
+    rows: [
+      ['File size', 'Lands just under your target — we search quality and resolution until it fits'],
+      ['How pages look', 'Kept — each page is re-rendered as a picture of itself'],
+      ['Print size', 'Kept. Pages keep their physical dimensions, whatever the compression'],
+      ['Text, and its selectability', 'LOST. Pages become images, so text is no longer selectable or searchable'],
+      ['Links and form fields', 'Lost, for the same reason'],
+      ['Password-protected files', 'Refused with a clear message, not mangled'],
+    ],
+  },
+
+  sections: [
+    {
+      heading: 'The honest version of how PDF compression works',
+      paragraphs: [
+        'A PDF is mostly its images. Genuinely recompressing one in place — re-encoding those images inside the document while leaving text as text — takes tooling that cannot run in a browser, which is why every site offering it quietly uploads your document to their server and runs it there. The document, with whatever is in it, makes a round trip you cannot see.',
+        'This tool stays on your device, and it is honest about the trade that requires: each page is re-rendered as a JPEG at a quality and resolution chosen to land the whole file just under your target — the same exact-size search our image compressor uses. The result looks like the original and prints at the original size, but it is a picture of the document. Text stops being selectable.',
+        'For the thing this tool is usually needed for — a portal that rejects anything over 200 KB — that trade is almost always right: the portal wants a small file it can display, and a human reads it by looking at it. If someone downstream needs to search or copy the text, send them the original as well.',
+      ],
+    },
+    {
+      heading: 'If the target cannot be reached, you are told',
+      paragraphs: [
+        'A 60-page document physically cannot become 50 KB and stay legible. When the target is out of reach at the lowest quality and resolution this tool allows, you get the smallest result it could produce, clearly labelled with what it achieved — never a silent failure, and never a file that quietly exceeds the limit.',
+      ],
+    },
+  ],
+
+  useCases: [
+    'Application portals that cap document uploads at 200 KB or 500 KB',
+    'Scanned certificates and marksheets that came off the scanner at 8 MB',
+    'Email attachments bouncing off a mailbox limit',
+    'Job portals that accept one PDF and reject it for size without saying why',
+    'Court and government e-filing systems with strict per-file caps',
+  ],
+
+  faq: [
+    {
+      q: 'Is my PDF uploaded anywhere?',
+      a: 'No. The compression runs in your browser on your own device, and no part of the document is sent over the network. You can verify it: open developer tools, watch the Network tab while you compress — or disconnect from the internet entirely and compress anyway.',
+    },
+    {
+      q: 'Will the text still be selectable afterwards?',
+      a: 'No, and any tool that compresses this hard without saying so is hiding it. Each page is re-rendered as an image, which is what makes an exact target size reachable in a browser. The page LOOKS the same and prints at the same size, but text can no longer be selected or searched. Keep the original for anything that needs its text.',
+    },
+    {
+      q: 'How exact is the target?',
+      a: 'The result lands between 92% and 100% of what you asked for — the same search the image compressor uses: render, measure the real assembled file, adjust, repeat. What you download is the file that was measured, not an estimate.',
+    },
+    {
+      q: 'What happens if my target is impossibly small?',
+      a: 'You get the smallest file this tool could honestly produce, plus a message saying what it achieved and that your target was out of reach. Raising the target — or splitting the document first and compressing the parts — is usually the fix.',
+    },
+    {
+      q: 'Can I compress a password-protected PDF?',
+      a: 'Not while it is protected. Remove the password in whatever you normally open it with, then compress. The file is reported as protected and skipped rather than being opened anyway and turned into blank pages.',
+    },
+    {
+      q: 'Does it work offline?',
+      a: 'Yes. After your first visit the tool is cached on your device and runs with no connection at all — which follows directly from nothing being uploaded. There is no server for it to need.',
+    },
+  ],
+};

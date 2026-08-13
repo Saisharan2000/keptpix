@@ -14,6 +14,7 @@
  * reached through.
  */
 import { detectFormat, MIN_DETECT_BYTES } from '../core/detect';
+import type { PdfPage } from '../core/pdf/writer';
 import { parsePageSelection, resolvePageIndices, selectedIndicesOrAll } from '../core/pdf/pages';
 import { assessPdfBudget, formatBytes } from '../core/pdf/budget';
 import { extractMetadata } from '../core/metadata';
@@ -372,6 +373,209 @@ const rotatePdfRunner: ToolRunner = async ({ files, config, pool, onProgress, si
 };
 
 
+/**
+ * /pdf/compress — exact-target-size PDF compression, by rasterising (D-120).
+ *
+ * WHY RASTERISE. Structural recompression of an arbitrary PDF — re-encoding
+ * its embedded images in place, dropping duplicate fonts — needs qpdf/mutool
+ * class tooling, which is AGPL and forbidden (docs/07 §3), or a server, which
+ * is forbidden absolutely. What CAN be done honestly in a browser is what this
+ * does: render every page through the pdf.js pipeline that already exists,
+ * re-encode as JPEG, and search quality × DPI together with the SAME
+ * `searchForTargetSize` the image tools use — one search implementation, no
+ * branch in the pipeline. The trade is stated loudly in the tool's copy: the
+ * output is a picture of each page, so text stops being selectable. Sites
+ * that "compress PDF" server-side never say what they traded; this page says
+ * what it did and why.
+ *
+ * The search's `scale` maps to DPI: `BASE_PDF_DPI × scale`, floored at
+ * raster.ts's own 72 DPI clamp — searching below the clamp would re-render
+ * identical pixels while believing it had downscaled, so `minScale` is
+ * exactly the clamp ratio rather than the image default of 0.25.
+ *
+ * Each encode pass measures the REAL assembled document — buildPdf is pure
+ * arithmetic on the JPEG frames, cheap next to the render — so `achievedBytes`
+ * is the file the user gets, never an estimate plus hope.
+ */
+const BASE_PDF_DPI = 150;
+const MIN_PDF_DPI = 72; // raster.ts clamps here; see the header note above.
+
+/**
+ * Loaded on first use, not at module scope: this runner rides in the baseline
+ * island via ToolShell, and static imports of the PDF writer, the JPEG frame
+ * parser and the target-size search cost every IMAGE route +2.8 KB gz for
+ * code only a PDF route can reach. Measured before and after — 48.6 KB gz
+ * static, 45.9 KB lazy (docs/12 D-120). Same discipline that keeps pdf.js's
+ * 493 KB out of the baseline.
+ */
+async function loadCompressDeps() {
+  const [{ parseJpegFrame }, { buildPdf }, { searchForTargetSize }] = await Promise.all([
+    import('../core/pdf/jpeg'),
+    import('../core/pdf/writer'),
+    import('../core/target-size'),
+  ]);
+  return { parseJpegFrame, buildPdf, searchForTargetSize };
+}
+
+function assemblePdf(
+  deps: { parseJpegFrame: (b: Uint8Array) => { width: number; height: number; components: number } | null; buildPdf: (pages: readonly PdfPage[]) => Uint8Array },
+  pages: readonly { bytes: ArrayBuffer; width: number; height: number; dpi: number }[],
+): Uint8Array {
+  const built: PdfPage[] = pages.map((page) => {
+    const frame = deps.parseJpegFrame(new Uint8Array(page.bytes));
+    if (frame === null) {
+      throw new Error('a rendered page did not come back as a readable JPEG');
+    }
+    // Original page geometry in points, recovered from the DPI actually used —
+    // so the compressed document prints at the same physical size as the
+    // source, whatever pixel size the search settled on.
+    const widthPt = (page.width * 72) / page.dpi;
+    const heightPt = (page.height * 72) / page.dpi;
+    return {
+      widthPt,
+      heightPt,
+      image: {
+        bytes: new Uint8Array(page.bytes),
+        filter: 'DCTDecode' as const,
+        width: frame.width,
+        height: frame.height,
+        colorSpace: frame.components === 1 ? ('DeviceGray' as const) : ('DeviceRGB' as const),
+        bitsPerComponent: 8,
+        orientation: 1,
+        reencoded: true,
+      },
+      x: 0,
+      y: 0,
+      w: widthPt,
+      h: heightPt,
+    };
+  });
+  return deps.buildPdf(built);
+}
+
+const compressPdfRunner: ToolRunner = async ({ files, config, pool, onProgress, signal }) => {
+  const failures: ToolRunFailure[] = [];
+  const targetBytes = typeof config.targetBytes === 'number' ? config.targetBytes : 200_000;
+  const allowDownscale = config.downsampleImages !== false;
+
+  const outputs: { name: string; blob: Blob }[] = [];
+  const deps = await loadCompressDeps();
+
+  for (let index = 0; index < files.length; index += 1) {
+    if (signal.aborted) throw new ToolRunAborted();
+    const file = files[index];
+    if (file === undefined) continue;
+
+    onProgress({ done: index, total: files.length, phase: 'reading' });
+    const bytes = await readPdf(file, failures);
+    if (bytes === null) continue; // one file failing never aborts the batch
+
+    try {
+      const pageCount = await pool.countPdfPages(bytes.slice(0));
+      const indices = Array.from({ length: pageCount }, (_, i) => i);
+
+      /**
+       * Best-so-far assembled documents, retained the same way the image
+       * pipeline retains candidates: the largest under-target result (what a
+       * met target returns) and the smallest overall (what I-5 falls back to)
+       * — at most two buffers, both near targetBytes in size.
+       *
+       * One object, not two `let` bindings, for the reason pipeline.ts states
+       * over its own state block: TypeScript cannot narrow a closure-assigned
+       * local, so after the search both would still read as `null`.
+       */
+      const kept: {
+        bestUnder: { pdf: Uint8Array; bytes: number } | null;
+        smallest: { pdf: Uint8Array; bytes: number } | null;
+      } = { bestUnder: null, smallest: null };
+
+      const encode = async (quality: number, scale: number): Promise<number> => {
+        signal.throwIfAborted();
+        const dpi = Math.max(MIN_PDF_DPI, Math.round(BASE_PDF_DPI * scale));
+        const pages = await pool.rasterisePdf(
+          // A fresh copy EVERY pass: the pool transfers the buffer to the
+          // worker (CLAUDE.md — transfer, never clone), which detaches it on
+          // this side. The single-pass runners never notice; a search that
+          // renders the same source repeatedly does, on pass two.
+          bytes.slice(0),
+          { format: 'jpeg', dpi, quality, indices },
+          (done, total) => onProgress({ done, total, phase: 'assembling' }),
+        );
+        const pdf = assemblePdf(deps, pages);
+        const size = pdf.byteLength;
+        if (size <= targetBytes && (kept.bestUnder === null || size > kept.bestUnder.bytes)) {
+          kept.bestUnder = { pdf, bytes: size };
+        }
+        if (kept.smallest === null || size < kept.smallest.bytes) {
+          kept.smallest = { pdf, bytes: size };
+        }
+        return size;
+      };
+
+      const search = await deps.searchForTargetSize(encode, {
+        targetBytes,
+        allowDownscale,
+        // The raster floor: below this ratio raster.ts clamps back to 72 DPI
+        // and every "smaller" pass would re-measure the same document.
+        minScale: MIN_PDF_DPI / BASE_PDF_DPI,
+        signal,
+      });
+
+      const winner = kept.bestUnder ?? kept.smallest;
+      /* c8 ignore next */
+      if (winner === null) throw new Error('no encode pass produced a document');
+
+      const base = sanitiseBaseName(file.name);
+      outputs.push({
+        name: base + '-compressed.pdf',
+        blob: new Blob([winner.pdf as BlobPart], { type: 'application/pdf' }),
+      });
+
+      if (!search.targetMet) {
+        // docs/04 §6 E_TARGET_UNREACHABLE semantics: a labelled shortfall WITH
+        // the best real file attached — never a silent failure, never nothing.
+        failures.push({
+          name: file.name,
+          reason:
+            'Could not reach ' + formatBytes(targetBytes) + ' — the closest was ' +
+            formatBytes(search.achievedBytes) + ' at the lowest quality and DPI this ' +
+            'tool allows. That result is included; a higher target will look better.',
+        });
+      }
+    } catch (cause) {
+      if (signal.aborted || (cause instanceof Error && cause.name === 'AbortError')) {
+        throw new ToolRunAborted();
+      }
+      failures.push({ name: file.name, reason: messageFor(cause) });
+    }
+  }
+
+  if (outputs.length === 0) {
+    // Name the first reason rather than a bare summary: "none could be
+    // compressed" with the why swallowed is exactly the unexplainable failure
+    // docs/04 §6 exists to prevent.
+    const first = failures[0];
+    throw new Error(
+      'None of those files could be compressed as PDFs.' +
+        (first !== undefined ? ' ' + first.name + ': ' + first.reason : ''),
+    );
+  }
+
+  if (outputs.length === 1) {
+    const only = outputs[0];
+    /* c8 ignore next */
+    if (only === undefined) throw new Error('unreachable: outputs.length is 1');
+    return { blob: only.blob, filename: only.name, failures };
+  }
+
+  await downloadAllAsZip(outputs, 'compressed-pdfs.zip');
+  return {
+    blob: new Blob([], { type: 'application/zip' }),
+    filename: 'compressed-pdfs.zip',
+    failures,
+  };
+};
+
 const pdfToImages: ToolRunner = async ({ files, config, pool, onProgress, signal }) => {
   const failures: ToolRunFailure[] = [];
   const file = files[0];
@@ -442,6 +646,7 @@ const RUNNERS: Partial<Record<ToolId, ToolRunner>> = {
   'pdf-split': splitPdfRunner,
   'pdf-rotate': rotatePdfRunner,
   'pdf-to-images': pdfToImages,
+  'pdf-compress': compressPdfRunner,
 };
 
 /** Whether a tool has an implementation behind it, for the shell's gate. */

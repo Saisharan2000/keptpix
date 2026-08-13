@@ -145,6 +145,11 @@ describe('the supported gate', () => {
    */
   const PUBLISHED: readonly ToolId[] = [
     'pdf-merge',
+    // D-120: acceptance green in tests/integration/pdf-compress.test.ts —
+    // exact-size landing, page count preserved, labelled shortfall on an
+    // unreachable target, one bad file never costing the batch. Position
+    // matches manifest order, which this list asserts verbatim.
+    'pdf-compress',
     'images-to-pdf',
     'pdf-to-images',
     'pdf-split',

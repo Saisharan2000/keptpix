@@ -228,15 +228,18 @@ export const toolManifest: readonly ToolManifestEntry[] = [
       {
         kind: 'toggle',
         id: 'downsampleImages',
-        label: 'Allow image downsampling',
-        help: 'Off keeps embedded images at their original pixel size, which raises the floor.',
+        label: 'Allow lower resolution',
+        // Reworded with the engine (D-120): the original text described
+        // structural image downsampling, which is not what a rasterising
+        // compressor does. This maps to the search's allowDownscale.
+        help: 'Off keeps every page at full render resolution, which raises the smallest reachable size.',
         default: true,
       },
     ],
     defaultConfig: { targetBytes: 200_000, downsampleImages: true },
     targetSizeCapable: true,
     licenseTier: 'free',
-    supported: false,
+    supported: true,
   },
   {
     id: 'images-to-pdf',

@@ -4989,6 +4989,67 @@ else fails anywhere.
   log already contains. Re-ran unpiped: exit 1, correct.
 
 ---
+## 🟢 D-120 — /pdf/compress ships: the demand class with no tool behind it, built on parts that all existed
+
+**Docs affected:** none structural — the manifest entry was fully specced at M0
+(`supported: false`), its downsample help text reworded to match a rasterising
+engine
+
+Backlog #28. "compress pdf to 200kb" was a GAP query routed to a tool that
+cannot do it (D-112). Like AVIF (D-114) and the M0 manifest before it, the
+front door existed — target-size field, downsample toggle, `ToolConfigPanel`
+already rendering both — and the machine behind it did not.
+
+### How it works, and why rasterising
+
+Structural in-place recompression needs qpdf/mutool-class tooling (AGPL,
+forbidden) or a server (forbidden absolutely). What a browser can do honestly:
+render every page through the pdf.js pipeline that already exists
+(`pool.rasterisePdf`), re-encode as JPEG, and drive quality × DPI with **the
+same `searchForTargetSize` the image tools use** — one search implementation,
+no branch in the pipeline. `scale` maps to DPI (150 base, floored at
+raster.ts's own 72 DPI clamp, so the search never "downscales" into a clamp
+that re-renders identical pixels). Every pass assembles the REAL document with
+the house `core/pdf/writer` and measures those bytes — `achievedBytes` is the
+file the user downloads, never an estimate. Pages keep their physical print
+size, recovered from the DPI actually used.
+
+**The trade is the headline of the tool's own copy**: the output is a picture
+of each page, so text stops being selectable. The competitors' version of this
+feature uploads the document to a server and never says so; this page's copy
+table has a row that says "LOST" in capitals. That honesty is the
+differentiator, same as D-118's exam facts.
+
+### Found while building — three, all caught by gates
+
+1. **The pool transfers buffers** (CLAUDE.md: never clone), so pass two of the
+   search handed the worker a detached ArrayBuffer. Single-pass runners can
+   never hit this; a search that re-renders the same source can. One
+   `bytes.slice(0)` per pass, with the reason in a comment.
+2. **The terminal error swallowed the reason.** "None of those files could be
+   compressed" with the per-file why lost in an unreturned array — the exact
+   unexplainable failure docs/04 §6 exists to prevent. It now names the first
+   failure.
+3. **Static imports cost every image route +2.8 KB gz** (48.6 vs 45.8) for
+   code only a PDF route can reach. Made lazy — measured back down to 46.7 —
+   the same discipline that keeps pdf.js's 493 KB out of the baseline.
+
+Also: the pinned published-tools test tripped on the `supported` flip and the
+manifest-order assertion, both by design; TypeScript refused the closure-
+mutated `let` bindings, and the fix is the `state` object pattern pipeline.ts
+already documents for exactly this.
+
+### Verification
+
+4 integration tests through the REAL pool: a 3-page detailed document lands at
+or under 60 KB with page count preserved and `%PDF-` magic; an unreachable
+20 KB target returns the smallest honest result WITH a labelled shortfall
+naming both numbers; one garbage file never costs the good one; downsample-off
+never beats downsample-on. The unreachable and batch-resilience claims are the
+tool's own copy, tested. 434 unit / 168 integration / 154 e2e; 35 pages;
+"compress pdf to 200kb" now routes to `/pdf/compress` in the query matcher.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
