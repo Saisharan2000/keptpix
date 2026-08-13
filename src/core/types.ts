@@ -382,6 +382,16 @@ export interface ExamSpec {
   surfaceOn: string[];
   /** The fact that changes what the user should do, if there is one. */
   caveat?: string;
+  /**
+   * The same facts in Hindi — FACTS ONLY, no prose beyond them (docs/12
+   * D-127, Cowork D2). Rendered with lang="hi" so screen readers and search
+   * engines treat it as Hindi. Numbers stay as digits; terms the portals
+   * themselves use in English (JPEG, KB, "photo") stay recognisable. Full
+   * Hindi pages are a separate, founder-reviewed decision — this field is
+   * deliberately too small to hold anything that needs reviewing beyond the
+   * facts it restates.
+   */
+  hindi?: string;
 }
 
 /**

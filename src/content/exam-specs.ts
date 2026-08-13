@@ -44,6 +44,8 @@ export const examSpecs: readonly ExamSpec[] = [
           'chase exact centimetres — just keep the signature big and clear.',
       },
     ],
+    hindi:
+      'SSC के ऑनलाइन फॉर्म में अब फोटो अपलोड नहीं होती — फोटो फॉर्म भरते समय कैमरे से लाइव ली जाती है। सिर्फ़ हस्ताक्षर (signature) की फ़ाइल अपलोड होती है: JPEG, 10 से 20 KB, लगभग 6 × 2 सेमी।',
     surfaceOn: ['signature-to-20kb', 'jpg-to-20kb'],
   },
   {
@@ -73,6 +75,8 @@ export const examSpecs: readonly ExamSpec[] = [
           'signatures are rejected — and names "too small" as the number one reason.',
       },
     ],
+    hindi:
+      'SSC GD (कांस्टेबल भर्ती) में फोटो अपलोड नहीं होती — फोटो लाइव ली जाती है। सिर्फ़ हस्ताक्षर अपलोड होता है: JPEG, 10 से 20 KB। ध्यान दें: बहुत छोटा हस्ताक्षर रिजेक्शन की सबसे बड़ी वजह है, इसलिए फ़ाइल 10 KB से छोटी न करें।',
     surfaceOn: ['ssc-gd-photo-signature', 'signature-to-20kb', 'jpg-to-20kb'],
   },
   {
@@ -112,6 +116,8 @@ export const examSpecs: readonly ExamSpec[] = [
           'in black ink on plain white paper. Scan all three as one image.',
       },
     ],
+    hindi:
+      'UPSC में अपलोड की गई फोटो और लाइव फोटो दोनों ली जाती हैं और आपस में मिलाई जाती हैं। फोटो: JPG, 20 से 200 KB, फ़ाइल का नाम "photo"। हस्ताक्षर: एक ही इमेज में तीन बार साइन करें, JPG, 20 से 100 KB, फ़ाइल का नाम "signature"।',
     surfaceOn: ['passport-photo-to-50kb', 'jpg-to-100kb', 'jpg-to-50kb'],
   },
   {
@@ -151,6 +157,8 @@ export const examSpecs: readonly ExamSpec[] = [
         notes: 'Both hands — left and right — as the bulletin asks.',
       },
     ],
+    hindi:
+      'NEET (UG) के लिए: फोटो JPG/JPEG 10 से 200 KB (चेहरा 80%, सफ़ेद बैकग्राउंड), हस्ताक्षर 10 से 100 KB (CAPITAL अक्षरों में नहीं), और दोनों हाथों की उँगलियों/अँगूठे के निशान 10 से 200 KB।',
     surfaceOn: ['jpg-to-100kb', 'jpg-to-200kb', 'passport-photo-to-50kb'],
   },
   {
@@ -204,6 +212,8 @@ export const examSpecs: readonly ExamSpec[] = [
         notes: 'Written in English, in your own handwriting, with black ink.',
       },
     ],
+    hindi:
+      'IBPS (बैंक भर्ती) में चार फ़ाइलें अपलोड होती हैं: फोटो 20–50 KB (200×230 px), हस्ताक्षर 10–20 KB (140×60 px, CAPITAL में नहीं), बाएँ अँगूठे का निशान 20–50 KB, और अंग्रेज़ी में हाथ से लिखा घोषणा-पत्र 50–100 KB।',
     surfaceOn: ['signature-to-20kb', 'passport-photo-to-50kb', 'jpg-to-20kb', 'jpg-to-50kb'],
   },
 ];

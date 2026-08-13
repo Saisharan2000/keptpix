@@ -5299,6 +5299,57 @@ write-ups for HN/dev.to keep their audience's voice — this is about the pages.
 435 unit / 168 integration / 162 e2e, deployed.
 
 ---
+## 🟢 D-127 — Three Cowork items in one pass: the write-up draft, Hindi facts blocks, and the Reddit script
+
+**Docs affected:** `05` (ExamSpec gains `hindi`), new `docs/19-writeup-exact-kb.md`
+
+### #36 — the Show HN / dev.to draft (Cowork batch #4, D1 launch material)
+
+`docs/19-writeup-exact-kb.md`. The story is the engineering that is actually
+true: exact size as a search problem (probe-first, floor-probe, sqrt-jump
+downscaling, the 92–100% band), the canvas-per-pass memory bug with its
+before/after numbers, and "nothing is uploaded" as a release gate rather than
+a promise — including the two times the absolute zero-requests rule caught
+something real (Cloudflare's Sec-Fetch-gated beacon injection, rolldown's
+runtime chunk racing a job). Ends with a pre-publish checklist: re-run the
+measurements, refresh numbers, founder publishes under his own name. The
+D-126 plain-language rule deliberately does NOT apply — this is for a
+technical audience.
+
+### #37 — Hindi facts blocks (Cowork D2), shipped
+
+`ExamSpec.hindi` — a field deliberately too small to hold anything beyond the
+facts it restates, which is what makes it shippable without the founder's
+native-reader review that FULL Hindi pages require. Five blocks (SSC, GD,
+UPSC, NEET, IBPS), rendered with `lang="hi"` so screen readers switch voices
+and Hindi queries have something to land on. Numbers stay digits; terms the
+portals themselves use in English (JPEG, KB, "photo") stay recognisable.
+
+The test has teeth: every Hindi block must contain Devanagari (the lang
+attribute promises the script) and must repeat EVERY KB bound its own table
+states — a Hindi block whose numbers drift from the table is worse than none,
+because the reader trusts whichever one they can read.
+
+### #38 — the Reddit/Telegram operating script (Cowork D3)
+
+Written to `claude-cowork-docs/` (private, gitignored, build-gated) because it
+names target communities. Encodes every D3 guardrail as instructions the
+Chrome agent cannot misread: draft-only until 20 founder approvals, help-first
+link-second with the no-link rule when specs do not match, disclosure always,
+rules-page reading before first contact, modmail where required, ≤3 links/week
+per community, one removal = permanent stop. Includes the verified facts the
+agent may state, so it cannot improvise specs — and an approval ledger table
+for the founder.
+
+### #39 — probed, needs one permission
+
+The API token can see the keptpix.com zone but GraphQL returns authz: it lacks
+`Zone → Analytics → Read`. One dashboard minute for Sai; the snapshot script
+follows once the scope exists.
+
+436 unit / 168 integration / 162 e2e; Hindi blocks verified in served HTML.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |

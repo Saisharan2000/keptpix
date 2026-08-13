@@ -83,6 +83,23 @@ describe('exam specs (docs/12 D-118)', () => {
     expect(examSpecsForRoute('jpg-to-1mb')).toEqual([]);
   });
 
+  it('every Hindi block is real Hindi and repeats the table’s own numbers (D-127)', () => {
+    for (const spec of examSpecs) {
+      if (spec.hindi === undefined) continue;
+      // Devanagari, not transliteration — lang="hi" promises the script.
+      expect(spec.hindi, spec.id).toMatch(/[ऀ-ॿ]/);
+      /*
+       * Facts only: every KB bound the requirements table states must appear
+       * in the Hindi text too. A Hindi block whose numbers drift from the
+       * table is worse than none — the reader trusts whichever they can read.
+       */
+      for (const r of spec.requirements) {
+        if (r.minKB !== undefined) expect(spec.hindi, `${spec.id} minKB`).toContain(String(r.minKB));
+        if (r.maxKB !== undefined) expect(spec.hindi, `${spec.id} maxKB`).toContain(String(r.maxKB));
+      }
+    }
+  });
+
   it('the GD page carries the GD spec, and GD stays photo-free (D-125)', () => {
     const specs = examSpecsForRoute('ssc-gd-photo-signature');
     expect(specs.map((s) => s.id)).toContain('ssc-gd');

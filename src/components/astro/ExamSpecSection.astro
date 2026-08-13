@@ -55,6 +55,18 @@ const cell = 'border-b border-border px-4 py-3 align-top text-sm text-text-muted
               {spec.caveat}
             </p>
           )}
+          {spec.hindi && (
+            /* lang="hi" is load-bearing: it tells screen readers to switch
+               voices and search engines that Hindi queries belong here
+               (Cowork D2, docs/12 D-127). Facts only — the same numbers as
+               the table, in the reader's language. */
+            <p
+              lang="hi"
+              class="mt-2 mb-0 max-w-[68ch] rounded-md border border-border bg-bg-subtle px-4 py-3 text-sm text-text"
+            >
+              {spec.hindi}
+            </p>
+          )}
           {/*
             tabindex="0" + role="region" is the D-55 pattern: the table overflows
             on phones, and a scrollable region must be keyboard-reachable (axe
