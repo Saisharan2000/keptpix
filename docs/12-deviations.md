@@ -5479,6 +5479,36 @@ consecutive full-suite runs since; before the fix it failed reproducibly.
 (the preloaded runtime now counts into the measured modules, honestly).
 
 ---
+## 🟠 D-131 — Gate (b) closed on the founder's waiver: Android pass, iOS deferred, launch week unlocked
+
+**Docs affected:** none — a gate decision, recorded with its risk
+
+Sai ran the device checklist on his Android: near-all green ("mostly all the 8
+points works"), no breakages reported. iPhone was NOT tested; his decision,
+explicitly: "i did not tested some parts but i dont care we can proceed
+mostly." That waives the iOS half of Cowork D1's gate (b) — the founder can
+waive his own gate, and the waiver is recorded rather than smoothed over.
+
+**The risk, stated for the record:** iPhone Safari is the single riskiest
+untested surface — D-95 (the delivery path that silently failed) was
+iOS-only, HEIC sources COME from iPhones, and the HN audience skews iPhone.
+The standing recommendation, put to Sai and left to him: a 10-minute
+borrowed-iPhone spot-check of steps 1–2 only (convert a real camera photo,
+confirm the file saves) before the Show HN goes up. Not a blocker.
+
+His one observation — his personal phone number on the Razorpay support page
+— is editable in their dashboard anytime; the virtual-number option is
+already in the tip-page memory.
+
+**Both D1 gates are now closed** (₹50 payee passed D-129; device pass here).
+Launch materials refreshed same commit: CWV re-measured today (LCP ~1.2s
+mobile lab, categories 99/100/100/100) and docs/19's pre-publish line updated
+to "ready to publish." What remains is Sai's side of the runbook: dev.to
+account, publish, submit on a Tue–Thu US morning, be present. The proposed
+window is Tue Aug 18 – Thu Aug 20 — no collision with the GD notice (~Sep 1),
+so D12a's collision rule stays dormant.
+
+---
 ## Outstanding work, most consequential first
 
 | | Item | Blocks |
