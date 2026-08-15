@@ -162,6 +162,37 @@ export const examSpecs: readonly ExamSpec[] = [
     surfaceOn: ['jpg-to-100kb', 'jpg-to-200kb', 'passport-photo-to-50kb'],
   },
   {
+    id: 'rrb-ntpc',
+    exam: 'RRB NTPC (Railway non-technical posts)',
+    org: 'Railway Recruitment Boards',
+    cycle: 'CEN 07/2025 (Undergraduate)',
+    sourceTitle: 'Detailed CEN No. 07/2025 NTPC (Under Graduate) — Railway Recruitment Boards',
+    sourceUrl: 'https://www.rrbchennai.gov.in/downloads/CEN-07-2025-NTPC-UnderGraduate-English.pdf',
+    verifiedOn: '2026-08-15',
+    caveat:
+      'RRB has NO photo upload. The form takes your photo live, with your camera, while you ' +
+      'fill it in — taking a picture of an old printed photo gets the form rejected. The only ' +
+      'image file you upload is your signature. Note the size is higher than most exams: 30 to ' +
+      '49 KB, not 10–20 KB. Sign in normal running handwriting — block or CAPITAL letters are ' +
+      'rejected.',
+    requirements: [
+      {
+        kind: 'signature',
+        label: 'Signature',
+        format: 'JPG/JPEG',
+        minKB: 30,
+        maxKB: 49,
+        dimensions: 'min 140 × 60 px @ 100 DPI (scan box 35 × 20 mm)',
+        notes:
+          'Black ink on white paper, running (joined) handwriting — NOT block, CAPITAL or ' +
+          'disjointed letters. A thumb impression in place of a signature is rejected.',
+      },
+    ],
+    hindi:
+      'RRB NTPC (रेलवे भर्ती) में फोटो अपलोड नहीं होती — फोटो फॉर्म भरते समय कैमरे से लाइव ली जाती है। सिर्फ़ हस्ताक्षर अपलोड होता है: JPG/JPEG, 30 से 49 KB, कम से कम 140 × 60 px। सामान्य (जुड़ी हुई) लिखावट में करें — CAPITAL अक्षरों में नहीं।',
+    surfaceOn: ['signature-140x60', 'jpg-to-50kb'],
+  },
+  {
     id: 'sbi',
     exam: 'SBI (PO / Clerk / CBO — recruitments on the same portal)',
     org: 'State Bank of India',
