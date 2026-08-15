@@ -84,6 +84,10 @@ EXIF orientation is applied to the pixels before encoding, so photos do not come
       a: 'Yes, a little. HEIC is already lossy, so re-encoding to JPEG is a second lossy pass. At quality 85 and above the difference is not visible at normal viewing sizes. If you intend to edit the photo afterwards, convert to PNG instead and accept a much larger file — every additional lossy save compounds the loss.',
     },
     {
+      q: 'I picked a HEIC photo on my iPhone, but it already shows as JPG here. Did it use the wrong file?',
+      a: 'No — that is your iPhone, not this page. When you pick a photo from the iOS Photos app inside any web browser, the iPhone quietly turns it into a JPG on the way out. So by the time your photo reaches this page, it is already a JPG. That is fine: JPG is exactly what you came here for, and it still works — the page just finishes the job and lets you save it or set an exact size. If you truly need the original HEIC untouched, pick it from the Files app instead of Photos, or use a computer.',
+    },
+    {
       q: 'Why is my JPG bigger than the HEIC I started with?',
       a: 'Because HEIC compresses better — that is the whole reason Apple adopted it. HEIC uses HEVC intra-frame coding, which is roughly twice as efficient as JPEG, so the same photo at the same visible quality typically comes out 1.5-2x larger as a JPEG. A 2 MB HEIC becoming a 3.5 MB JPG is normal, not a fault. You are trading file size for a format every device and website can actually open. If the result has to fit a limit — an upload form, an email attachment — switch to target-size mode and set the exact size you need.',
     },
