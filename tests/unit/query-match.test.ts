@@ -225,6 +225,39 @@ describe('matchQuery — direction', () => {
   });
 });
 
+describe('matchQuery — exam subject pages (docs/12 D-135)', () => {
+  /*
+   * Found by the Sunday keywords loop on real GSC data: the exam money pages
+   * were unreachable from the search box because they required the verb
+   * "compress", which applicants never type. Pre-fix probe: "passport size
+   * photo in 50 kb" and "pan card photo" returned NOTHING; "signature convert
+   * into 20 kb" went to /convert. Every case below was observed failing before
+   * keywords-based routing.
+   */
+  it('routes a natural passport query to the passport page', () => {
+    expect(top('passport size photo in 50 kb')).toBe('/compress/passport-photo-to-50kb');
+    expect(top('passport photo 50kb')).toBe('/compress/passport-photo-to-50kb');
+  });
+
+  it('routes a signature query to the signature page, not the converter', () => {
+    expect(top('signature 20kb')).toBe('/compress/signature-to-20kb');
+    // "convert" in the query must not hijack it to /convert (the pre-fix bug).
+    expect(top('signature convert into 20 kb')).toBe('/compress/signature-to-20kb');
+  });
+
+  it('routes the literal PAN and GD page names', () => {
+    expect(top('pan card photo')).toBe('/compress/pan-card-photo');
+    expect(top('ssc gd photo signature')).toBe('/compress/ssc-gd-photo-signature');
+  });
+
+  it('a subject word does not hijack the generic byte-target pages', () => {
+    // "compress jpg to 100kb" must still reach a compress destination, not be
+    // stolen by a subject page — the verb path is intact.
+    expect(top('compress jpg to 100kb')).toMatch(/^\/compress/);
+    expect(top('convert heic to jpg')).toBe('/convert/heic-to-jpg');
+  });
+});
+
 describe('matchQuery — format vocabulary', () => {
   it('can reach every published convert route from a plain query', () => {
     // /convert/jpg-to-webp was UNREACHABLE: route data spells the format `jpeg`,

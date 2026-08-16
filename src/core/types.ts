@@ -334,6 +334,18 @@ export interface SizePresetRoute {
    * actually requires.
    */
   chain?: { slug: string; reason: string };
+  /**
+   * Subject words the on-site matcher routes to this page (docs/12 D-135).
+   *
+   * The generic byte-target routes (jpg-to-100kb) match on the verb "compress".
+   * The SUBJECT routes do not — real applicants search "passport size photo in
+   * 50kb" or "signature in 20kb", never "compress", so requiring the verb made
+   * every exam page unreachable from the search box (a whole GSC week of
+   * measured demand hitting pages the matcher could not find). The first entry
+   * is the discriminating token the query must contain; the rest score.
+   * Omit on a generic size route.
+   */
+  keywords?: readonly string[];
 }
 
 /**

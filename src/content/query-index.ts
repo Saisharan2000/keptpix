@@ -109,13 +109,29 @@ const pairEntries: QueryEntry[] = publishedFormatPairRoutes.map((route) => ({
  * where the link goes — "Compress JPG to 150 KB" pointing at the 100 KB route.
  * A query naming an arbitrary size is served by the generic entry below.
  */
-const presetEntries: QueryEntry[] = publishedSizePresetRoutes.map((route) => ({
-  path: '/compress/' + route.slug,
-  label: 'Compress ' + (FORMAT_LABEL[route.format] ?? route.format) + ' to ' + formatTarget(route.targetBytes),
-  terms: [...COMPRESS_TERMS, route.format, 'photo', 'image'],
-  must: ['compress'],
-  excludes: [...NOT_AN_IMAGE],
-}));
+const presetEntries: QueryEntry[] = publishedSizePresetRoutes.map((route) => {
+  // SUBJECT routes (signature, passport, pan, gd) match on their subject word,
+  // not on the verb "compress" — real form queries never say "compress"
+  // (docs/12 D-135). The generic byte-target routes keep the verb, so
+  // "compress jpg" still finds them and a subject word cannot hijack them.
+  if (route.keywords !== undefined && route.keywords.length > 0) {
+    const [primary] = route.keywords;
+    return {
+      path: '/compress/' + route.slug,
+      label: route.cardName ?? 'Compress to ' + formatTarget(route.targetBytes),
+      terms: [...COMPRESS_TERMS, ...route.keywords, route.format, 'photo', 'image'],
+      must: [primary as string],
+      excludes: [...NOT_AN_IMAGE],
+    };
+  }
+  return {
+    path: '/compress/' + route.slug,
+    label: 'Compress ' + (FORMAT_LABEL[route.format] ?? route.format) + ' to ' + formatTarget(route.targetBytes),
+    terms: [...COMPRESS_TERMS, route.format, 'photo', 'image'],
+    must: ['compress'],
+    excludes: [...NOT_AN_IMAGE],
+  };
+});
 
 /**
  * Resize presets: /resize/signature-140x60 and friends (docs/12 D-130).

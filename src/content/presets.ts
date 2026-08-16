@@ -242,6 +242,7 @@ const jpg1mb: SizePresetRoute = {
 
 const signature20kb: SizePresetRoute = {
   slug: 'signature-to-20kb',
+  keywords: ['signature', 'sign'],
   format: 'jpeg',
   targetBytes: 20_000,
   supported: true,
@@ -290,6 +291,7 @@ const signature20kb: SizePresetRoute = {
 
 const passportPhoto50kb: SizePresetRoute = {
   slug: 'passport-photo-to-50kb',
+  keywords: ['passport', 'visa'],
   format: 'jpeg',
   targetBytes: 50_000,
   supported: true,
@@ -347,6 +349,7 @@ const passportPhoto50kb: SizePresetRoute = {
  */
 const panCardPhoto: SizePresetRoute = {
   slug: 'pan-card-photo',
+  keywords: ['pan'],
   format: 'jpeg',
   targetBytes: 30_000,
   supported: true,
@@ -414,6 +417,7 @@ const panCardPhoto: SizePresetRoute = {
  */
 const sscGdPhotoSignature: SizePresetRoute = {
   slug: 'ssc-gd-photo-signature',
+  keywords: ['gd', 'ssc', 'constable'],
   format: 'jpeg',
   targetBytes: 20_000,
   supported: true,

@@ -397,6 +397,13 @@ export interface SizePresetRoute {
    */
   cardName?: string;
   /**
+   * Subject words the on-site matcher routes here (docs/12 D-135) — set on
+   * exam/subject pages (signature, passport, pan, gd) so a natural query like
+   * "passport size photo in 50kb" reaches them without the verb "compress".
+   * First entry is the discriminating token; omit on generic byte-target routes.
+   */
+  keywords?: readonly string[];
+  /**
    * The next step in the SAME real-world task, shown once a batch completes
    * (docs/12 D-113). `slug` names another published size preset; `reason` is
    * one honest sentence rendered next to the link. Only set where the
