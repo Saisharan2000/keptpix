@@ -28,6 +28,15 @@ import {
   otherCards,
   unbuiltCards,
 } from '../content/tool-cards';
+import { publishedResizePresetRoutes } from '../content/presets';
+
+// The exact-dimension resize pages were reachable only from the /resize hub —
+// orphaned from this site-wide index (external audit, docs/12 D-136). Derived
+// from route data so a new resize preset appears here automatically.
+const resizePresetLinks = publishedResizePresetRoutes.map((r) => ({
+  href: '/resize/' + r.slug,
+  label: r.h1,
+}));
 
 const groups = [
   {
@@ -57,6 +66,7 @@ const groups = [
     blurb:
       'Change dimensions, or look at what a photo is carrying before you send it anywhere — EXIF, GPS coordinates, camera serial numbers.',
     cards: otherCards,
+    plainLinks: resizePresetLinks,
   },
   {
     id: 'about',
